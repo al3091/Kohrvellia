@@ -1,0 +1,310 @@
+{
+  "version": "1.0.0",
+  "description": "Audio manifest for Kohrvellia - lists all required sound assets",
+  "sources": {
+    "recommended": [
+      "Freesound.org (CC0 license)",
+      "OpenGameArt.org (various licenses)",
+      "Zapsplat.com (free tier)",
+      "Incompetech.com (royalty-free BGM)"
+    ]
+  },
+  "sfx": {
+    "combat": {
+      "attack.mp3": {
+        "description": "Standard weapon swing/attack",
+        "duration": "0.3-0.5s",
+        "style": "Whoosh with slight impact"
+      },
+      "attack_critical.mp3": {
+        "description": "Critical hit attack",
+        "duration": "0.4-0.6s",
+        "style": "Heavy whoosh with sharp impact"
+      },
+      "hit.mp3": {
+        "description": "Normal damage received",
+        "duration": "0.2-0.3s",
+        "style": "Flesh/armor impact"
+      },
+      "hit_heavy.mp3": {
+        "description": "Heavy damage received",
+        "duration": "0.3-0.5s",
+        "style": "Heavy thud with grunt"
+      },
+      "miss.mp3": {
+        "description": "Attack missed",
+        "duration": "0.2-0.4s",
+        "style": "Whoosh fading away"
+      },
+      "defend.mp3": {
+        "description": "Block/shield mitigation",
+        "duration": "0.2-0.3s",
+        "style": "Metal clang"
+      },
+      "heal.mp3": {
+        "description": "HP restoration",
+        "duration": "0.5-0.8s",
+        "style": "Magical shimmer, ascending"
+      },
+      "buff.mp3": {
+        "description": "Positive status effect applied",
+        "duration": "0.4-0.6s",
+        "style": "Bright chime, uplifting"
+      },
+      "debuff.mp3": {
+        "description": "Negative status effect applied",
+        "duration": "0.4-0.6s",
+        "style": "Dark tone, descending"
+      }
+    },
+    "rewards": {
+      "victory.mp3": {
+        "description": "Combat victory fanfare",
+        "duration": "2-3s",
+        "style": "Triumphant brass/strings"
+      },
+      "defeat.mp3": {
+        "description": "Combat defeat/game over",
+        "duration": "2-3s",
+        "style": "Somber, minor key"
+      },
+      "level_up.mp3": {
+        "description": "Character level increase",
+        "duration": "1.5-2s",
+        "style": "Ascending fanfare with sparkle"
+      },
+      "achievement.mp3": {
+        "description": "Achievement unlocked",
+        "duration": "1-1.5s",
+        "style": "Bright notification with flourish"
+      },
+      "item_pickup.mp3": {
+        "description": "Item acquired",
+        "duration": "0.3-0.5s",
+        "style": "Light pop/chime"
+      },
+      "item_equip.mp3": {
+        "description": "Equipment changed",
+        "duration": "0.3-0.5s",
+        "style": "Metallic click/settle"
+      },
+      "gold_pickup.mp3": {
+        "description": "Gold/currency acquired",
+        "duration": "0.4-0.6s",
+        "style": "Coins clinking"
+      }
+    },
+    "ui": {
+      "button_click.mp3": {
+        "description": "Standard button tap",
+        "duration": "0.1-0.15s",
+        "style": "Soft click"
+      },
+      "button_confirm.mp3": {
+        "description": "Confirmation/accept",
+        "duration": "0.2-0.3s",
+        "style": "Positive chime"
+      },
+      "button_cancel.mp3": {
+        "description": "Cancel/back",
+        "duration": "0.15-0.25s",
+        "style": "Soft negative tone"
+      },
+      "error.mp3": {
+        "description": "Error/invalid action",
+        "duration": "0.2-0.3s",
+        "style": "Buzzer/wrong sound"
+      }
+    },
+    "exploration": {
+      "door_open.mp3": {
+        "description": "Door/gate opening",
+        "duration": "0.5-1s",
+        "style": "Stone/wood creak"
+      },
+      "step.mp3": {
+        "description": "Footstep",
+        "duration": "0.2-0.3s",
+        "style": "Stone/dirt footfall"
+      },
+      "shrine_chime.mp3": {
+        "description": "Divine shrine activation",
+        "duration": "1-1.5s",
+        "style": "Ethereal bell/chime"
+      },
+      "treasure_open.mp3": {
+        "description": "Treasure reveal",
+        "duration": "0.5-0.8s",
+        "style": "Magical sparkle"
+      },
+      "treasure_creak.mp3": {
+        "description": "Chest lid opening",
+        "duration": "0.3-0.5s",
+        "style": "Wood creak/hinge"
+      },
+      "mimic_growl.mp3": {
+        "description": "Mimic monster reveal",
+        "duration": "0.5-0.8s",
+        "style": "Monstrous growl"
+      }
+    },
+    "blessing": {
+      "blessing_start.mp3": {
+        "description": "Blessing ceremony begins",
+        "duration": "1-1.5s",
+        "style": "Divine light whoosh, ascending"
+      },
+      "blessing_loop.mp3": {
+        "description": "Blessing examination ambient",
+        "duration": "4-6s (loopable)",
+        "style": "Ethereal humming, sustained"
+      },
+      "blessing_complete.mp3": {
+        "description": "Blessing ceremony flash/finish",
+        "duration": "0.8-1.2s",
+        "style": "Bright flash with impact"
+      },
+      "stat_reveal.mp3": {
+        "description": "Individual stat revealed",
+        "duration": "0.3-0.5s",
+        "style": "Light chime, ascending note"
+      },
+      "grade_up.mp3": {
+        "description": "Stat grade increased",
+        "duration": "0.5-0.8s",
+        "style": "Triumphant chord, sparkle"
+      }
+    }
+  },
+  "bgm": {
+    "core": {
+      "title.mp3": {
+        "description": "Main menu/title screen",
+        "duration": "60-120s (loopable)",
+        "style": "Epic fantasy, mysterious"
+      },
+      "dungeon.mp3": {
+        "description": "Dungeon exploration",
+        "duration": "90-180s (loopable)",
+        "style": "Ambient, tense, atmospheric"
+      },
+      "combat.mp3": {
+        "description": "Standard combat",
+        "duration": "60-90s (loopable)",
+        "style": "Action, driving rhythm"
+      },
+      "boss.mp3": {
+        "description": "Boss battle",
+        "duration": "90-120s (loopable)",
+        "style": "Intense, orchestral, dramatic"
+      },
+      "victory.mp3": {
+        "description": "Post-combat victory",
+        "duration": "15-30s",
+        "style": "Triumphant, celebratory"
+      },
+      "defeat.mp3": {
+        "description": "Game over/defeat",
+        "duration": "15-30s",
+        "style": "Somber, reflective"
+      },
+      "shop.mp3": {
+        "description": "Town/merchant areas",
+        "duration": "60-90s (loopable)",
+        "style": "Calm, medieval market"
+      },
+      "rest.mp3": {
+        "description": "Rest sites/safe areas",
+        "duration": "60-90s (loopable)",
+        "style": "Peaceful, campfire warmth"
+      }
+    },
+    "blessing": {
+      "blessing_generic.mp3": {
+        "description": "Default blessing ceremony",
+        "duration": "30-60s (loopable)",
+        "style": "Divine, ethereal choir"
+      },
+      "blessing_war.mp3": {
+        "description": "War domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Martial drums, brass fanfare"
+      },
+      "blessing_magic.mp3": {
+        "description": "Magic domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Mystical, arcane harmonics"
+      },
+      "blessing_death.mp3": {
+        "description": "Death domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Ominous, deep chords, whispers"
+      },
+      "blessing_fortune.mp3": {
+        "description": "Fortune domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Lucky, playful, jingling"
+      },
+      "blessing_nature.mp3": {
+        "description": "Nature domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Forest sounds, pan flutes"
+      },
+      "blessing_wisdom.mp3": {
+        "description": "Wisdom domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Contemplative, flowing"
+      },
+      "blessing_life.mp3": {
+        "description": "Life domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Warm, healing, heart tones"
+      },
+      "blessing_fire.mp3": {
+        "description": "Fire domain blessing",
+        "duration": "30-60s (loopable)",
+        "style": "Crackling, intense, powerful"
+      }
+    }
+  },
+  "ambient": {
+    "dungeon_drip.mp3": {
+      "description": "Water dripping in caves",
+      "duration": "10-20s (loopable)",
+      "style": "Sporadic drips, echo"
+    },
+    "wind.mp3": {
+      "description": "Light wind/breeze",
+      "duration": "15-30s (loopable)",
+      "style": "Gentle whooshing"
+    },
+    "fire_crackle.mp3": {
+      "description": "Campfire/torch crackling",
+      "duration": "10-20s (loopable)",
+      "style": "Wood popping, flames"
+    },
+    "cave_echo.mp3": {
+      "description": "Cave ambience",
+      "duration": "20-30s (loopable)",
+      "style": "Distant echoes, stone settling"
+    },
+    "forest_ambient.mp3": {
+      "description": "Forest background",
+      "duration": "30-60s (loopable)",
+      "style": "Birds, leaves rustling"
+    }
+  },
+  "totalFiles": {
+    "sfx": 31,
+    "bgm": 17,
+    "ambient": 5,
+    "total": 53
+  },
+  "notes": [
+    "All files should be MP3 format, 128-192kbps for mobile optimization",
+    "SFX should be mono, BGM can be stereo",
+    "Keep file sizes under 500KB for SFX, under 2MB for BGM",
+    "Test on both iOS and Android before finalizing",
+    "Consider using expo-av's Sound.createAsync for preloading"
+  ]
+}
