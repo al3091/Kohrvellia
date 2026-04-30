@@ -13,6 +13,7 @@ import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants
 import { useCombatStore } from '../../src/stores/useCombatStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
+import { useGameStore } from '../../src/stores/useGameStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { EnemyPreview } from '../../src/components/combat/EnemyPreview';
@@ -30,6 +31,7 @@ export default function EncounterScreen() {
   const { monster, startCombatWithMonster, setSneakPenalty } = useCombatStore();
   const { character, initializePendingExcelia } = useCharacterStore();
   const { currentRun } = useDungeonStore();
+  const monsterKnowledge = useGameStore(s => monster ? s.monsterKnowledge[monster.base.id] : undefined);
 
   const [phase, setPhase] = useState<EncounterPhase>('preview');
   const [sneakRoll, setSneakRoll] = useState(0);
@@ -57,7 +59,7 @@ export default function EncounterScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>No encounter active</Text>
-          <Pressable style={styles.errorButton} onPress={() => router.back()}>
+          <Pressable style={styles.errorButton} onPress={() => router.replace('/dungeon/floor')}>
             <Text style={styles.errorButtonText}>Return</Text>
           </Pressable>
         </View>
@@ -135,6 +137,7 @@ export default function EncounterScreen() {
                 monster={monster}
                 observed={false}
                 sneakChance={sneakChance}
+                knowledge={monsterKnowledge}
               />
             </DramaticReveal>
           </View>

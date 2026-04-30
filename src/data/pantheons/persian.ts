@@ -1,0 +1,1048 @@
+/**
+ * Persian Pantheon - Pre-Zoroastrian Yazatas
+ * 14 divine beings covering fire, sky, war, fortune, wisdom, nature,
+ * life, knowledge, authority, magic, craft, sea, death, and trickery
+ */
+
+import type { Deity } from '../../types/Deity';
+
+const persianDeities: Deity[] = [
+
+  // ===== AHURA MAZDA - Wisdom Domain =====
+  {
+    id: 'ahura_mazda',
+    name: 'Ahura Mazda',
+    pantheon: 'persian',
+    domain: 'wisdom',
+    personality: 'wise',
+    title: 'Lord of Wisdom',
+    description:
+      'The supreme creator and fount of all divine light. He embodies truth and righteousness, granting clarity of mind to those who walk the honest path.',
+    loreSnippet: '"Truth is the sword that does not rust. Wield it without shame."',
+    statBonus: { stat: 'WIS', value: 12, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Divine light floods your mind, revealing what is hidden',
+      effectType: 'enemy_info_reveal',
+      effectValue: 15,
+    },
+    uniqueAbility: {
+      id: 'asha_revelation',
+      name: 'Asha Revelation',
+      description: 'Fully reveal all enemy stats and weaknesses. For 3 turns, all attacks against revealed enemies deal +20% damage.',
+      unlockFavor: 65,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'reveal_and_damage_bonus', value: 1.2, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'ahura_ch1',
+        name: "Asha's Path",
+        description: 'Use Observe on 10 different enemy types to honor truth through knowledge.',
+        domain: 'wisdom',
+        tier: 'challenging',
+        requirement: { type: 'observe_unique_enemies', value: 10 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'ahura_ch2',
+        name: 'Light Against Darkness',
+        description: 'Defeat 3 undead or demon-type enemies on a single floor without taking fatal damage.',
+        domain: 'wisdom',
+        tier: 'heroic',
+        requirement: { type: 'kill_type_no_death', value: 3 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Truth guides your blade. Trust it.',
+        'The light you carry is older than the Tower. Use it.',
+        'Ahura Mazda sees your efforts. Every honest act echoes in eternity.',
+      ],
+      warning: [
+        'Falsehood corrodes the spirit. What are you hiding from yourself?',
+        'The darkness ahead is real. Prepare with clarity, not bravado.',
+        'Even wisdom has its limits. Do not mistake cunning for truth.',
+      ],
+      achievement: [
+        'THE LIGHT GROWS BRIGHTER. Ahura Mazda acknowledges your righteousness.',
+        'Truth prevails through you. The Lord of Wisdom is pleased.',
+        'Your spirit shines. Even the darkness cannot claim you today.',
+      ],
+      combat: [
+        'Study your enemy. Wisdom strikes where strength cannot.',
+        'Light finds every crack in their armor.',
+        'The informed warrior wins before the first blow lands.',
+      ],
+    },
+  },
+
+  // ===== ANAHITA - Life Domain =====
+  {
+    id: 'anahita',
+    name: 'Anahita',
+    pantheon: 'persian',
+    domain: 'life',
+    personality: 'benevolent',
+    title: 'Lady of the Waters of Life',
+    description:
+      'Goddess of the celestial waters, fertility, and healing. Her blessing flows through wounds and restores what was lost.',
+    loreSnippet: '"Water does not fight stone. It outlasts it."',
+    statBonus: { stat: 'END', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'AGI', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Living waters restore your flesh after each battle',
+      effectType: 'post_combat_heal',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'celestial_waters',
+      name: 'Celestial Waters',
+      description: 'Restore 40% of max HP. For the next 3 turns all healing received is doubled.',
+      unlockFavor: 60,
+      cooldownType: 'per_combat',
+      cooldownValue: 1,
+      effect: { type: 'heal_and_buff', value: 40, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'anahita_ch1',
+        name: "River's Resilience",
+        description: 'Survive 5 encounters in a row without using any healing items.',
+        domain: 'life',
+        tier: 'challenging',
+        requirement: { type: 'survive_no_item_heal', value: 5 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'anahita_ch2',
+        name: 'Undying Current',
+        description: 'Recover from below 15% HP in a single combat without fleeing.',
+        domain: 'life',
+        tier: 'heroic',
+        requirement: { type: 'survive_low_hp', value: 1 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'You carry Anahita\'s waters inside you. They will not run dry.',
+        'Life endures. Let that truth steady your hands.',
+        'The goddess watches over the wounded. You are not alone.',
+      ],
+      warning: [
+        'Your wounds are deeper than pride admits. Tend them.',
+        'Water yields to nothing — but it does not rush into fire carelessly.',
+        'The life you carry is precious. Spend it with wisdom.',
+      ],
+      achievement: [
+        'THE WATERS SING. Anahita pours her blessing upon you.',
+        'Life flows through you unbroken. The goddess rejoices.',
+        'You have proved that endurance is its own victory.',
+      ],
+      combat: [
+        'Let them exhaust themselves against your endurance.',
+        'The river bends. The rock breaks. Choose your nature.',
+        'Outlast them. Anahita\'s waters sustain you.',
+      ],
+    },
+  },
+
+  // ===== MITHRA - Authority Domain =====
+  {
+    id: 'mithra',
+    name: 'Mithra',
+    pantheon: 'persian',
+    domain: 'authority',
+    personality: 'stern',
+    title: 'Lord of Covenants and Contracts',
+    description:
+      'God of sacred oaths, contracts, and the radiant sun. He punishes oath-breakers and rewards those who keep their word.',
+    loreSnippet: '"A promise made before Mithra is carved in sunlight. Break it and you break yourself."',
+    statBonus: { stat: 'CHA', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'LCK', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Radiant authority makes enemies hesitate before each strike',
+      effectType: 'intimidation',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'solar_covenant',
+      name: 'Solar Covenant',
+      description: 'For 4 turns, your first strike each turn cannot miss and deals +25% damage. Breach this oath by fleeing and the bonus is lost.',
+      unlockFavor: 70,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'guaranteed_hit_bonus', value: 1.25, duration: 4, condition: 'no_flee' },
+    },
+    challenges: [
+      {
+        id: 'mithra_ch1',
+        name: 'Keep Your Word',
+        description: 'Complete 8 floors without fleeing from a single combat.',
+        domain: 'authority',
+        tier: 'challenging',
+        requirement: { type: 'floors_no_flee', value: 8 },
+        favorGain: 15,
+        favorLoss: 10,
+      },
+      {
+        id: 'mithra_ch2',
+        name: 'Solar Judgment',
+        description: 'Defeat a floor boss without using any defensive skills or items.',
+        domain: 'authority',
+        tier: 'legendary',
+        requirement: { type: 'boss_no_defense', value: 1 },
+        favorGain: 30,
+        bonusStatPoints: 3,
+        favorLoss: 15,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Honor your oaths and Mithra\'s light will guide your blows.',
+        'Steadfast adventurer. Mithra approves of your resolve.',
+        'The sun god watches those who keep their word. You have kept yours.',
+      ],
+      warning: [
+        'Hesitation is the first betrayal of the covenant.',
+        'Mithra does not forgive those who break what they swear.',
+        'You promised to press forward. Do not dishonor that oath now.',
+      ],
+      achievement: [
+        'THE SUN BLAZES IN RECOGNITION. Mithra salutes the oath-keeper.',
+        'Your covenant is fulfilled. Radiant approval shines upon you.',
+        'No oath-breaker could achieve what you have done. Mithra is proud.',
+      ],
+      combat: [
+        'Strike true. A promise of victory is already half kept.',
+        'Mithra\'s light reveals the enemy\'s weakness. Act on it.',
+        'Honor in combat means finishing what you started.',
+      ],
+    },
+  },
+
+  // ===== ATAR - Fire Domain =====
+  {
+    id: 'atar',
+    name: 'Atar',
+    pantheon: 'persian',
+    domain: 'fire',
+    personality: 'passionate',
+    title: 'Son of Ahura Mazda, Sacred Fire',
+    description:
+      'The divine fire that lives in every hearth and forge. Atar burns corruption away and strengthens those who tend his flames.',
+    loreSnippet: '"I do not burn randomly. I burn what deserves burning."',
+    statBonus: { stat: 'INT', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'END', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Sacred fire coats your strikes with holy heat',
+      effectType: 'fire_damage',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'divine_conflagration',
+      name: 'Divine Conflagration',
+      description: 'Ignite the enemy: deal 15% max HP fire damage now, then 8% per turn for 3 turns.',
+      unlockFavor: 60,
+      cooldownType: 'per_combat',
+      cooldownValue: 1,
+      effect: { type: 'fire_dot', value: 15, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'atar_ch1',
+        name: 'Trial of Sacred Flame',
+        description: 'Defeat 15 enemies using fire-type skills or weapons.',
+        domain: 'fire',
+        tier: 'challenging',
+        requirement: { type: 'fire_kills', value: 15 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'atar_ch2',
+        name: "Atar's Purge",
+        description: 'Kill a legendary-tier monster using only fire damage.',
+        domain: 'fire',
+        tier: 'legendary',
+        requirement: { type: 'legendary_fire_kill', value: 1 },
+        favorGain: 30,
+        bonusStatPoints: 3,
+        favorLoss: 15,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The sacred fire burns inside you. Let it out.',
+        'Atar\'s flame does not falter. Neither should yours.',
+        'Burn away your doubt. Only the worthy carry divine fire.',
+      ],
+      warning: [
+        'Even fire burns out when it has nothing to consume. Be careful.',
+        'Reckless burning destroys everything — including the arsonist.',
+        'Control the flame or it controls you.',
+      ],
+      achievement: [
+        'SACRED FIRE ERUPTS. Atar blazes with divine pride.',
+        'The flames have spoken. You are worthy of the divine conflagration.',
+        'Atar leaps in triumph. His fire has found a worthy vessel.',
+      ],
+      combat: [
+        'Put them to the flame. Sacred fire cleanses all.',
+        'Fire finds weakness that swords cannot.',
+        'Let Atar\'s gift consume them.',
+      ],
+    },
+  },
+
+  // ===== TISHTRYA - Sky Domain =====
+  {
+    id: 'tishtrya',
+    name: 'Tishtrya',
+    pantheon: 'persian',
+    domain: 'sky',
+    personality: 'ancient',
+    title: 'Star of the Rains, Lord of Sirius',
+    description:
+      'The star-god who battles drought demons and brings life-giving rain. His annual battle determines whether the year will prosper or wither.',
+    loreSnippet: '"The star does not compete with the sun. It simply endures until the sun sleeps."',
+    statBonus: { stat: 'AGI', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Starlight quickens your reflexes beyond mortal limits',
+      effectType: 'lightning_damage',
+      effectValue: 10,
+    },
+    uniqueAbility: {
+      id: 'celestial_storm',
+      name: 'Celestial Storm',
+      description: 'Call down star-rain: attack all enemies for 80% magic damage, reducing their speed by 20% for 2 turns.',
+      unlockFavor: 65,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'aoe_magic_slow', value: 80, duration: 2 },
+    },
+    challenges: [
+      {
+        id: 'tishtrya_ch1',
+        name: 'Storm Season',
+        description: 'Defeat 20 enemies faster than they can act (win initiative in every round).',
+        domain: 'sky',
+        tier: 'challenging',
+        requirement: { type: 'first_strikes', value: 20 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'tishtrya_ch2',
+        name: 'Defeat the Drought Demon',
+        description: 'Defeat a fire-type elite or boss without taking fire damage.',
+        domain: 'sky',
+        tier: 'heroic',
+        requirement: { type: 'fire_immune_kill', value: 1 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The star persists through the longest night. So will you.',
+        'Tishtrya has fought this battle a thousand times. With you, he fights again.',
+        'Your speed pleases the star-god. Swift victory honors him.',
+      ],
+      warning: [
+        'The drought demon is patient. Do not mistake stillness for weakness.',
+        'Stars burn out when they rush too far from their course.',
+        'Speed without direction scatters like rain on hot stone.',
+      ],
+      achievement: [
+        'THE CELESTIAL STAR BLAZES. Tishtrya celebrates the season\'s victory.',
+        'You have beaten the drought. Life returns where you walk.',
+        'Star and warrior shine together. Tishtrya is well pleased.',
+      ],
+      combat: [
+        'Strike from above. Like stars, the best attacks come without warning.',
+        'Speed is mercy — for you, not for them.',
+        'Let the storm in you break first.',
+      ],
+    },
+  },
+
+  // ===== VAYU - War Domain =====
+  {
+    id: 'vayu',
+    name: 'Vayu',
+    pantheon: 'persian',
+    domain: 'war',
+    personality: 'chaotic',
+    title: 'Lord of the Wind Between Worlds',
+    description:
+      'The great wind-god who stands between good and evil, serving both with equal ferocity. He carries the souls of the slain and strikes with hurricane force.',
+    loreSnippet: '"I have no side in your war. I simply blow harder than you can stand."',
+    statBonus: { stat: 'STR', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'WIS', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Wind gods grant relentless striking force',
+      effectType: 'physical_damage',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'hurricane_strike',
+      name: 'Hurricane Strike',
+      description: 'Strike 3 times in rapid succession, each hit dealing 70% physical damage. The third hit always crits.',
+      unlockFavor: 60,
+      cooldownType: 'per_combat',
+      cooldownValue: 1,
+      effect: { type: 'multi_strike', value: 70, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'vayu_ch1',
+        name: 'The Windswept Gauntlet',
+        description: 'Clear 5 combat encounters in a single floor without resting between fights.',
+        domain: 'war',
+        tier: 'challenging',
+        requirement: { type: 'consecutive_fights', value: 5 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'vayu_ch2',
+        name: 'Storm of Blades',
+        description: 'Land 50 total hits in a single floor of the dungeon.',
+        domain: 'war',
+        tier: 'heroic',
+        requirement: { type: 'total_hits_per_floor', value: 50 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The wind never tires. You should not either.',
+        'Vayu blows where he will — and right now, he blows toward your victory.',
+        'Chaos is not your enemy. It is your medium. Move with it.',
+      ],
+      warning: [
+        'Even the wind knows when the storm is too large.',
+        'Vayu does not reward the reckless. He buries them.',
+        'Fighting everything at once is how the unprepared die.',
+      ],
+      achievement: [
+        'VAYU HOWLS IN TRIUMPH. The hurricane has found a worthy rider.',
+        'The wind speaks your name to every corner of the Tower.',
+        'Between worlds you stand victorious. Vayu salutes the tempest.',
+      ],
+      combat: [
+        'Don\'t let them breathe. Wind fills every space.',
+        'Hit hard, hit fast, change direction before they can react.',
+        'A storm doesn\'t telegraph its next move. Neither should you.',
+      ],
+    },
+  },
+
+  // ===== ASHI - Fortune Domain =====
+  {
+    id: 'ashi',
+    name: 'Ashi',
+    pantheon: 'persian',
+    domain: 'fortune',
+    personality: 'gentle',
+    title: 'Yazata of Blessings and Bounty',
+    description:
+      'The divine spirit of fortune and reward. She pours out blessings on the virtuous and multiplies their harvest.',
+    loreSnippet: '"Virtue is the seed. I am only the rain."',
+    statBonus: { stat: 'LCK', value: 12, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Divine blessing improves the quality and quantity of all loot',
+      effectType: 'loot_quality',
+      effectValue: 15,
+    },
+    uniqueAbility: {
+      id: 'divine_bounty',
+      name: 'Divine Bounty',
+      description: 'Next time loot drops this floor, it contains one additional rare-quality item guaranteed.',
+      unlockFavor: 55,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'guaranteed_rare_loot', value: 1 },
+    },
+    challenges: [
+      {
+        id: 'ashi_ch1',
+        name: 'Virtuous Harvest',
+        description: 'Collect rare or better loot from 10 different encounters.',
+        domain: 'fortune',
+        tier: 'challenging',
+        requirement: { type: 'rare_loot_collected', value: 10 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'ashi_ch2',
+        name: 'The Blessed Run',
+        description: 'Reach floor 10 without spending any gold on repairs or healing.',
+        domain: 'fortune',
+        tier: 'legendary',
+        requirement: { type: 'reach_floor_no_spend', value: 10 },
+        favorGain: 30,
+        bonusStatPoints: 3,
+        favorLoss: 15,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Your virtue shines. Ashi sees it and opens her hands.',
+        'Fortune favors those who earned it. You have earned today.',
+        'The blessing flows where it is deserved. It flows to you.',
+      ],
+      warning: [
+        'Greed corrupts fortune. Take what you need, not all you can.',
+        'Even luck runs dry for the reckless. Be careful with this run.',
+        'Ashi turns away from those who waste her gifts.',
+      ],
+      achievement: [
+        'ASHI POURS OUT HER BOUNTY. The virtuous are rewarded.',
+        'Fortune celebrates your achievement. Great blessings await.',
+        'Virtue and luck aligned at last. Ashi smiles upon you.',
+      ],
+      combat: [
+        'Lucky strikes come to those who earned them.',
+        'Let Ashi\'s blessing guide the final blow.',
+        'Fortune is watching. Make the moment worthy of it.',
+      ],
+    },
+  },
+
+  // ===== RASHNU - Knowledge Domain =====
+  {
+    id: 'rashnu',
+    name: 'Rashnu',
+    pantheon: 'persian',
+    domain: 'knowledge',
+    personality: 'calculating',
+    title: 'Lord of Justice and Judgment',
+    description:
+      'The divine judge who weighs souls at the Chinvat Bridge. He sees every action, remembers every deed, and renders perfect judgment.',
+    loreSnippet: '"I do not hate the wicked. I simply record them accurately."',
+    statBonus: { stat: 'PER', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'CHA', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'The judge\'s clarity reveals every hidden weakness',
+      effectType: 'enemy_info_reveal',
+      effectValue: 15,
+    },
+    uniqueAbility: {
+      id: 'judges_verdict',
+      name: 'Judge\'s Verdict',
+      description: 'Analyze the enemy: for 3 turns, all your attacks deal +15% damage and ignore 20% of their defense.',
+      unlockFavor: 65,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'analyze_and_penetrate', value: 15, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'rashnu_ch1',
+        name: 'Perfect Record',
+        description: 'Complete 5 floors without missing a single attack.',
+        domain: 'knowledge',
+        tier: 'heroic',
+        requirement: { type: 'floors_no_miss', value: 5 },
+        favorGain: 20,
+        favorLoss: 10,
+      },
+      {
+        id: 'rashnu_ch2',
+        name: 'The Accurate Eye',
+        description: 'Land 3 critical hits in a single combat encounter.',
+        domain: 'knowledge',
+        tier: 'challenging',
+        requirement: { type: 'crits_per_combat', value: 3 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Your judgment is sound. Rashnu confirms it.',
+        'Precision honors the judge. You have been precise.',
+        'Every action you take is being weighed. So far, the scales favor you.',
+      ],
+      warning: [
+        'Sloppy fighting disrespects the judge. Sharpen your discipline.',
+        'Rashnu records every mistake. Make fewer of them.',
+        'The judgment is near. Are you ready for it?',
+      ],
+      achievement: [
+        'THE SCALES TILT IN YOUR FAVOR. Rashnu renders a just verdict.',
+        'Perfect judgment has been witnessed. Rashnu acknowledges your skill.',
+        'Justice is served. Rashnu seals the record in your favor.',
+      ],
+      combat: [
+        'Study them before you strike. Every data point is a weapon.',
+        'The informed blow does double the work.',
+        'Rashnu sees their weakness. Let him guide your hand.',
+      ],
+    },
+  },
+
+  // ===== SRAOSHA - Magic Domain =====
+  {
+    id: 'sraosha',
+    name: 'Sraosha',
+    pantheon: 'persian',
+    domain: 'magic',
+    personality: 'serene',
+    title: 'Yazata of Obedience and Divine Word',
+    description:
+      'The divine voice that carries Ahura Mazda\'s commands. His word carries power to shape reality, and he blesses those who listen for the sacred.',
+    loreSnippet: '"The most powerful spells are not spoken. They are heard."',
+    statBonus: { stat: 'INT', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'AGI', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'The divine word amplifies all magical power',
+      effectType: 'spell_damage',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'sacred_word',
+      name: 'Sacred Word',
+      description: 'Speak the divine command: silence the enemy for 2 turns (preventing skills) and deal 120% magic damage.',
+      unlockFavor: 60,
+      cooldownType: 'per_combat',
+      cooldownValue: 1,
+      effect: { type: 'silence_and_damage', value: 120, duration: 2 },
+    },
+    challenges: [
+      {
+        id: 'sraosha_ch1',
+        name: 'Path of Obedience',
+        description: 'Use 20 skills in combat without a single failure or cancellation.',
+        domain: 'magic',
+        tier: 'challenging',
+        requirement: { type: 'skills_used_no_fail', value: 20 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'sraosha_ch2',
+        name: 'The Word Made Power',
+        description: 'Deal 1000 total magic damage in a single run.',
+        domain: 'magic',
+        tier: 'heroic',
+        requirement: { type: 'total_magic_damage', value: 1000 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Listen. The sacred word is already inside you.',
+        'Your magic flows cleanly. Sraosha is satisfied.',
+        'The divine voice speaks through your power. Use it wisely.',
+      ],
+      warning: [
+        'Shouting is not speaking. Calm your casting.',
+        'Wasted magic displeases the voice. Focus.',
+        'The sacred word cannot be rushed. Breathe.',
+      ],
+      achievement: [
+        'SRAOSHA\'S VOICE RESONATES. The divine word has found a worthy speaker.',
+        'Your spellwork sings. Sraosha\'s approval rings clear.',
+        'Magic and obedience united. The Yazata of the word is pleased.',
+      ],
+      combat: [
+        'Magic flows where words cannot travel. Let it carry the battle.',
+        'The perfect incantation defeats before the enemy can respond.',
+        'Speak the power into being. Sraosha lends his voice.',
+      ],
+    },
+  },
+
+  // ===== NAIRYOSANGHA - Trickery Domain =====
+  {
+    id: 'nairyosangha',
+    name: 'Nairyosangha',
+    pantheon: 'persian',
+    domain: 'trickery',
+    personality: 'playful',
+    title: 'Divine Messenger and Wit',
+    description:
+      'The divine messenger-god who carries words between realms. Known for clever wordplay and misdirection, he teaches adventurers to succeed through cleverness rather than brawn.',
+    loreSnippet: '"I never lie. I simply choose which truths to tell and in what order."',
+    statBonus: { stat: 'AGI', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'END', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Messenger\'s blessing lets you slip away when cornered',
+      effectType: 'dodge_chance',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'divine_misdirection',
+      name: 'Divine Misdirection',
+      description: 'For 2 turns, dodge all attacks. On the next action after this ends, your attack deals double damage.',
+      unlockFavor: 60,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'dodge_then_double_strike', value: 2, duration: 2 },
+    },
+    challenges: [
+      {
+        id: 'nairyosangha_ch1',
+        name: 'The Clever Path',
+        description: 'Dodge 10 attacks in a single floor.',
+        domain: 'trickery',
+        tier: 'challenging',
+        requirement: { type: 'dodges_per_floor', value: 10 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'nairyosangha_ch2',
+        name: 'Perfect Ruse',
+        description: 'Win a combat encounter without taking a single hit.',
+        domain: 'trickery',
+        tier: 'heroic',
+        requirement: { type: 'combat_no_damage_taken', value: 1 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The cleverest path is rarely the straightest. You know this.',
+        'Nairyosangha applauds your resourcefulness.',
+        'Sometimes not being hit is a greater victory than striking.',
+      ],
+      warning: [
+        'Cleverness without substance is a glass weapon.',
+        'They are watching your pattern. Change it.',
+        'The messenger warns: overconfidence is the trickster\'s last trick.',
+      ],
+      achievement: [
+        'NAIRYOSANGHA LAUGHS WITH DELIGHT. The clever one wins again.',
+        'Perfect execution of a flawless misdirection. Impressive.',
+        'The messenger will carry your story to the heavens. Well done.',
+      ],
+      combat: [
+        'Let them commit to a swing that hits nothing.',
+        'The dodge is your first weapon.',
+        'Be somewhere else when they strike.',
+      ],
+    },
+  },
+
+  // ===== VERETHRAGNA - War Domain =====
+  {
+    id: 'verethragna',
+    name: 'Verethragna',
+    pantheon: 'persian',
+    domain: 'war',
+    personality: 'aggressive',
+    title: 'Yazata of Victory',
+    description:
+      'The divine embodiment of victory itself. He takes many battle-forms — eagle, wind, bull, boar — and smashes all obstacles that stand before his champions.',
+    loreSnippet: '"I am what happens to obstacles. They stop existing."',
+    statBonus: { stat: 'STR', value: 15, type: 'bonus' },
+    statPenalty: { stat: 'INT', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Victory-god\'s blessing guarantees the killing blow lands',
+      effectType: 'physical_damage',
+      effectValue: 15,
+    },
+    uniqueAbility: {
+      id: 'victory_form',
+      name: 'Victory Form',
+      description: 'Transform into a battle form for 3 turns: +40% physical damage, +20% attack speed, cannot be stunned.',
+      unlockFavor: 70,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'battle_form', value: 40, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'verethragna_ch1',
+        name: 'The Unstoppable',
+        description: 'Complete an entire floor without being slowed, stunned, or debuffed.',
+        domain: 'war',
+        tier: 'challenging',
+        requirement: { type: 'floor_no_debuffs', value: 1 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'verethragna_ch2',
+        name: 'Perfect Victory',
+        description: 'Defeat 5 enemies in a row without taking damage.',
+        domain: 'war',
+        tier: 'legendary',
+        requirement: { type: 'consecutive_no_damage_kills', value: 5 },
+        favorGain: 30,
+        bonusStatPoints: 3,
+        favorLoss: 15,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Victory favors the decisive. Be decisive.',
+        'Verethragna has taken ten forms and won with every one. So can you.',
+        'Forward. Always forward.',
+      ],
+      warning: [
+        'Hesitation is the only obstacle Verethragna cannot smash for you.',
+        'The victory-god does not carry his champions. He runs beside them.',
+        'Letting them breathe is letting them recover. Don\'t.',
+      ],
+      achievement: [
+        'VERETHRAGNA ROARS IN TRIUMPH. Victory was never in doubt.',
+        'You have manifested victory. The divine embodiment approves.',
+        'Every form he has taken, you have honored today. Magnificent.',
+      ],
+      combat: [
+        'Drive through every defense they raise.',
+        'Victory is not a destination. It is your nature right now.',
+        'Smash the obstacle. Smash the next one. Smash them all.',
+      ],
+    },
+  },
+
+  // ===== SPENTA ARMAITI - Nature Domain =====
+  {
+    id: 'spenta_armaiti',
+    name: 'Spenta Armaiti',
+    pantheon: 'persian',
+    domain: 'nature',
+    personality: 'serene',
+    title: 'Holy Devotion, Spirit of Earth',
+    description:
+      'The divine spirit of piety and the earth itself. She sustains those who work the land and grants deep-rooted strength to those she favors.',
+    loreSnippet: '"I do not leap. I grow. And what grows never truly stops."',
+    statBonus: { stat: 'END', value: 12, type: 'bonus' },
+    statPenalty: { stat: 'AGI', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Earth-spirit\'s devotion restores health as you endure',
+      effectType: 'hp_regen',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'earthbound_resilience',
+      name: 'Earthbound Resilience',
+      description: 'Root yourself in the earth: become immune to knockback and gain +30% max HP until combat ends.',
+      unlockFavor: 60,
+      cooldownType: 'per_combat',
+      cooldownValue: 1,
+      effect: { type: 'root_and_hp_bonus', value: 30, condition: 'ground_contact' },
+    },
+    challenges: [
+      {
+        id: 'spenta_ch1',
+        name: 'Devoted Endurance',
+        description: 'Take 200 total damage in a single run without dying.',
+        domain: 'nature',
+        tier: 'challenging',
+        requirement: { type: 'damage_survived', value: 200 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'spenta_ch2',
+        name: 'Unbroken Earth',
+        description: 'Complete 5 consecutive combat encounters without your HP dropping below 50%.',
+        domain: 'nature',
+        tier: 'heroic',
+        requirement: { type: 'consecutive_fights_high_hp', value: 5 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The earth does not yield. You inherit that quality.',
+        'Spenta Armaiti holds you up. You need only keep walking.',
+        'Slow, deliberate, unstoppable. That is your nature now.',
+      ],
+      warning: [
+        'Even earth cracks under enough pressure. Know your limits.',
+        'Piety does not mean invincibility. Plan carefully.',
+        'The spirit of devotion requires something to devote to. Stay focused.',
+      ],
+      achievement: [
+        'THE EARTH RISES TO MEET YOU. Spenta Armaiti blesses your endurance.',
+        'Devoted and unbroken. The holy spirit is proud.',
+        'You have grown strong roots here. The earth-spirit acknowledges you.',
+      ],
+      combat: [
+        'Let them break themselves against you.',
+        'Absorb. Endure. Then answer.',
+        'The earth is patient. You can afford to be.',
+      ],
+    },
+  },
+
+  // ===== HAOMA - Craft Domain =====
+  {
+    id: 'haoma',
+    name: 'Haoma',
+    pantheon: 'persian',
+    domain: 'craft',
+    personality: 'mysterious',
+    title: 'Divine Plant of Immortality',
+    description:
+      'The sacred plant-deity who grants immortality and healing to those who prepare and consume the divine draught. Haoma rewards those who refine rather than rush.',
+    loreSnippet: '"I am grown, not made. The difference matters."',
+    statBonus: { stat: 'WIS', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'The sacred draught amplifies the effect of all consumables',
+      effectType: 'crafting_success',
+      effectValue: 15,
+    },
+    uniqueAbility: {
+      id: 'haoma_draught',
+      name: 'Haoma Draught',
+      description: 'Brew a temporary draught: restore 30% HP and SP, and grant +15% to all stats for 3 turns.',
+      unlockFavor: 60,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'stat_boost_and_heal', value: 15, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'haoma_ch1',
+        name: 'The Sacred Preparation',
+        description: 'Use 10 consumable items in a single run.',
+        domain: 'craft',
+        tier: 'challenging',
+        requirement: { type: 'items_used', value: 10 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'haoma_ch2',
+        name: 'Perfected Brew',
+        description: 'Win 3 elite-level encounters while at full SP.',
+        domain: 'craft',
+        tier: 'heroic',
+        requirement: { type: 'elite_kills_full_sp', value: 3 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'The draught within you has not yet been fully consumed. Push deeper.',
+        'Haoma rewards the patient cultivator. You are patient.',
+        'Every preparation was worth it. You will see this soon.',
+      ],
+      warning: [
+        'Rushing the brew ruins it. The same applies here.',
+        'Resources spent carelessly leave nothing for when it matters.',
+        'Haoma does not reward the improviser. Have a plan.',
+      ],
+      achievement: [
+        'THE SACRED PLANT BLOOMS IN YOUR HONOR. Haoma is satisfied.',
+        'Crafted victory from careful preparation. The divine plant approves.',
+        'Your draught was perfect. Haoma has no notes.',
+      ],
+      combat: [
+        'Use what you\'ve prepared. That\'s why you prepared it.',
+        'Efficiency is its own kind of power.',
+        'The prepared warrior wins the unprepared fight.',
+      ],
+    },
+  },
+
+  // ===== ABAN - Sea Domain =====
+  {
+    id: 'aban',
+    name: 'Aban',
+    pantheon: 'persian',
+    domain: 'sea',
+    personality: 'ancient',
+    title: 'Lady of the Waters',
+    description:
+      'The ancient goddess of all waters — rivers, rain, and sea. She predates the current divine order and moves with unfathomable depth and patience.',
+    loreSnippet: '"I was here before your gods had names. I will be here after they are forgotten."',
+    statBonus: { stat: 'WIS', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Ancient waters protect against all magical attacks',
+      effectType: 'water_magic',
+      effectValue: 12,
+    },
+    uniqueAbility: {
+      id: 'ancient_current',
+      name: 'Ancient Current',
+      description: 'Summon an ancient tide: deal 100% magic damage to all enemies and reduce their magic defense by 25% for 3 turns.',
+      unlockFavor: 65,
+      cooldownType: 'per_floor',
+      cooldownValue: 1,
+      effect: { type: 'aoe_magic_and_debuff', value: 100, duration: 3 },
+    },
+    challenges: [
+      {
+        id: 'aban_ch1',
+        name: 'Waters of Memory',
+        description: 'Survive 20 rounds in total across multiple combats without using any healing skills.',
+        domain: 'sea',
+        tier: 'challenging',
+        requirement: { type: 'rounds_no_heal_skill', value: 20 },
+        favorGain: 15,
+        favorLoss: 8,
+      },
+      {
+        id: 'aban_ch2',
+        name: 'The Deep Current',
+        description: 'Deal magic damage to an enemy while your HP is below 25%.',
+        domain: 'sea',
+        tier: 'heroic',
+        requirement: { type: 'magic_damage_low_hp', value: 1 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 12,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Ancient patience. Ancient power. You are beginning to understand.',
+        'Aban has seen a thousand adventurers. You are different.',
+        'The deep current flows beneath everything. Let it carry you.',
+      ],
+      warning: [
+        'Even the sea is not infinite in its mercy. Do not test this.',
+        'Ancient forces are patient, but they are watching.',
+        'The waters know your weakness. Address it before they show it to your enemy.',
+      ],
+      achievement: [
+        'ANCIENT WATERS RISE IN CELEBRATION. Aban\'s approval is rarely given.',
+        'Even the oldest goddess takes notice. This is not common.',
+        'You have moved with the deep current. Aban is pleased beyond measure.',
+      ],
+      combat: [
+        'The oldest weapon is patience. You have time.',
+        'Water finds every crack. So should your magic.',
+        'Let the current do the work. You steer it.',
+      ],
+    },
+  },
+
+];
+
+export const persianPantheon = persianDeities;

@@ -156,10 +156,11 @@ export const LEVEL_1_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'l1_dragons_bane',
     name: "Dragon's Bane",
-    description: 'Defeat a boss monster on Floor 1.',
+    description: 'Reach Floor 5 and defeat the first boss.',
     tier: 'legendary',
     targetLevel: 2,
     requirements: [
+      { type: 'floor_reach', value: 5, description: 'Reach Floor 5' },
       { type: 'boss_kill', value: 1, description: 'Defeat 1 boss' },
     ],
     requireAll: true,

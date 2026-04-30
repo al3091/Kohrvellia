@@ -125,19 +125,17 @@ export const useShopStore = create<ShopStoreState>()(
         const numEquipment = 6 + Math.floor(currentBestFloor / 5);
         const equipmentStock: EquipmentStock[] = [];
 
-        // Guarantee one weapon per stat category and one armor per slot on early floors
-        if (currentBestFloor <= 3) {
-          const statCategories = ['STR', 'AGI', 'PER', 'INT', 'WIS', 'CHA', 'END', 'LCK'] as const;
-          for (const stat of statCategories) {
-            const weapon = generateRandomWeapon(currentBestFloor, [stat]);
-            registerWeapon(weapon);
-            equipmentStock.push({ item: weapon, basePrice: calculateWeaponPrice(weapon), sold: false });
-          }
-          const armorSlots = ['head', 'chest', 'hands', 'legs'] as const;
-          for (const _slot of armorSlots) {
-            const armor = generateRandomArmor(currentBestFloor);
-            equipmentStock.push({ item: armor, basePrice: calculateArmorPrice(armor), sold: false });
-          }
+        // Always guarantee one weapon per stat category and one armor per slot
+        const statCategories = ['STR', 'AGI', 'PER', 'INT', 'WIS', 'CHA', 'END', 'LCK'] as const;
+        for (const stat of statCategories) {
+          const weapon = generateRandomWeapon(currentBestFloor, [stat]);
+          registerWeapon(weapon);
+          equipmentStock.push({ item: weapon, basePrice: calculateWeaponPrice(weapon), sold: false });
+        }
+        const armorSlots = ['head', 'chest', 'hands', 'legs'] as const;
+        for (const _slot of armorSlots) {
+          const armor = generateRandomArmor(currentBestFloor);
+          equipmentStock.push({ item: armor, basePrice: calculateArmorPrice(armor), sold: false });
         }
 
         for (let i = 0; i < numEquipment; i++) {

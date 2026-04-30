@@ -10,6 +10,19 @@ import { Typography } from '../../constants/Typography';
 import { Spacing, BorderRadius, BorderWidth } from '../../constants/Spacing';
 import type { Monster } from '../../types/Monster';
 import { STATUS_EFFECT_ICONS } from '../../types/StatusEffect';
+import type { MonsterKnowledgeRecord } from '../../stores/useGameStore';
+
+const MASTERY_COLORS: Record<string, string> = {
+  sighted: '#888888',
+  studied: '#5B8DD9',
+  mastered: '#C9A84C',
+};
+
+const MASTERY_LABELS: Record<string, string> = {
+  sighted: 'SIGHTED',
+  studied: 'STUDIED',
+  mastered: 'MASTERED',
+};
 
 export interface EnemyPreviewProps {
   monster: Monster;
@@ -17,6 +30,8 @@ export interface EnemyPreviewProps {
   observed?: boolean;
   /** Calculated sneak chance (0-100) */
   sneakChance?: number;
+  /** Monster knowledge from prior runs */
+  knowledge?: MonsterKnowledgeRecord;
 }
 
 // Danger level based on CR relative to player level
@@ -38,9 +53,12 @@ export function EnemyPreview({
   monster,
   observed = false,
   sneakChance,
+  knowledge,
 }: EnemyPreviewProps) {
-  // Calculate danger (assume player level 1 for now - will be passed in later)
   const danger = getDangerLevel(monster.finalCR, 1);
+  const knowledgeTier = knowledge?.tier ?? 'unknown';
+  const showStats = observed || knowledgeTier === 'studied' || knowledgeTier === 'mastered';
+  const showHP = showStats || knowledgeTier === 'sighted';
 
   // Get status effects this monster can inflict (from abilities)
   const canInflict: string[] = [];
@@ -69,6 +87,15 @@ export function EnemyPreview({
         </Text>
       </View>
 
+      {/* Mastery Tier Badge */}
+      {knowledgeTier !== 'unknown' && (
+        <View style={[styles.masteryBadge, { backgroundColor: MASTERY_COLORS[knowledgeTier] + '20' }]}>
+          <Text style={[styles.masteryText, { color: MASTERY_COLORS[knowledgeTier] }]}>
+            {MASTERY_LABELS[knowledgeTier]}
+          </Text>
+        </View>
+      )}
+
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
         <View style={styles.statItem}>
@@ -79,21 +106,21 @@ export function EnemyPreview({
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>HP</Text>
           <Text style={styles.statValue}>
-            {observed ? monster.currentHP : '???'}
+            {showHP ? monster.currentHP : '???'}
           </Text>
         </View>
 
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>ATK</Text>
           <Text style={styles.statValue}>
-            {observed ? monster.attack : '???'}
+            {showStats ? monster.attack : '???'}
           </Text>
         </View>
 
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>DEF</Text>
           <Text style={styles.statValue}>
-            {observed ? monster.defense : '???'}
+            {showStats ? monster.defense : '???'}
           </Text>
         </View>
       </View>
@@ -283,6 +310,19 @@ const styles = StyleSheet.create({
   },
   sneakLow: {
     color: Colors.ui.error,
+  },
+
+  masteryBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+  },
+  masteryText: {
+    ...Typography.label,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
 });
 

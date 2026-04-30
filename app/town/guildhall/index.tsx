@@ -20,9 +20,11 @@ import { Typography } from '../../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
 import { useCharacterStore } from '../../../src/stores/useCharacterStore';
 import { useGameStore } from '../../../src/stores/useGameStore';
+import { useAchievementStore } from '../../../src/stores/useAchievementStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
 import type { AchievementProgress } from '../../../src/types/Achievement';
-import { getAchievementById } from '../../../src/data/achievements';
+import { getAchievementById, getAchievementsForLevel } from '../../../src/data/achievements';
+import { AchievementTracker } from '../../../src/components/achievement/AchievementTracker';
 
 // ─── Advisor NPC ──────────────────────────────────────────────────────────────
 
@@ -73,7 +75,51 @@ interface AchievementCardProps {
 
 function AchievementCard({ progress }: AchievementCardProps) {
   const achievement = getAchievementById(progress.achievementId);
-  const tier = achievement?.tier ?? progress.discoveryState;
+  const discoveryState = progress.discoveryState;
+
+  // Hidden: show only a mystery placeholder
+  if (discoveryState === 'hidden') {
+    return (
+      <View style={[styles.achievementCard, styles.achievementCardHidden]}>
+        <View style={styles.achievementHeader}>
+          <Text style={styles.achievementIcon}>🔒</Text>
+          <View style={styles.achievementInfo}>
+            <Text style={styles.achievementIdHidden}>??? UNKNOWN ???</Text>
+            <Text style={styles.achievementTierHidden}>UNDISCOVERED</Text>
+          </View>
+        </View>
+        <Text style={styles.hiddenHint}>
+          Something has been recorded here. Investigate to learn more.
+        </Text>
+      </View>
+    );
+  }
+
+  // Rumored: show name dimmed + hint only, no progress
+  if (discoveryState === 'rumored') {
+    const tier = achievement?.tier ?? 'standard';
+    const tierColor = TIER_COLORS[tier] ?? Colors.text.muted;
+    const displayName = achievement?.name ?? progress.achievementId.replace(/_/g, ' ').toUpperCase();
+    const hint = achievement?.hint ?? 'A great deed awaits...';
+
+    return (
+      <View style={[styles.achievementCard, styles.achievementCardRumored, { borderColor: tierColor + '25' }]}>
+        <View style={styles.achievementHeader}>
+          <Text style={styles.achievementIcon}>📜</Text>
+          <View style={styles.achievementInfo}>
+            <Text style={styles.achievementIdRumored}>[RUMORED] {displayName}</Text>
+            <Text style={[styles.achievementTier, { color: tierColor + '80' }]}>
+              {TIER_LABELS[tier] ?? tier.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.rumoredHint}>{hint}</Text>
+      </View>
+    );
+  }
+
+  // Known / completed: full card
+  const tier = achievement?.tier ?? 'standard';
   const tierColor = TIER_COLORS[tier] ?? Colors.text.muted;
   const totalReqs = progress.requirementProgress.length;
   const displayName = achievement?.name ?? progress.achievementId.replace(/_/g, ' ').toUpperCase();
@@ -183,6 +229,7 @@ export default function GuildHallScreen() {
   const haptics = useHaptics();
   const { character, canLevelUp, setDeityApproval, performLevelUp } = useCharacterStore();
   const gameStore = useGameStore.getState();
+  const achievementStore = useAchievementStore();
 
   const [confirmLevelUpVisible, setConfirmLevelUpVisible] = useState(false);
 
@@ -199,11 +246,27 @@ export default function GuildHallScreen() {
     );
   }
 
-  const achievements: AchievementProgress[] = character.levelProgress.achievementsCompleted;
-  const completed = achievements.filter((a) => a.isCompleted);
-  const inProgress = achievements.filter((a) => !a.isCompleted);
+  // Target level is current level + 1
+  const targetLevel = character.level + 1;
+
+  // All achievement progress for the current target level, from the store
+  const levelAchievements = getAchievementsForLevel(targetLevel);
+  const allProgress: AchievementProgress[] = levelAchievements
+    .map(a => achievementStore.getProgress(a.id))
+    .filter((p): p is AchievementProgress => p !== undefined);
+
+  const completed = allProgress.filter((a) => a.isCompleted);
+  const inProgress = allProgress.filter((a) => !a.isCompleted && (a.discoveryState === 'known' || a.discoveryState === 'rumored'));
+  const hidden = allProgress.filter((a) => a.discoveryState === 'hidden');
+  const rumored = allProgress.filter((a) => a.discoveryState === 'rumored' && !a.isCompleted);
   const hasCompleted = completed.length > 0;
   const deityApproved = character.levelProgress.deityApproved;
+
+  // Trigger guild discovery on first visit — advance all guild achievements to known
+  React.useEffect(() => {
+    achievementStore.discoverAllFromSource('guild');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isLevelUp = canLevelUp();
 
   const GRADE_ORDER = ['I','H','G','F','E','D','C','B','A','S','SS','SSS'];
@@ -282,6 +345,11 @@ export default function GuildHallScreen() {
           </View>
         </View>
 
+        {/* Achievement Tracker */}
+        <View style={styles.trackerWrapper}>
+          <AchievementTracker targetLevel={targetLevel} />
+        </View>
+
         {/* Ascension Panel */}
         <LevelUpPanel
           canLevel={isLevelUp}
@@ -291,6 +359,35 @@ export default function GuildHallScreen() {
           onRequestApproval={handleRequestApproval}
           onLevelUp={handleLevelUp}
         />
+
+        {/* Discovery Status Banner */}
+        {hidden.length > 0 && (
+          <View style={styles.discoveryBanner}>
+            <Text style={styles.discoveryBannerText}>
+              {hidden.length} feat{hidden.length > 1 ? 's' : ''} hidden at this level
+            </Text>
+            <Text style={styles.discoveryBannerHint}>
+              Seek the arena, library, temple, and shrines to uncover more.
+            </Text>
+          </View>
+        )}
+
+        {/* Library Research — discover library-source achievements */}
+        <Pressable
+          style={styles.researchButton}
+          onPress={() => {
+            if ((character.gold ?? 0) < 100) {
+              haptics.warning();
+              Alert.alert('Insufficient Gold', 'Consulting the records costs 100G.');
+              return;
+            }
+            haptics.medium();
+            achievementStore.discoverAllFromSource('library');
+            Alert.alert('Records Consulted', 'The guild scribes have shared what they know.');
+          }}
+        >
+          <Text style={styles.researchButtonText}>Consult the Records (100G)</Text>
+        </Pressable>
 
         {/* Completed Feats */}
         {completed.length > 0 && (
@@ -302,18 +399,42 @@ export default function GuildHallScreen() {
           </View>
         )}
 
-        {/* In-Progress */}
-        {inProgress.length > 0 && (
+        {/* In-Progress / Known */}
+        {inProgress.filter(a => a.discoveryState === 'known').length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>In Progress ({inProgress.length})</Text>
-            {inProgress.map((a) => (
+            <Text style={styles.sectionTitle}>
+              In Progress ({inProgress.filter(a => a.discoveryState === 'known').length})
+            </Text>
+            {inProgress
+              .filter(a => a.discoveryState === 'known')
+              .map((a) => (
+                <AchievementCard key={a.achievementId} progress={a} />
+              ))}
+          </View>
+        )}
+
+        {/* Rumored */}
+        {rumored.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rumored ({rumored.length})</Text>
+            {rumored.map((a) => (
+              <AchievementCard key={a.achievementId} progress={a} />
+            ))}
+          </View>
+        )}
+
+        {/* Hidden */}
+        {hidden.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Unknown ({hidden.length})</Text>
+            {hidden.map((a) => (
               <AchievementCard key={a.achievementId} progress={a} />
             ))}
           </View>
         )}
 
         {/* Empty state */}
-        {achievements.length === 0 && (
+        {allProgress.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🗡️</Text>
             <Text style={styles.emptyTitle}>No Feats Recorded</Text>
@@ -569,6 +690,50 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
 
+  trackerWrapper: {
+    marginBottom: Spacing.lg,
+  },
+
+  // Discovery Banner
+  discoveryBanner: {
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.secondary,
+    alignItems: 'center',
+  },
+  discoveryBannerText: {
+    ...Typography.h6,
+    color: Colors.text.muted,
+    letterSpacing: 1,
+  },
+  discoveryBannerHint: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    fontStyle: 'italic',
+  },
+
+  // Library research button
+  researchButton: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.domain.knowledge + '60',
+  },
+  researchButtonText: {
+    ...Typography.buttonSmall,
+    color: Colors.domain.knowledge,
+    letterSpacing: 1,
+  },
+
   // Achievement Card
   achievementCard: {
     backgroundColor: Colors.background.secondary,
@@ -580,6 +745,14 @@ const styles = StyleSheet.create({
   },
   achievementCardDone: {
     borderColor: Colors.text.accent + '60',
+  },
+  achievementCardHidden: {
+    borderColor: Colors.border.primary,
+    opacity: 0.6,
+  },
+  achievementCardRumored: {
+    borderColor: Colors.border.primary,
+    opacity: 0.75,
   },
   achievementHeader: {
     flexDirection: 'row',
@@ -603,6 +776,39 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     marginTop: 2,
+  },
+  achievementIdHidden: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontWeight: '600',
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  achievementTierHidden: {
+    ...Typography.caption,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: Colors.text.muted,
+    marginTop: 2,
+  },
+  achievementIdRumored: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontWeight: '600',
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  hiddenHint: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    fontSize: 10,
+  },
+  rumoredHint: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
+    fontSize: 10,
   },
   completedBadge: {
     backgroundColor: Colors.text.accent + '30',

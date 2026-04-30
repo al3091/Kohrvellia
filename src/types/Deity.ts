@@ -47,12 +47,20 @@ export type PantheonId =
 // Deity personality affects hint style
 export type DeityPersonality =
   | 'encouraging' // Supportive, gentle hints
-  | 'stern' // Direct, demanding hints
-  | 'mysterious' // Cryptic, riddle-like hints
-  | 'playful' // Teasing, mischievous hints
-  | 'wrathful' // Angry, threatening hints
-  | 'serene' // Calm, peaceful hints
-  | 'chaotic'; // Unpredictable hints
+  | 'stern'       // Direct, demanding hints
+  | 'mysterious'  // Cryptic, riddle-like hints
+  | 'playful'     // Teasing, mischievous hints
+  | 'wrathful'    // Angry, threatening hints
+  | 'serene'      // Calm, peaceful hints
+  | 'chaotic'     // Unpredictable hints
+  | 'gentle'      // Kind, nurturing hints
+  | 'aggressive'  // Forceful, proactive hints
+  | 'wise'        // Thoughtful, insightful hints
+  | 'ancient'     // Primordial, timeless hints
+  | 'passionate'  // Intense, emotional hints
+  | 'benevolent'  // Generous, life-affirming hints
+  | 'dark'        // Shadow, threshold-dwelling hints
+  | 'calculating'; // Strategic, deliberate hints
 
 // Stat modifier from deity
 export interface StatModifier {

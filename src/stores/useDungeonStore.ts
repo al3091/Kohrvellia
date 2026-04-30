@@ -189,7 +189,7 @@ function getFloorWeightProfile(floorNumber: number): Partial<Record<NodeType, nu
 /**
  * Select a node type based on floor and row
  * Treasure is ULTRA-RARE: additional floor-based probability filter
- * Shop is DISABLED: weight is 0, shops only exist in town
+ * Shop weight is low (5): rare wandering merchant encounters
  */
 function selectNodeType(
   floorNumber: number,
@@ -259,7 +259,7 @@ function selectMysteryRevealType(floorNumber: number, rng: () => number): NodeTy
     start: 0,
     mystery: 0, // Can't reveal to another mystery
     boss: 0,
-    shop: 0, // No shops in dungeon
+    shop: 3, // Rare wandering merchant in mystery reveals
     // Positive outcomes (40% total)
     treasure: 12, // Higher chance than normal - mystery reward
     rest: 10,

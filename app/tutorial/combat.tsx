@@ -80,7 +80,7 @@ export default function TutorialKairosScreen() {
   const handleContinue = () => {
     haptics.medium();
     advanceTutorial();
-    router.push('/tutorial/death');
+    router.push('/tutorial/stats');
   };
 
   const primaryStaged = phase !== 'idle';

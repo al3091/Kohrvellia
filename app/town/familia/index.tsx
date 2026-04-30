@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../../src/constants/Colors';
@@ -71,13 +71,31 @@ const DOMAIN_ICONS: Record<string, string> = {
   knowledge: '📖',
 };
 
+type ChallengeResultKind = 'completed' | 'abandoned';
+
+interface ChallengeResultState {
+  kind: ChallengeResultKind;
+  challengeName: string;
+  favorDelta: number;
+}
+
 export default function FamiliaHomeScreen() {
   const router = useRouter();
   const haptics = useHaptics();
   const [isResting, setIsResting] = useState(false);
+  const [challengeResult, setChallengeResult] = useState<ChallengeResultState | null>(null);
 
   const { character, hasPendingExcelia, getPendingExcelia, modifyHP, modifySP, getDerivedStatsWithBlessings } = useCharacterStore();
-  const { getPatronDeity, getFavorStatus, relationship, setPatronDeity: initializeDeityRelationship } = useDeityStore();
+  const {
+    getPatronDeity,
+    getFavorStatus,
+    relationship,
+    setPatronDeity: initializeDeityRelationship,
+    getAvailableChallenges,
+    hasActiveChallenge,
+    issueChallenge,
+    abandonChallenge,
+  } = useDeityStore();
 
   // Fallback: If deity relationship isn't initialized, try to initialize from character
   React.useEffect(() => {
@@ -91,6 +109,15 @@ export default function FamiliaHomeScreen() {
   const pendingExcelia = hasPendingExcelia();
   const pending = getPendingExcelia();
   const derivedStats = getDerivedStatsWithBlessings();
+
+  // Challenge section — only show when no active challenge and one is available
+  const currentFavor = relationship?.favor ?? 0;
+  const activeChallenge = hasActiveChallenge();
+  const availableChallenges = (!activeChallenge && deity && currentFavor >= 30)
+    ? getAvailableChallenges()
+    : [];
+  const proposedChallenge = availableChallenges[0] ?? null;
+  const activeChallengeData = relationship?.currentChallenge ?? null;
 
   if (!character) {
     return (
@@ -140,6 +167,44 @@ export default function FamiliaHomeScreen() {
   const handleBack = () => {
     haptics.light();
     router.back();
+  };
+
+  const handleAcceptChallenge = () => {
+    if (!proposedChallenge) return;
+    haptics.success();
+    issueChallenge(proposedChallenge.id, proposedChallenge.requirement.timeLimit ?? 5);
+  };
+
+  const handleDeclineChallenge = () => {
+    haptics.light();
+    // Declining does not penalise — just dismiss by doing nothing (proposal will re-appear next visit)
+  };
+
+  const handleAbandonChallenge = () => {
+    if (!activeChallengeData || !deity) return;
+    const challenge = deity.challenges.find((c) => c.id === activeChallengeData.challengeId);
+    haptics.warning();
+    Alert.alert(
+      'Abandon Challenge',
+      `Abandoning "${challenge?.name ?? 'this challenge'}" will cost ${challenge?.favorLoss ?? 10} favor. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Abandon',
+          style: 'destructive',
+          onPress: () => {
+            const favorBefore = relationship?.favor ?? 0;
+            abandonChallenge();
+            const favorAfter = useDeityStore.getState().relationship?.favor ?? 0;
+            setChallengeResult({
+              kind: 'abandoned',
+              challengeName: challenge?.name ?? 'Challenge',
+              favorDelta: favorAfter - favorBefore,
+            });
+          },
+        },
+      ]
+    );
   };
 
   // Calculate total pending excelia for display
@@ -242,6 +307,105 @@ export default function FamiliaHomeScreen() {
             <Text style={styles.noBlessingText}>
               "Your Falna shows no new growth. Venture forth and return when you have proven yourself."
             </Text>
+          </View>
+        )}
+
+        {/* Active Challenge Status */}
+        {activeChallenge && activeChallengeData && deity && (() => {
+          const activeCh = deity.challenges.find((c) => c.id === activeChallengeData.challengeId);
+          if (!activeCh) return null;
+          return (
+            <View style={styles.activeChallengeSection}>
+              <View style={styles.challengeSectionHeader}>
+                <Text style={styles.challengeSectionIcon}>⚡</Text>
+                <Text style={styles.challengeSectionTitle}>ACTIVE CHALLENGE</Text>
+                <View style={[styles.tierBadge, styles[`tier_${activeCh.tier}` as keyof typeof styles] as ViewStyle]}>
+                  <Text style={styles.tierBadgeText}>{activeCh.tier.toUpperCase()}</Text>
+                </View>
+              </View>
+              <Text style={styles.challengeName}>{activeCh.name}</Text>
+              <Text style={styles.challengeDesc}>{activeCh.description}</Text>
+              <View style={styles.challengeProgressRow}>
+                <Text style={styles.challengeProgressLabel}>Progress</Text>
+                <Text style={styles.challengeProgressValue}>
+                  {activeChallengeData.progress} / {activeCh.requirement.value}
+                </Text>
+              </View>
+              {activeChallengeData.floorsRemaining !== undefined && (
+                <View style={styles.challengeProgressRow}>
+                  <Text style={styles.challengeProgressLabel}>Floors Remaining</Text>
+                  <Text style={[
+                    styles.challengeProgressValue,
+                    activeChallengeData.floorsRemaining <= 1 && styles.challengeProgressDanger,
+                  ]}>
+                    {activeChallengeData.floorsRemaining}
+                  </Text>
+                </View>
+              )}
+              <Pressable style={styles.abandonButton} onPress={handleAbandonChallenge}>
+                <Text style={styles.abandonButtonText}>Abandon Challenge</Text>
+              </Pressable>
+            </View>
+          );
+        })()}
+
+        {/* Challenge Proposal */}
+        {!activeChallenge && proposedChallenge && (
+          <View style={styles.challengeProposalSection}>
+            <View style={styles.challengeSectionHeader}>
+              <Text style={styles.challengeSectionIcon}>🏆</Text>
+              <Text style={styles.challengeSectionTitle}>CHALLENGE AVAILABLE</Text>
+              <View style={[styles.tierBadge, styles[`tier_${proposedChallenge.tier}` as keyof typeof styles] as ViewStyle]}>
+                <Text style={styles.tierBadgeText}>{proposedChallenge.tier.toUpperCase()}</Text>
+              </View>
+            </View>
+            <Text style={styles.challengeName}>{proposedChallenge.name}</Text>
+            <Text style={styles.challengeDesc}>{proposedChallenge.description}</Text>
+            <Text style={styles.challengeRequirement}>
+              Task: {proposedChallenge.requirement.type === 'kill_bosses'
+                ? `Kill ${proposedChallenge.requirement.value} boss${proposedChallenge.requirement.value > 1 ? 'es' : ''}`
+                : proposedChallenge.requirement.type === 'kill_elites'
+                ? `Kill ${proposedChallenge.requirement.value} elite${proposedChallenge.requirement.value > 1 ? 's' : ''}`
+                : `${proposedChallenge.requirement.type.replace(/_/g, ' ')}: ${proposedChallenge.requirement.value}`}
+              {proposedChallenge.requirement.timeLimit !== undefined
+                ? ` within ${proposedChallenge.requirement.timeLimit} floors`
+                : ''}
+            </Text>
+            <View style={styles.challengeRewardRow}>
+              <Text style={styles.challengeRewardLabel}>Reward:</Text>
+              <Text style={styles.challengeRewardValue}>
+                +{proposedChallenge.favorGain} favor
+                {proposedChallenge.bonusStatPoints ? `, +${proposedChallenge.bonusStatPoints} stat point${proposedChallenge.bonusStatPoints > 1 ? 's' : ''}` : ''}
+              </Text>
+            </View>
+            <View style={styles.challengeButtons}>
+              <Pressable style={styles.acceptButton} onPress={handleAcceptChallenge}>
+                <Text style={styles.acceptButtonText}>Accept</Text>
+              </Pressable>
+              <Pressable style={styles.declineButton} onPress={handleDeclineChallenge}>
+                <Text style={styles.declineButtonText}>Decline</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Challenge Result Notification */}
+        {challengeResult && (
+          <View style={[
+            styles.challengeResultBanner,
+            challengeResult.kind === 'completed'
+              ? styles.challengeResultSuccess
+              : styles.challengeResultFailure,
+          ]}>
+            <Text style={styles.challengeResultTitle}>
+              {challengeResult.kind === 'completed' ? 'Challenge Complete!' : 'Challenge Abandoned'}
+            </Text>
+            <Text style={styles.challengeResultText}>
+              {challengeResult.challengeName} — {challengeResult.favorDelta >= 0 ? '+' : ''}{challengeResult.favorDelta} favor
+            </Text>
+            <Pressable onPress={() => setChallengeResult(null)}>
+              <Text style={styles.challengeResultDismiss}>Dismiss</Text>
+            </Pressable>
           </View>
         )}
 
@@ -652,5 +816,189 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     width: 60,
     textAlign: 'right',
+  },
+
+  // Challenge Proposal Section
+  challengeProposalSection: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: BorderWidth.normal,
+    borderColor: Colors.resource.gold + '50',
+  },
+
+  // Active Challenge Section
+  activeChallengeSection: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: BorderWidth.normal,
+    borderColor: Colors.ui.info + '60',
+  },
+
+  challengeSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  challengeSectionIcon: {
+    fontSize: 20,
+  },
+  challengeSectionTitle: {
+    ...Typography.h5,
+    color: Colors.text.primary,
+    letterSpacing: 1,
+    flex: 1,
+  },
+
+  // Tier badges
+  tierBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  tierBadgeText: {
+    ...Typography.caption,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: Colors.text.inverse,
+  },
+  tier_challenging: {
+    backgroundColor: Colors.ui.warning,
+  },
+  tier_heroic: {
+    backgroundColor: Colors.ui.error,
+  },
+  tier_legendary: {
+    backgroundColor: Colors.danger.deadly,
+  },
+
+  challengeName: {
+    ...Typography.h6,
+    color: Colors.resource.gold,
+    marginBottom: Spacing.xs,
+  },
+  challengeDesc: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.md,
+    fontStyle: 'italic',
+  },
+  challengeRequirement: {
+    ...Typography.caption,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  challengeRewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  challengeRewardLabel: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+  },
+  challengeRewardValue: {
+    ...Typography.caption,
+    color: Colors.ui.success,
+    fontWeight: '600',
+  },
+  challengeButtons: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  acceptButton: {
+    flex: 1,
+    backgroundColor: Colors.resource.gold,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  acceptButtonText: {
+    ...Typography.button,
+    color: Colors.background.primary,
+    fontWeight: 'bold',
+  },
+  declineButton: {
+    flex: 1,
+    backgroundColor: Colors.background.tertiary,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.primary,
+  },
+  declineButtonText: {
+    ...Typography.button,
+    color: Colors.text.muted,
+  },
+
+  // Active challenge progress rows
+  challengeProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  challengeProgressLabel: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+  },
+  challengeProgressValue: {
+    ...Typography.caption,
+    color: Colors.text.primary,
+    fontWeight: '600',
+  },
+  challengeProgressDanger: {
+    color: Colors.ui.error,
+  },
+  abandonButton: {
+    marginTop: Spacing.md,
+    backgroundColor: 'transparent',
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.ui.error + '80',
+  },
+  abandonButtonText: {
+    ...Typography.caption,
+    color: Colors.ui.error,
+  },
+
+  // Challenge result banner
+  challengeResultBanner: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  challengeResultSuccess: {
+    backgroundColor: Colors.ui.success + '20',
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.ui.success + '60',
+  },
+  challengeResultFailure: {
+    backgroundColor: Colors.ui.error + '20',
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.ui.error + '60',
+  },
+  challengeResultTitle: {
+    ...Typography.h6,
+    color: Colors.text.primary,
+  },
+  challengeResultText: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+  },
+  challengeResultDismiss: {
+    ...Typography.caption,
+    color: Colors.text.accent,
+    marginTop: Spacing.xs,
   },
 });

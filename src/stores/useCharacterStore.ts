@@ -1132,8 +1132,14 @@ export const useCharacterStore = create<CharacterState>()(
         }
 
         const carryStats = computeCarryStats(character.levelHistory);
-        const weaponDamage = character.equipment.weapon?.finalDamage ?? 0;
-        const weaponMagic = 0; // TODO: Add magic weapon support
+        const equippedWeapon = character.equipment.weapon;
+        const weaponCategory = equippedWeapon?.base?.category;
+        const isMagicWeapon = equippedWeapon?.base?.damageTypes?.includes('magic') && weaponCategory !== 'LCK';
+        const isLuckWeapon = weaponCategory === 'LCK';
+        const rawDamage = equippedWeapon?.finalDamage ?? 0;
+        const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
+        const weaponMagic = isMagicWeapon ? rawDamage : 0;
+        const weaponLuck = isLuckWeapon ? rawDamage : 0;
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
@@ -1147,7 +1153,8 @@ export const useCharacterStore = create<CharacterState>()(
           armorDefense,
           armorMagicDef,
           1.0,
-          weaponOutputCap
+          weaponOutputCap,
+          weaponLuck
         );
       },
 
@@ -1168,8 +1175,14 @@ export const useCharacterStore = create<CharacterState>()(
         const blessingMult = getBlessingMultiplier(character.deityFavor ?? 50);
 
         const carryStats = computeCarryStats(character.levelHistory);
-        const weaponDamage = character.equipment.weapon?.finalDamage ?? 0;
-        const weaponMagic = 0; // TODO: Add magic weapon support
+        const equippedWeapon = character.equipment.weapon;
+        const weaponCategory = equippedWeapon?.base?.category;
+        const isMagicWeapon = equippedWeapon?.base?.damageTypes?.includes('magic') && weaponCategory !== 'LCK';
+        const isLuckWeapon = weaponCategory === 'LCK';
+        const rawDamage = equippedWeapon?.finalDamage ?? 0;
+        const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
+        const weaponMagic = isMagicWeapon ? rawDamage : 0;
+        const weaponLuck = isLuckWeapon ? rawDamage : 0;
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
@@ -1183,7 +1196,8 @@ export const useCharacterStore = create<CharacterState>()(
           armorDefense,
           armorMagicDef,
           blessingMult,
-          weaponOutputCap
+          weaponOutputCap,
+          weaponLuck
         );
       },
 

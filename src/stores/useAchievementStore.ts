@@ -11,6 +11,7 @@ import type {
   Achievement,
   AchievementProgress,
   AchievementTier,
+  DiscoveryState,
   RequirementType,
 } from '../types/Achievement';
 import {
@@ -39,7 +40,8 @@ interface AchievementState {
   updateProgress: (type: RequirementType, value: number, targetType?: string) => void;
   incrementProgress: (type: RequirementType, amount: number, targetType?: string) => void;
   checkCompletion: (achievementId: string) => boolean;
-  discoverAchievement: (achievementId: string) => void;
+  discoverAchievement: (achievementId: string, source: string) => void;
+  discoverAllFromSource: (source: string) => void;
 
   // Level-up ceremony
   startLevelUpCeremony: (targetLevel: number) => void;
@@ -54,6 +56,7 @@ interface AchievementState {
   getCompletedAchievements: (targetLevel?: number) => Achievement[];
   getAvailableAchievements: (targetLevel: number) => Achievement[];
   getTierCount: (targetLevel: number) => Record<AchievementTier, number>;
+  getDiscoveryStateForLevel: (targetLevel: number) => Record<string, DiscoveryState>;
 
   // Reset for new game
   resetAllProgress: () => void;
@@ -73,12 +76,16 @@ export const useAchievementStore = create<AchievementState>()(
         const existingProgress = get().progress;
         const newProgress: Record<string, AchievementProgress> = { ...existingProgress };
 
-        // Initialize progress for all achievements that don't have tracking yet
+        // Initialize progress for all achievements that don't have tracking yet.
+        // Guild-source achievements start as 'rumored' — the Guild Hall passively
+        // spreads basic knowledge. All others start 'hidden'.
         for (const achievement of ALL_ACHIEVEMENTS) {
           if (!newProgress[achievement.id]) {
-            // Standard tier achievements start as 'known', others start as 'hidden'
-            const isDiscovered = achievement.tier === 'standard' && achievement.targetLevel <= 2;
-            newProgress[achievement.id] = createAchievementProgress(achievement, isDiscovered);
+            const baseProgress = createAchievementProgress(achievement, false);
+            if (achievement.discoverySource === 'guild') {
+              baseProgress.discoveryState = 'rumored';
+            }
+            newProgress[achievement.id] = baseProgress;
           }
         }
 
@@ -164,22 +171,60 @@ export const useAchievementStore = create<AchievementState>()(
         return progress?.isCompleted ?? false;
       },
 
-      discoverAchievement: (achievementId) => {
+      discoverAchievement: (achievementId, source) => {
         const { progress } = get();
         const achievementProgress = progress[achievementId];
 
         if (!achievementProgress) return;
-        if (achievementProgress.discoveryState !== 'hidden') return;
+        // Already known or completed — nothing to do
+        if (
+          achievementProgress.discoveryState === 'known' ||
+          achievementProgress.discoveryState === 'completed'
+        ) return;
+
+        const achievement = ALL_ACHIEVEMENTS.find(a => a.id === achievementId);
+        if (!achievement) return;
+
+        // Source must match the achievement's discoverySource
+        if (achievement.discoverySource !== source) return;
+
+        // hidden → rumored, or rumored → known
+        const nextState: DiscoveryState =
+          achievementProgress.discoveryState === 'hidden' ? 'rumored' : 'known';
 
         set({
           progress: {
             ...progress,
             [achievementId]: {
               ...achievementProgress,
-              discoveryState: 'known',
+              discoveryState: nextState,
             },
           },
         });
+      },
+
+      discoverAllFromSource: (source) => {
+        const { progress } = get();
+        const updatedProgress = { ...progress };
+        let changed = false;
+
+        for (const achievement of ALL_ACHIEVEMENTS) {
+          if (achievement.discoverySource !== source) continue;
+
+          const p = updatedProgress[achievement.id];
+          if (!p) continue;
+          if (p.discoveryState === 'known' || p.discoveryState === 'completed') continue;
+
+          const nextState: DiscoveryState =
+            p.discoveryState === 'hidden' ? 'rumored' : 'known';
+
+          updatedProgress[achievement.id] = { ...p, discoveryState: nextState };
+          changed = true;
+        }
+
+        if (changed) {
+          set({ progress: updatedProgress });
+        }
       },
 
       // Level-up ceremony
@@ -326,6 +371,19 @@ export const useAchievementStore = create<AchievementState>()(
         }
 
         return counts;
+      },
+
+      getDiscoveryStateForLevel: (targetLevel) => {
+        const { progress } = get();
+        const result: Record<string, DiscoveryState> = {};
+
+        for (const achievement of ALL_ACHIEVEMENTS) {
+          if (achievement.targetLevel !== targetLevel) continue;
+          const p = progress[achievement.id];
+          result[achievement.id] = p?.discoveryState ?? 'hidden';
+        }
+
+        return result;
       },
 
       // Reset all progress for new game

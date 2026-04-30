@@ -19,7 +19,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'WIS', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% intimidation effectiveness',
-      effectType: 'intimidation_bonus',
+      effectType: 'intimidation',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -90,7 +90,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'END', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% enemy information revealed',
-      effectType: 'enemy_info_bonus',
+      effectType: 'enemy_info',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -160,7 +160,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'WIS', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% dodge chance',
-      effectType: 'dodge_bonus',
+      effectType: 'dodge',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -231,7 +231,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% enemy information revealed',
-      effectType: 'enemy_info_bonus',
+      effectType: 'enemy_info',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -301,7 +301,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'AGI', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% intimidation effectiveness',
-      effectType: 'intimidation_bonus',
+      effectType: 'intimidation',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -372,7 +372,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% HP regeneration',
-      effectType: 'hp_regen_bonus',
+      effectType: 'hp_regen',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -443,7 +443,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% skill learning speed',
-      effectType: 'skill_learning_bonus',
+      effectType: 'skill_learning',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -514,7 +514,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'END', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% loot quality',
-      effectType: 'loot_quality_bonus',
+      effectType: 'loot_quality',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -584,7 +584,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'INT', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% physical damage',
-      effectType: 'physical_damage_bonus',
+      effectType: 'physical_damage',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -725,7 +725,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'CHA', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% physical damage',
-      effectType: 'physical_damage_bonus',
+      effectType: 'physical_damage',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -866,7 +866,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'CHA', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% undead damage, can speak with fallen enemies',
-      effectType: 'undead_damage_bonus',
+      effectType: 'undead_damage',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -937,7 +937,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% water magic damage, immunity to drowning',
-      effectType: 'water_magic_bonus',
+      effectType: 'water_magic',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -1008,7 +1008,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'WIS', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% fire damage, immunity to burn',
-      effectType: 'fire_damage_bonus',
+      effectType: 'fire_damage',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -1079,7 +1079,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'AGI', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% crafting quality, structures never collapse',
-      effectType: 'crafting_bonus',
+      effectType: 'crafting',
       effectValue: 10,
     },
     uniqueAbility: {
@@ -1150,7 +1150,7 @@ export const arsGoetiaDeities: Deity[] = [
     statPenalty: { stat: 'END', value: 5, type: 'penalty' },
     domainBlessing: {
       description: '+10% nature magic, animals do not attack unprovoked',
-      effectType: 'nature_magic_bonus',
+      effectType: 'nature_magic',
       effectValue: 10,
     },
     uniqueAbility: {

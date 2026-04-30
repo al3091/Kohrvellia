@@ -185,7 +185,7 @@ export const ROWS_PER_FLOOR = 12;  // start, 10 middle rows, boss (~25-36 nodes)
 
 // Node type weights by row
 // Note: Treasure is ultra-rare (actual spawn controlled by floor probability in useDungeonStore)
-// Shop is 0 - shops only exist in town, not inside dungeons
+// Shop is rare (weight 5) — a wandering merchant occasionally appears inside dungeons
 export const NODE_TYPE_WEIGHTS: Record<NodeType, number> = {
   start: 0,       // Placed automatically
   combat: 40,     // Most common
@@ -193,7 +193,7 @@ export const NODE_TYPE_WEIGHTS: Record<NodeType, number> = {
   treasure: 3,    // Ultra-rare base weight (further filtered by floor probability)
   event: 22,      // Narrative encounters
   rest: 4,        // Rest sites kept scarce
-  shop: 0,        // DISABLED - shops only exist in town
+  shop: 5,        // Rare wandering merchant
   shrine: 3,      // Rare deity interactions
   mystery: 16,    // Variety and tension
   boss: 0,        // Placed automatically

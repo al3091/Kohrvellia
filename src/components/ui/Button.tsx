@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { Typography, FontSize, FontWeight } from '../../constants/Typography';
-import { Spacing, BorderRadius, Padding, TouchTarget, Shadow } from '../../constants/Spacing';
+import { Spacing, BorderRadius, Padding, TouchTarget } from '../../constants/Spacing';
 import { useHaptics, HapticStyle } from '../../hooks/useHaptics';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';

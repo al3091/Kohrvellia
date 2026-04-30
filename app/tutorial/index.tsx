@@ -80,7 +80,7 @@ export default function TutorialStakesScreen() {
           useNativeDriver: true,
         }).start(() => {
           advanceTutorial();
-          router.push('/tutorial/combat');
+          router.push('/tutorial/basics');
         });
       }
     });

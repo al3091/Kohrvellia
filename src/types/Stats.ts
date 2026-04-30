@@ -229,6 +229,7 @@ export interface DerivedStats {
   // ── Core offensive / defensive (soft-capped) ──
   physicalAttack: number;
   magicAttack: number;
+  luckAttack: number;
   physicalDefense: number;
   magicDefense: number;
   speed: number;
@@ -311,7 +312,8 @@ export function calculateDerivedStats(
   armorDefense: number = 0,
   armorMagicDef: number = 0,
   blessingMultiplier: number = 1.0,
-  weaponMaxOutputCap: number = Infinity
+  weaponMaxOutputCap: number = Infinity,
+  weaponLuck: number = 0
 ): DerivedStats {
   // Effective stats include current-level points + permanent carry from all previous levels
   const effSTR = calculateEffectiveStat(level, stats.STR.points, carryStats.STR ?? 0);
@@ -334,6 +336,7 @@ export function calculateDerivedStats(
   // C2: Weapon quality caps total physical attack — crude weapons cannot scale with high stats
   const basePhysicalAttack = Math.min(effSTR * 0.008 + weaponDamage, weaponMaxOutputCap);
   const baseMagicAttack = effINT * 0.008 + effWIS * 0.002 + weaponMagic;
+  const baseLuckAttack = effLCK * 0.008 + weaponLuck;
   const basePhysicalDefense = effEND * 0.006 + armorDefense;
   const baseMagicDefense = effWIS * 0.008 + armorMagicDef + arcaneArmor;
   const baseSpeed = effAGI * 0.010 + effPER * 0.002;
@@ -399,6 +402,7 @@ export function calculateDerivedStats(
     maxSP: Math.floor(baseSP * blessingMultiplier),
     physicalAttack: Math.floor(basePhysicalAttack * blessingMultiplier),
     magicAttack: Math.floor(baseMagicAttack * blessingMultiplier),
+    luckAttack: Math.floor(baseLuckAttack * blessingMultiplier),
     physicalDefense: Math.floor(basePhysicalDefense * blessingMultiplier),
     magicDefense: Math.floor(baseMagicDefense * blessingMultiplier),
     speed: Math.floor(baseSpeed * blessingMultiplier),

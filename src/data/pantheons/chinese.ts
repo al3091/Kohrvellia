@@ -662,7 +662,7 @@ export const chineseDeities: Deity[] = [
 
   // ===== YAMA - Death Domain =====
   {
-    id: 'yama',
+    id: 'yama_diyu',
     name: 'Yama',
     pantheon: 'chinese',
     domain: 'death',

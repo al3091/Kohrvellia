@@ -16,7 +16,11 @@ export { aztecPantheon } from './aztec';
 // TODO: Regenerate maya, inca pantheons with correct Deity interface
 
 // Regional Pantheons
-// TODO: Regenerate yoruba, polynesian, persian, vodou, shinto pantheons with correct Deity interface
+export { polynesianPantheon } from './polynesian';
+export { yorubaPantheon } from './yoruba';
+export { vodouPantheon } from './vodou';
+export { persianPantheon } from './persian';
+export { shintoPantheon } from './shinto';
 
 // Demonic/Angelic Pantheons
 export { arsGoetiaPantheon } from './arsGoetia';
@@ -33,8 +37,13 @@ import { hinduPantheon } from './hindu';
 import { chinesePantheon } from './chinese';
 import { slavicPantheon } from './slavic';
 import { aztecPantheon } from './aztec';
+import { polynesianPantheon } from './polynesian';
+import { yorubaPantheon } from './yoruba';
+import { vodouPantheon } from './vodou';
 import { arsGoetiaPantheon } from './arsGoetia';
 import { fallenAngelsPantheon } from './fallenAngels';
+import { persianPantheon } from './persian';
+import { shintoPantheon } from './shinto';
 
 /**
  * All deities from all pantheons combined
@@ -50,8 +59,13 @@ export const allDeities: Deity[] = [
   ...chinesePantheon,
   ...slavicPantheon,
   ...aztecPantheon,
+  ...polynesianPantheon,
+  ...yorubaPantheon,
+  ...vodouPantheon,
   ...arsGoetiaPantheon,
   ...fallenAngelsPantheon,
+  ...persianPantheon,
+  ...shintoPantheon,
 ];
 
 /**
@@ -68,8 +82,13 @@ export const pantheonMap: Record<string, Deity[]> = {
   chinese: chinesePantheon,
   slavic: slavicPantheon,
   aztec: aztecPantheon,
+  polynesian: polynesianPantheon,
+  yoruba: yorubaPantheon,
+  vodou: vodouPantheon,
   ars_goetia: arsGoetiaPantheon,
   fallen_angels: fallenAngelsPantheon,
+  persian: persianPantheon,
+  shinto: shintoPantheon,
 };
 
 /**
@@ -120,6 +139,11 @@ export const pantheonInfo = [
   { id: 'chinese', name: 'Chinese', description: 'Gods of Heaven', deityCount: chinesePantheon.length },
   { id: 'slavic', name: 'Slavic', description: 'Gods of the Slavs', deityCount: slavicPantheon.length },
   { id: 'aztec', name: 'Aztec', description: 'Gods of Tenochtitlan', deityCount: aztecPantheon.length },
+  { id: 'polynesian', name: 'Polynesian', description: 'Kami of the Pacific', deityCount: polynesianPantheon.length },
+  { id: 'yoruba', name: 'Yoruba', description: 'The Orishas of West Africa', deityCount: yorubaPantheon.length },
+  { id: 'vodou', name: 'Vodou', description: 'The Lwa of Haiti and West Africa', deityCount: vodouPantheon.length },
   { id: 'ars_goetia', name: 'Ars Goetia', description: 'Demons of Solomon', deityCount: arsGoetiaPantheon.length },
   { id: 'fallen_angels', name: 'Fallen Angels', description: 'Angels of the Fall', deityCount: fallenAngelsPantheon.length },
+  { id: 'persian', name: 'Persian', description: 'Pre-Zoroastrian Yazatas', deityCount: persianPantheon.length },
+  { id: 'shinto', name: 'Shinto', description: 'Nature Kami of Japan', deityCount: shintoPantheon.length },
 ];

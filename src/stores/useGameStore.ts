@@ -119,6 +119,7 @@ interface GameState {
   addCodexEntry: (entryId: string) => void;
   recordMonsterEncounter: (baseId: string) => void;
   addMonsterObservation: (baseId: string) => void;
+  resetMonsterKnowledge: () => void;
 
   // Actions - Tutorial
   completeTutorial: () => void;
@@ -282,6 +283,10 @@ export const useGameStore = create<GameState>()(
             },
           };
         });
+      },
+
+      resetMonsterKnowledge: () => {
+        set({ monsterKnowledge: {} });
       },
 
       // First combat

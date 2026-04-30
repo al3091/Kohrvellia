@@ -18,6 +18,8 @@ import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
+import { useGameStore } from '../../src/stores/useGameStore';
+import { useJobStore } from '../../src/stores/useJobStore';
 import { BACKSTORIES } from '../../src/types/Character';
 import { getDeityById } from '../../src/data/pantheons';
 import type { StatName } from '../../src/types/Stats';
@@ -79,6 +81,8 @@ export default function ConfirmScreen() {
     }
 
     initializeProgress();
+    useGameStore.getState().resetMonsterKnowledge();
+    useJobStore.getState().reset();
     reset();
 
     router.replace('/town');

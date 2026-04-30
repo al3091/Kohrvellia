@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
@@ -29,6 +29,8 @@ import {
 import { getDeityById } from '../../src/data/pantheons';
 import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
+import { ALL_ACHIEVEMENTS } from '../../src/data/achievements';
+import { useShopStore } from '../../src/stores/useShopStore';
 
 // Node descriptions
 const NODE_DESCRIPTIONS: Record<NodeType, string> = {
@@ -63,6 +65,7 @@ export default function RoomScreen() {
   const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery } = useDungeonStore();
   const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, removeFromInventory, addToInventory, modifyDeityFavor, addStatusEffect, modifySatiation } = useCharacterStore();
   const { prepareEncounter } = useCombatStore();
+  const { equipmentStock, purchaseEquipment, getEquipmentPrice, shouldRefreshStock, refreshStock } = useShopStore();
 
   const node = getCurrentNode();
   const map = getCurrentMap();
@@ -86,6 +89,9 @@ export default function RoomScreen() {
   // Mystery node state
   const [mysteryRevealed, setMysteryRevealed] = useState(false);
   const [mysteryRevealedType, setMysteryRevealedType] = useState<NodeType | null>(null);
+
+  // Shop node state
+  const [shopDone, setShopDone] = useState(false);
 
   // Generate event data once per node visit (also for mystery nodes that reveal to event)
   const currentEvent = useMemo<DungeonEvent | null>(() => {
@@ -112,6 +118,19 @@ export default function RoomScreen() {
   }, [map?.floorNumber, node?.id, node?.treasureData]);
 
   const handleBack = () => {
+    if (
+      node &&
+      (node.type === 'combat' || node.type === 'elite') &&
+      !node.isCompleted
+    ) {
+      haptics.warning();
+      Alert.alert(
+        'No Retreat',
+        'You cannot leave without resolving this encounter.',
+        [{ text: 'Stand Your Ground' }]
+      );
+      return;
+    }
     router.back();
   };
 
@@ -196,11 +215,28 @@ export default function RoomScreen() {
     // Apply rewards
     modifyGold(totalGold);
 
+    // 10% chance to find a journal, discovering one hidden journal-source achievement
+    let journalFound = false;
+    if (Math.random() < 0.10) {
+      const store = useAchievementStore.getState();
+      const hiddenJournalAchievements = ALL_ACHIEVEMENTS.filter(a => {
+        if (a.discoverySource !== 'journal') return false;
+        const p = store.getProgress(a.id);
+        return p?.discoveryState === 'hidden';
+      });
+      if (hiddenJournalAchievements.length > 0) {
+        const pick = hiddenJournalAchievements[Math.floor(Math.random() * hiddenJournalAchievements.length)];
+        store.discoverAchievement(pick.id, 'journal');
+        journalFound = true;
+      }
+    }
+
     const lootMessage = [
       `You found a treasure!`,
       ``,
       `+${totalGold} Gold`,
       ...items.map(item => `+${item}`),
+      ...(journalFound ? ['', "A weathered journal falls from the chest.\n\"The gods whisper of a deed few know...\""] : []),
     ].join('\n');
 
     setTreasureLoot({
@@ -490,6 +526,21 @@ export default function RoomScreen() {
     if (tier === 'A' || tier === 'B' || tier === 'C') {
       useAchievementStore.getState().incrementProgress('shrine_blessing', 1);
     }
+
+    // Discovery: the shrine whispers about one random hidden shrine-source achievement
+    if (tier !== 'D' && tier !== 'D+' && map) {
+      const store = useAchievementStore.getState();
+      const hiddenShrineAchievements = ALL_ACHIEVEMENTS.filter(a => {
+        if (a.discoverySource !== 'shrine') return false;
+        const p = store.getProgress(a.id);
+        return p?.discoveryState === 'hidden';
+      });
+      if (hiddenShrineAchievements.length > 0) {
+        const pick = hiddenShrineAchievements[Math.floor(Math.random() * hiddenShrineAchievements.length)];
+        store.discoverAchievement(pick.id, 'shrine');
+      }
+    }
+
     setShrineUsed(true);
   };
 
@@ -698,7 +749,28 @@ export default function RoomScreen() {
     }
   };
 
-  // Shop functionality removed - shops only exist in town
+  // Refresh shop stock when entering a dungeon shop node
+  React.useEffect(() => {
+    if (node?.type === 'shop' && shouldRefreshStock()) {
+      refreshStock();
+    }
+  }, [node?.id]);
+
+  const handleShopBuy = (index: number) => {
+    const result = purchaseEquipment(index);
+    if (result.success) {
+      haptics.success();
+      playSFX('buff');
+    } else {
+      haptics.warning();
+    }
+  };
+
+  const handleShopLeave = () => {
+    haptics.light();
+    setShopDone(true);
+    completeNode(node!.id);
+  };
 
   if (!node || !character) {
     return (
@@ -1164,6 +1236,44 @@ export default function RoomScreen() {
             </Text>
           </View>
         )}
+
+        {/* Shop node — wandering merchant */}
+        {node.type === 'shop' && (
+          <View style={styles.nodeContent}>
+            <Text style={styles.shopIntro}>
+              A cloaked merchant eyes you from behind a makeshift stall.
+              {'\n'}"Everything here has a price. So do you, probably."
+            </Text>
+            {equipmentStock
+              .slice(0, 4)
+              .map((stock, idx) => !stock.sold ? (
+                <View key={stock.item.id} style={styles.shopItem}>
+                  <View style={styles.shopItemInfo}>
+                    <Text style={styles.shopItemName}>{stock.item.displayName}</Text>
+                    <Text style={styles.shopItemPrice}>{getEquipmentPrice(idx)} G</Text>
+                  </View>
+                  <Pressable
+                    style={[
+                      styles.shopBuyBtn,
+                      (character.gold < getEquipmentPrice(idx) || shopDone) && styles.shopBuyBtnDisabled,
+                    ]}
+                    onPress={() => handleShopBuy(idx)}
+                    disabled={character.gold < getEquipmentPrice(idx) || shopDone}
+                  >
+                    <Text style={styles.shopBuyBtnText}>
+                      {character.gold < getEquipmentPrice(idx) ? 'Can\'t Afford' : 'Buy'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View key={stock.item.id} style={[styles.shopItem, styles.shopItemSold]}>
+                  <Text style={styles.shopItemSoldText}>{stock.item.displayName} — Sold</Text>
+                </View>
+              ))
+            }
+            <Text style={styles.shopGoldDisplay}>Your gold: {character.gold} G</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Action Footer */}
@@ -1354,6 +1464,18 @@ export default function RoomScreen() {
         )}
 
         {node.type === 'start' && (
+          <Pressable style={[styles.actionButton, styles.emptyButton]} onPress={handleCompleteNode}>
+            <Text style={styles.actionButtonText}>Continue</Text>
+          </Pressable>
+        )}
+
+        {node.type === 'shop' && !shopDone && (
+          <Pressable style={[styles.actionButton, styles.emptyButton]} onPress={handleShopLeave}>
+            <Text style={styles.actionButtonText}>Pack Up and Leave</Text>
+          </Pressable>
+        )}
+
+        {node.type === 'shop' && shopDone && (
           <Pressable style={[styles.actionButton, styles.emptyButton]} onPress={handleCompleteNode}>
             <Text style={styles.actionButtonText}>Continue</Text>
           </Pressable>
@@ -1618,6 +1740,71 @@ const styles = StyleSheet.create({
     ...Typography.narrative,
     color: Colors.domain.fortune,
     textAlign: 'center',
+  },
+  shopIntro: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+  },
+  shopItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.background.card,
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    marginBottom: Spacing.xs,
+  },
+  shopItemSold: {
+    opacity: 0.4,
+  },
+  shopItemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  shopItemName: {
+    ...Typography.bodySmall,
+    color: Colors.text.primary,
+    fontWeight: '500',
+  },
+  shopItemPrice: {
+    ...Typography.caption,
+    color: Colors.text.accent,
+  },
+  shopBuyBtn: {
+    backgroundColor: Colors.domain.fortune + '30',
+    borderWidth: 1,
+    borderColor: Colors.domain.fortune,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  shopBuyBtnDisabled: {
+    opacity: 0.4,
+    borderColor: Colors.border.primary,
+    backgroundColor: Colors.background.secondary,
+  },
+  shopBuyBtnText: {
+    ...Typography.label,
+    fontSize: 12,
+    color: Colors.domain.fortune,
+    letterSpacing: 1,
+  },
+  shopItemSoldText: {
+    ...Typography.bodySmall,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+  },
+  shopGoldDisplay: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'right',
+    marginTop: Spacing.sm,
   },
   bossText: {
     ...Typography.body,

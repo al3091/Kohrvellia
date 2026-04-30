@@ -238,9 +238,23 @@ export default function LevelUpScreen() {
       completeLevelUp();
       performLevelUp();
 
-      // Navigate back after a moment
+      // Navigate based on new level
       setTimeout(() => {
-        router.back();
+        const newLevel = useCharacterStore.getState().character?.level ?? 0;
+        if (newLevel >= 10) {
+          router.replace('/dungeon/denatus');
+        } else if (newLevel === 2) {
+          // Lazily import to avoid circular module issues
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { useJobStore } = require('../../src/stores/useJobStore') as typeof import('../../src/stores/useJobStore');
+          if (!useJobStore.getState().hasSelectedJob) {
+            router.replace('/dungeon/job-select');
+          } else {
+            router.back();
+          }
+        } else {
+          router.back();
+        }
       }, 1500);
     }, 4000);
   };

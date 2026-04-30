@@ -27,6 +27,7 @@ export default function TitleScreen() {
 
   const { hasCompletedTutorial, runHistory } = useGameStore();
   const { character, deleteCharacter } = useCharacterStore();
+  const { currentRun } = useDungeonStore();
 
   const hasExistingSave = !!character && !character.isDead;
 
@@ -51,7 +52,7 @@ export default function TitleScreen() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    useSoundStore.getState().playBGM('title');
+    useSoundStore.getState().crossfadeBGM('title', 500);
 
     // Title: slow ember-breath pulse using sine easing
     Animated.loop(
@@ -124,7 +125,7 @@ export default function TitleScreen() {
 
   const handleContinue = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace('/town');
+    router.replace(currentRun ? '/dungeon/floor' : '/town');
   };
 
   const handleCodex = () => {

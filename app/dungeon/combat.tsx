@@ -15,9 +15,11 @@ import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
+import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { FloatingDamage, type DamagePopup } from '../../src/components/combat/FloatingDamage';
+import { TurnOrderTimeline } from '../../src/components/combat/TurnOrderTimeline';
 import { MonsterDisplay } from '../../src/components/combat/MonsterDisplay';
 import { NarrativeLog } from '../../src/components/combat/NarrativeLog';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
@@ -44,7 +46,6 @@ const RARITY_COLORS: Record<string, string> = {
 export default function CombatScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { playSFX, crossfadeBGM } = useSoundStore();
   const [actionDisabled, setActionDisabled] = useState(false);
   const [initiativeMessage, setInitiativeMessage] = useState('');
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -97,6 +98,7 @@ export default function CombatScreen() {
     stagedPrimary,
     stagedBonus,
     bonusActionAvailable,
+    resolvedTurnSequence,
     playerAttack,
     playerDefend,
     playerFlee,
@@ -182,14 +184,14 @@ export default function CombatScreen() {
   useEffect(() => {
     // Start combat/boss BGM on mount
     if (monster?.isBoss) {
-      crossfadeBGM('boss', 800);
+      useSoundStore.getState().crossfadeBGM('boss', 800);
     } else {
-      crossfadeBGM('combat', 500);
+      useSoundStore.getState().crossfadeBGM('combat', 500);
     }
 
     // Return to dungeon BGM on unmount
     return () => {
-      crossfadeBGM('dungeon', 1000);
+      useSoundStore.getState().crossfadeBGM('dungeon', 1000);
     };
   }, [monster?.isBoss]);
 
@@ -238,7 +240,7 @@ export default function CombatScreen() {
   const runAttack = (derived: DerivedStats): void => {
     if (!character) return;
     haptics.medium();
-    playSFX('attack');
+    useSoundStore.getState().playSFX('attack');
 
     const scalingStat = getWeaponScalingStat();
     const result = playerAttack(derived, character.currentHP, character.maxHP);
@@ -252,7 +254,7 @@ export default function CombatScreen() {
       if (result.critical) {
         addDamagePopup(result.damage, 'critical', 0);
         triggerScreenFlash();
-        playSFX('attack_critical');
+        useSoundStore.getState().playSFX('attack_critical');
         haptics.heavy();
         addPendingExcelia('PER', 2);
         addPendingExcelia(scalingStat, 1);
@@ -260,19 +262,19 @@ export default function CombatScreen() {
         useSoulStore.getState().incrementBehavement('phys_crits_100');
       } else {
         addDamagePopup(result.damage, 'damage', 0);
-        playSFX('hit');
+        useSoundStore.getState().playSFX('hit');
       }
 
       if (result.doubleHit) {
         setTimeout(() => {
           addDamagePopup(result.doubleHitDamage, 'damage', 10);
-          playSFX('hit');
+          useSoundStore.getState().playSFX('hit');
         }, 300);
         addPendingExcelia('AGI', 1);
       }
     } else {
       addDamagePopup(0, 'miss', 0);
-      playSFX('miss');
+      useSoundStore.getState().playSFX('miss');
     }
 
     useSoulStore.getState().incrementBehavement('phys_attacks_100');
@@ -287,7 +289,7 @@ export default function CombatScreen() {
 
   const runDefend = (): void => {
     haptics.light();
-    playSFX('defend');
+    useSoundStore.getState().playSFX('defend');
     playerDefend();
     addPendingExcelia('END', 1);
     useSoulStore.getState().incrementBehavement('tank_blocks_50');
@@ -297,7 +299,7 @@ export default function CombatScreen() {
   const runFlee = (derived: DerivedStats): void => {
     haptics.medium();
     const effectiveFleeSpeed = derived.speed + derived.fleeBonus * 0.5;
-    const success = playerFlee(effectiveFleeSpeed);
+    const success = playerFlee(effectiveFleeSpeed, currentRun?.currentFloor ?? 1);
     addPendingExcelia('AGI', 1);
 
     if (success) {
@@ -337,7 +339,7 @@ export default function CombatScreen() {
       healAmount = Math.floor(healAmount * derived.healAmplify);
       modifyHP(healAmount);
       addDamagePopup(healAmount, 'heal', 0);
-      playSFX('heal');
+      useSoundStore.getState().playSFX('heal');
     };
 
     const onHealSP = (amount: number) => {
@@ -347,7 +349,7 @@ export default function CombatScreen() {
       }
       modifySP(healAmount);
       addDamagePopup(healAmount, 'heal', 0);
-      playSFX('buff');
+      useSoundStore.getState().playSFX('buff');
     };
 
     const onRemoveItem = (id: string) => {
@@ -370,19 +372,19 @@ export default function CombatScreen() {
     if (!check.canUse) return;
 
     haptics.medium();
-    playSFX('attack');
+    useSoundStore.getState().playSFX('attack');
 
     const onHeal = (amount: number) => {
       modifyHP(amount);
       addDamagePopup(amount, 'heal', 0);
-      playSFX('heal');
+      useSoundStore.getState().playSFX('heal');
     };
     const onSpendSP = (amount: number) => { modifySP(-amount); };
     const onApplyShield = (amount: number) => {
       const prev = useCombatStore.getState().combatDynamic.playerShieldHP;
       useCombatStore.getState().updateCombatDynamic({ playerShieldHP: prev + amount });
       addDamagePopup(amount, 'heal', 0);
-      playSFX('defend');
+      useSoundStore.getState().playSFX('defend');
     };
 
     const result = playerUseSkill(skill, statValue, derived, onHeal, onSpendSP, onApplyShield);
@@ -409,17 +411,17 @@ export default function CombatScreen() {
   const runQuickStrike = (derived: DerivedStats): void => {
     if (!character) return;
     haptics.medium();
-    playSFX('attack');
+    useSoundStore.getState().playSFX('attack');
     const result = playerQuickStrike(derived, character.currentHP, character.maxHP);
     if (result.hit) {
       addDamagePopup(result.damage, 'damage', 10);
-      playSFX('hit');
+      useSoundStore.getState().playSFX('hit');
       setMonsterTakingDamage(true);
       setTimeout(() => setMonsterTakingDamage(false), 300);
       addPendingExcelia('AGI', 1);
     } else {
       addDamagePopup(0, 'miss', 10);
-      playSFX('miss');
+      useSoundStore.getState().playSFX('miss');
     }
   };
 
@@ -536,7 +538,18 @@ export default function CombatScreen() {
 
           const finalPhase = useCombatStore.getState().phase;
           if (finalPhase === 'resolve_queue' || finalPhase === 'player_plan') {
-            endRound();
+            if (useCombatStore.getState().monsterActsTwice) {
+              setTimeout(() => {
+                const phaseCheck = useCombatStore.getState().phase;
+                if (phaseCheck === 'victory' || phaseCheck === 'defeat' || phaseCheck === 'fled') {
+                  endRound();
+                  return;
+                }
+                handleEnemyTurnInner(endRound, true);
+              }, 500);
+            } else {
+              endRound();
+            }
           } else {
             setActionDisabled(false);
           }
@@ -636,7 +649,7 @@ export default function CombatScreen() {
   // B3: Enemy turn — onComplete callback fires after the setTimeout resolves.
   // When called from handleLockIn (player_first path), nextTurn+handlePlayerTurnStart run here.
   // When called from handleLockIn (enemy_first path), onComplete drives the next step instead.
-  const handleEnemyTurnInner = (onComplete?: () => void) => {
+  const handleEnemyTurnInner = (onComplete?: () => void, isSecondStrike = false) => {
     if (!character) { onComplete?.(); return; }
 
     const currentPhase = useCombatStore.getState().phase;
@@ -680,11 +693,11 @@ export default function CombatScreen() {
         triggerShake();
         haptics.heavy();
         if (wasDefending) {
-          playSFX('defend');
+          useSoundStore.getState().playSFX('defend');
           addDamagePopup(damage, 'block', 0);
           addPendingExcelia('END', 2);
         } else {
-          playSFX(damage > 15 ? 'hit_heavy' : 'hit');
+          useSoundStore.getState().playSFX(damage > 15 ? 'hit_heavy' : 'hit');
           addDamagePopup(damage, 'damage', 0);
         }
         updateRunStats({ damageTaken: currentChar.runStats.damageTaken + damage });
@@ -699,23 +712,35 @@ export default function CombatScreen() {
         if (currentHP <= 0) {
           setPhase('defeat');
           haptics.error();
-          playSFX('defeat');
+          useSoundStore.getState().playSFX('defeat');
           setActionDisabled(false);
           onComplete?.();
           return;
         }
       } else {
         addDamagePopup(0, 'miss', 0);
-        playSFX('miss');
+        useSoundStore.getState().playSFX('miss');
         addPendingExcelia('LCK', 1);
       }
 
       if (!onComplete) {
-        // player_first path: end round here
-        setInitiativeMessage('');
-        nextTurn();
-        handlePlayerTurnStart();
-        setActionDisabled(false);
+        // player_first path: check double-turn before ending round
+        const actsTwice = !isSecondStrike && useCombatStore.getState().monsterActsTwice;
+        if (actsTwice) {
+          setTimeout(() => {
+            const phaseCheck = useCombatStore.getState().phase;
+            if (phaseCheck === 'victory' || phaseCheck === 'defeat' || phaseCheck === 'fled') {
+              endRound();
+              return;
+            }
+            handleEnemyTurnInner(undefined, true);
+          }, 500);
+        } else {
+          setInitiativeMessage('');
+          nextTurn();
+          handlePlayerTurnStart();
+          setActionDisabled(false);
+        }
       } else {
         onComplete();
       }
@@ -753,7 +778,7 @@ export default function CombatScreen() {
         modifySP(sp);
       },
       (effectName) => {
-        playSFX('buff');
+        useSoundStore.getState().playSFX('buff');
         addDamagePopup(0, 'heal', 15);
         // Log message is added inside processPassiveEffects
         void effectName; // used by log inside store
@@ -784,7 +809,7 @@ export default function CombatScreen() {
         cumulativeHPChange += heal;
         modifyHP(heal);
         addDamagePopup(heal, 'heal', 0);
-        playSFX('heal');
+        useSoundStore.getState().playSFX('heal');
       }
     );
 
@@ -794,7 +819,7 @@ export default function CombatScreen() {
     if (expectedHP <= 0) {
       setPhase('defeat');
       haptics.error();
-      playSFX('defeat');
+      useSoundStore.getState().playSFX('defeat');
       return;
     }
 
@@ -864,7 +889,7 @@ export default function CombatScreen() {
     if (!rewards || !character || !monster) return;
 
     haptics.success();
-    playSFX('victory');
+    useSoundStore.getState().playSFX('victory');
 
     // Add gold
     modifyGold(rewards.gold);
@@ -920,6 +945,25 @@ export default function CombatScreen() {
       useSoulStore.getState().incrementBehavement('phys_boss_melee');
       useSoulStore.getState().incrementBehavement('glory_boss_streak_3');
       useSoulStore.getState().incrementBehavement('glory_boss_streak_5');
+    }
+
+    // God Challenge progress — update kill-type challenges
+    {
+      const deityStore = useDeityStore.getState();
+      const activeCh = deityStore.relationship?.currentChallenge;
+      if (activeCh) {
+        const deity = deityStore.getPatronDeity();
+        const challengeDef = deity?.challenges.find((c) => c.id === activeCh.challengeId);
+        if (challengeDef) {
+          const reqType = challengeDef.requirement.type;
+          const isKillChallenge = reqType === 'kill' || reqType === 'kill_monsters';
+          const isBossChallenge = (reqType === 'kill_bosses') && monster.isBoss;
+          const isEliteChallenge = (reqType === 'kill_elites') && monster.isElite;
+          if (isKillChallenge || isBossChallenge || isEliteChallenge) {
+            deityStore.updateChallengeProgress(1);
+          }
+        }
+      }
     }
 
     // Clear the combat node
@@ -1237,6 +1281,11 @@ export default function CombatScreen() {
           <Text style={[styles.phaseTextMinimal, styles.phaseEnemy]}>Resolving...</Text>
         )}
       </View>
+
+      {/* Action Economy Visualizer */}
+      {resolvedTurnSequence.length > 0 && phase === 'resolve_queue' && (
+        <TurnOrderTimeline sequence={resolvedTurnSequence} />
+      )}
 
       {/* Narrative Combat Log - THE HERO */}
       <NarrativeLog
@@ -1618,7 +1667,7 @@ export default function CombatScreen() {
                 style={styles.retreatFleeButton}
                 onPress={() => {
                   setRetreatModalVisible(false);
-                  playerFlee(getDerivedStats().speed);
+                  playerFlee(getDerivedStats().speed, currentRun?.currentFloor ?? 1);
                 }}
               >
                 <Text style={styles.retreatFleeButtonText}>Attempt Escape</Text>

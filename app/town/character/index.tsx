@@ -11,6 +11,7 @@ import { Colors } from '../../../src/constants/Colors';
 import { Typography } from '../../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
 import { useCharacterStore } from '../../../src/stores/useCharacterStore';
+import { useJobStore } from '../../../src/stores/useJobStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
 import {
   StatName,
@@ -79,6 +80,7 @@ export default function CharacterStatsScreen() {
   const router = useRouter();
   const haptics = useHaptics();
   const { character, getDerivedStats, getPendingExcelia } = useCharacterStore();
+  const currentJob = useJobStore((s) => s.getCurrentJob());
 
   // Get pending excelia (stat gains waiting to be committed via Blessing Rite)
   const pendingExcelia = getPendingExcelia();
@@ -327,6 +329,39 @@ export default function CharacterStatsScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Job / Class */}
+        <View style={styles.equipmentSection}>
+          <Text style={styles.sectionTitle}>CLASS</Text>
+          {currentJob ? (
+            <View style={styles.equipmentCard}>
+              <View style={styles.equipmentRow}>
+                <Text style={styles.equipmentSlot}>Path</Text>
+                <Text style={[styles.equipmentName, { color: Colors.resource.gold }]}>
+                  {currentJob.name}
+                </Text>
+              </View>
+              <Text style={styles.equipmentStats}>
+                {currentJob.description}
+              </Text>
+              <View style={[styles.equipmentRow, { marginTop: Spacing.sm }]}>
+                <Text style={styles.equipmentSlot}>Starter Skill</Text>
+                <Text style={styles.equipmentName}>
+                  {currentJob.starterSkill.icon} {currentJob.starterSkill.name}
+                </Text>
+              </View>
+              <Text style={styles.equipmentStats}>
+                {currentJob.starterSkill.description}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.equipmentCard}>
+              <Text style={[styles.equipmentStats, { fontStyle: 'italic' }]}>
+                No path chosen — reach Level 2 to unlock your calling.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Run Stats */}

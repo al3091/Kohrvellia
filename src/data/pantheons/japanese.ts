@@ -1378,7 +1378,7 @@ export const japaneseDeities: Deity[] = [
     },
   },
 
-  // ===== TSUKUYOMI-NO-MIKOTO - Knowledge Domain =====
+  // ===== SHINATSUHIKO - Sky Domain =====
   {
     id: 'shinatsuhiko',
     name: 'Shinatsuhiko',
@@ -1392,7 +1392,7 @@ export const japaneseDeities: Deity[] = [
     statPenalty: { stat: 'END', value: 5, type: 'penalty' },
     domainBlessing: {
       description: 'Divine winds hasten your movements',
-      effectType: 'speed_bonus',
+      effectType: 'speed',
       effectValue: 15,
     },
     uniqueAbility: {
@@ -1446,6 +1446,78 @@ export const japaneseDeities: Deity[] = [
         'Strike like wind!',
         'Be everywhere!',
         'The wind cuts deep!',
+      ],
+    },
+  },
+
+  // ===== OMOIKANE - Knowledge Domain =====
+  {
+    id: 'omoikane',
+    name: 'Omoikane',
+    pantheon: 'japanese',
+    domain: 'knowledge',
+    personality: 'calculating',
+    title: 'God of Wisdom and Thought',
+    description: 'Omoikane is the divine counselor of the heavens, praised for his ability to devise solutions where no others exist. When Amaterasu hid in the cave, it was Omoikane who thought of the plan to draw her out.',
+    loreSnippet: '"Think eight thousand thoughts at once," they said. Omoikane thought eight thousand and one.',
+    statBonus: { stat: 'INT', value: 10, type: 'bonus' },
+    statPenalty: { stat: 'STR', value: 5, type: 'penalty' },
+    domainBlessing: {
+      description: 'Observe reveals all stats and weaknesses; +10% damage per active enemy debuff',
+      effectType: 'enemy_info',
+      effectValue: 25,
+    },
+    uniqueAbility: {
+      id: 'eight_thousand_thoughts',
+      name: 'Eight Thousand Thoughts',
+      description: 'Once per floor, before committing to an action, preview the damage range and hit chance of your next attack.',
+      unlockFavor: 65,
+      cooldownType: 'per_floor',
+      effect: { type: 'preview_attack', value: 1 },
+    },
+    challenges: [
+      {
+        id: 'omoikane_counsel',
+        name: 'The Counselor',
+        description: 'Use the Observe action 20 times in a single run.',
+        domain: 'knowledge',
+        tier: 'challenging',
+        requirement: { type: 'observe_uses', value: 20 },
+        favorGain: 15,
+        favorLoss: 5,
+      },
+      {
+        id: 'omoikane_masterplan',
+        name: 'Master Plan',
+        description: 'Defeat 10 enemies by exploiting an observed weakness.',
+        domain: 'knowledge',
+        tier: 'heroic',
+        requirement: { type: 'exploit_weakness_kills', value: 10 },
+        favorGain: 25,
+        bonusStatPoints: 2,
+        favorLoss: 10,
+      },
+    ],
+    hintTemplates: {
+      encouragement: [
+        'Think before you act. Then act with certainty.',
+        'Every problem has a solution. Find it before you commit.',
+        'Knowledge is the advantage that cannot be stripped from you.',
+      ],
+      warning: [
+        'A plan only works if you execute it. Thinking is not enough.',
+        'Do not overanalyze when the moment demands action.',
+        'Even the wisest counselor makes no difference if unheard.',
+      ],
+      achievement: [
+        'The divine council would approve of that reasoning.',
+        'Eight thousand thoughts — and you found the right one.',
+        'Omoikane adds this strategy to his collection.',
+      ],
+      combat: [
+        'Observe first. Every time.',
+        'Their weakness is there. You need only look.',
+        'Information is the first weapon. Strike with the second.',
       ],
     },
   },

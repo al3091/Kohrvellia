@@ -12,6 +12,7 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { getNodeIcon, getNodeDisplayName } from '../../src/types/Dungeon';
 import type { MapNode, NodeType } from '../../src/types/Dungeon';
@@ -80,6 +81,13 @@ export default function FloorScreen() {
     lastRamifications,
     clearRamifications,
   } = useDungeonStore();
+
+  const { relationship, getPatronDeity } = useDeityStore();
+  const activeChallenge = relationship?.currentChallenge ?? null;
+  const activeChallengeDeity = getPatronDeity();
+  const activeChallengeData = activeChallenge && activeChallengeDeity
+    ? activeChallengeDeity.challenges.find((c) => c.id === activeChallenge.challengeId) ?? null
+    : null;
 
   const map = getCurrentMap();
   const currentNode = getCurrentNode();
@@ -237,6 +245,9 @@ export default function FloorScreen() {
     const newFloor = map.floorNumber + 1;
     enterFloor(newFloor);
     useAchievementStore.getState().updateProgress('floor_reach', newFloor);
+
+    // Decrement challenge floor countdown — auto-fails if time runs out
+    useDeityStore.getState().checkChallengeExpiry(newFloor);
   };
 
   const handleExitToTown = () => {
@@ -300,7 +311,7 @@ export default function FloorScreen() {
     }
 
     // Navigate to room interaction based on node type
-    router.push('/dungeon/room');
+    router.replace('/dungeon/room');
   };
 
   if (!map || !currentRun || !character) {
@@ -323,11 +334,6 @@ export default function FloorScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.floorNumber}>Floor {map.floorNumber}</Text>
           <Text style={styles.biomeName}>{map.biomeName}</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <Text style={styles.progressText}>
-            Step {map.stepsTaken}/{map.totalSteps}
-          </Text>
         </View>
       </View>
 
@@ -389,6 +395,26 @@ export default function FloorScreen() {
           <Text style={styles.hungerTextHungry}>Hungry</Text>
         )}
       </View>
+
+      {/* Active Challenge Strip */}
+      {activeChallenge && activeChallengeData && (
+        <View style={styles.challengeStrip}>
+          <Text style={styles.challengeStripName} numberOfLines={1}>
+            {activeChallengeData.name}
+          </Text>
+          <Text style={styles.challengeStripProgress}>
+            {activeChallenge.progress}/{activeChallengeData.requirement.value}
+          </Text>
+          {activeChallenge.floorsRemaining !== undefined && (
+            <Text style={[
+              styles.challengeStripFloors,
+              activeChallenge.floorsRemaining <= 1 && styles.challengeStripFloorsDanger,
+            ]}>
+              {activeChallenge.floorsRemaining}F
+            </Text>
+          )}
+        </View>
+      )}
 
       {/* Vertical Node Map */}
       <View style={styles.mapContainer}>
@@ -470,8 +496,11 @@ export default function FloorScreen() {
                           height: lineLength,
                           left: '50%',
                           marginLeft: sourceOffset - 1.5,
-                          transform: [{ rotate: `${angleDeg}deg` }],
-                          transformOrigin: 'top center',
+                          transform: [
+                            { translateY: lineLength / 2 },
+                            { rotate: `${angleDeg}deg` },
+                            { translateY: -(lineLength / 2) },
+                          ],
                         },
                       ]}
                     />
@@ -747,7 +776,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border.primary,
   },
   headerLeft: {},
-  headerRight: {},
   floorNumber: {
     ...Typography.h3,
     color: Colors.text.accent,
@@ -755,10 +783,6 @@ const styles = StyleSheet.create({
   biomeName: {
     ...Typography.caption,
     color: Colors.text.secondary,
-  },
-  progressText: {
-    ...Typography.caption,
-    color: Colors.text.muted,
   },
   statusBar: {
     flexDirection: 'row',
@@ -1196,5 +1220,38 @@ const styles = StyleSheet.create({
     top: 0, left: 0, right: 0, bottom: 0,
     opacity: 0.4,
     zIndex: -1,
+  },
+
+  // Active challenge strip
+  challengeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Padding.screen.horizontal,
+    paddingVertical: 4,
+    backgroundColor: Colors.ui.info + '20',
+    borderBottomWidth: BorderWidth.thin,
+    borderBottomColor: Colors.ui.info + '40',
+    gap: Spacing.sm,
+  },
+  challengeStripName: {
+    ...Typography.caption,
+    color: Colors.ui.info,
+    flex: 1,
+    fontWeight: '600',
+  },
+  challengeStripProgress: {
+    ...Typography.caption,
+    color: Colors.text.primary,
+    fontWeight: '600',
+  },
+  challengeStripFloors: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    minWidth: 28,
+    textAlign: 'right',
+  },
+  challengeStripFloorsDanger: {
+    color: Colors.ui.error,
+    fontWeight: 'bold',
   },
 });

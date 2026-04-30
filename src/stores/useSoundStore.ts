@@ -52,6 +52,7 @@ export type SFXType =
 export type BGMType =
   // Core tracks
   | 'title'
+  | 'town'
   | 'dungeon'
   | 'combat'
   | 'boss'
@@ -209,6 +210,7 @@ const AMBIENT_FILES: Record<AmbientType, ReturnType<typeof require> | null> = {
 const BGM_FILES: Record<BGMType, ReturnType<typeof require> | null> = {
   // Core tracks
   title: require('../../assets/sounds/bgm/title.mp3'),
+  town: require('../../assets/sounds/bgm/dungeon.mp3'), // fallback until town.mp3 is added
   dungeon: require('../../assets/sounds/bgm/dungeon.mp3'),
   combat: require('../../assets/sounds/bgm/combat.mp3'),
   boss: require('../../assets/sounds/bgm/boss.mp3'),
@@ -450,8 +452,9 @@ export const useSoundStore = create<SoundState>((set, get) => ({
         player.volume = sfxVolume * masterVolume;
         player.play();
         // Auto-cleanup when finished
-        const subscription = player.addListener('playbackStatusUpdate', (status: Record<string, unknown>) => {
-          if (status.didJustFinish) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const subscription = (player as any).addListener('playbackStatusChange', (status: Record<string, unknown>) => {
+          if (!status.playing) {
             subscription.remove();
             safeRemove(player);
           }
@@ -474,8 +477,9 @@ export const useSoundStore = create<SoundState>((set, get) => ({
   },
 
   playBGM: async (type) => {
-    const { bgmEnabled, bgmVolume, masterVolume, bgmPlayer, currentBGM } = get();
+    const { bgmEnabled, bgmVolume, masterVolume, bgmPlayer, currentBGM, isCrossfading } = get();
     if (currentBGM === type && bgmPlayer) return;
+    if (isCrossfading) return;
 
     safeRemove(bgmPlayer);
     console.log(`[BGM] Would play: ${type}`);

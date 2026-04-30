@@ -50,6 +50,8 @@ import {
   hasStatusEffect,
   STATUS_EFFECT_ICONS,
 } from '../types/StatusEffect';
+import { Combat as CombatConfig, Loot as LootConfig } from '../constants/GameConstants';
+import { useCharacterStore } from './useCharacterStore';
 
 export type ActionTag = 'STRIKE' | 'WARD' | 'READ' | 'SURGE';
 export type CombatAction = 'attack' | 'defend' | 'flee' | 'skill' | 'item' | 'observe' | 'taunt'
@@ -111,6 +113,10 @@ interface CombatState {
   stagedBonus: StagedAction | null;
   bonusActionAvailable: boolean; // true when playerSpeed >= monsterSpeed * 0.8
 
+  // Action Economy Visualizer
+  resolvedTurnSequence: ('player' | 'monster')[];
+  monsterActsTwice: boolean;
+
   // Status effects
   playerEffects: StatusEffect[];
   monsterEffects: StatusEffect[];
@@ -150,7 +156,7 @@ interface CombatState {
     maxHP: number
   ) => { hit: boolean; damage: number; critical: boolean; doubleHit: boolean; doubleHitDamage: number };
   playerDefend: () => void;
-  playerFlee: (playerSpeed: number) => boolean;
+  playerFlee: (playerSpeed: number, currentFloor: number) => boolean;
   playerObserve: () => { alreadyObserved: boolean; info: string };
   playerTaunt: (intimidatePower: number) => { success: boolean };
   // Kairos new actions
@@ -247,6 +253,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   stagedPrimary: null,
   stagedBonus: null,
   bonusActionAvailable: false,
+  resolvedTurnSequence: [],
+  monsterActsTwice: false,
   playerEffects: [],
   monsterEffects: [],
   log: [],
@@ -419,7 +427,16 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     const enemyInit = (state.monster?.initiative ?? 5) + Math.floor(Math.random() * 21);
     const order: 'player_first' | 'enemy_first' = playerInit >= enemyInit ? 'player_first' : 'enemy_first';
 
-    set({ phase: 'resolve_queue', stagedPrimary: null, stagedBonus: null });
+    const monsterSpeed = state.monster?.speed ?? 0;
+    const monsterActsTwice = monsterSpeed >= playerSpeed * 3.0;
+    const playerActsTwice = playerSpeed >= monsterSpeed * 1.5;
+    let sequence: ('player' | 'monster')[] = order === 'player_first'
+      ? ['player', 'monster']
+      : ['monster', 'player'];
+    if (playerActsTwice) sequence = [...sequence, 'player'];
+    if (monsterActsTwice) sequence = [...sequence, 'monster'];
+
+    set({ phase: 'resolve_queue', stagedPrimary: null, stagedBonus: null, resolvedTurnSequence: sequence, monsterActsTwice });
     return order;
   },
 
@@ -484,8 +501,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     const effectiveEnemyDef = Math.max(0, monster.defense - derived.armorPierce);
     const defenseReduction = effectiveEnemyDef / (effectiveEnemyDef + 100);
 
-    // ── 5. Base damage from DerivedStats (soft-capped physicalAttack) ──
-    let rawDamage = Math.max(1, derived.physicalAttack * (1 - defenseReduction));
+    // ── 5. Base damage — LCK weapons use luckAttack, others use physicalAttack ──
+    const equippedWeaponCategory = useCharacterStore.getState().character?.equipment.weapon?.base?.category;
+    const baseAttackStat = equippedWeaponCategory === 'LCK'
+      ? (derived.luckAttack ?? 0)
+      : derived.physicalAttack;
+    let rawDamage = Math.max(1, baseAttackStat * (1 - defenseReduction));
 
     // ── 6. Situational bonuses ──
     const hpFraction = maxHP > 0 ? currentHP / maxHP : 1;
@@ -493,7 +514,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     rawDamage += derived.comboRamp * combatDynamic.comboCount; // AGI combo chain
     rawDamage += derived.moraleBonus * (combatDynamic.moraleRemainingTurns > 0 ? 1 : 0); // CHA morale
     // STR momentum from defending turns
-    rawDamage += derived.physicalAttack * 0.002 * combatDynamic.momentumStacks;
+    rawDamage += baseAttackStat * 0.002 * combatDynamic.momentumStacks;
 
     // ── 7. INT exploit weakness — multiplier per active debuff on monster ──
     const activeDebuffs = get().monsterEffects.length;
@@ -644,13 +665,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     get().addLogEntry(narration, 'player_action');
   },
 
-  playerFlee: (playerSpeed) => {
+  playerFlee: (playerSpeed, currentFloor) => {
     const { monster, playerFledAttempts } = get();
     if (!monster) return false;
 
-    // Calculate flee chance based on speed difference
-    const speedDiff = playerSpeed - monster.speed;
-    const baseChance = 50 + speedDiff * 2 - playerFledAttempts * 10;
+    const agiContribution = playerSpeed * CombatConfig.flee.agiBonus;
+    const floorPenalty = currentFloor * CombatConfig.flee.penaltyPerFloor;
+    const attemptPenalty = playerFledAttempts * 10;
+    const baseChance = CombatConfig.flee.baseChance + agiContribution - floorPenalty - attemptPenalty;
     const fleeChance = Math.max(10, Math.min(90, baseChance));
 
     const roll = Math.random() * 100;
@@ -1214,7 +1236,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     set((state) => ({
       turn: state.turn + 1,
       playerDefending: false,
-      // Decrease sneak penalty turns
+      stagedPrimary: null,
+      stagedBonus: null,
       sneakPenaltyTurns: Math.max(0, state.sneakPenaltyTurns - 1),
     }));
   },
@@ -1317,7 +1340,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     const bonusMaterial = rollBonusMaterialDrop(
       monster.base.minFloor,
       category,
-      0 // TODO: Add luck bonus from player stats
+      (useCharacterStore.getState().getEffectiveStats().LCK ?? 0) * LootConfig.luckBonusPerPoint
     );
     if (bonusMaterial) {
       materialDrops.push({ material: bonusMaterial, quantity: 1 });
