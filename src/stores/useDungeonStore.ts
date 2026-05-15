@@ -366,6 +366,11 @@ interface DungeonState {
   // Per-floor context
   setFloorFlag: (flag: keyof FloorContext) => void;
 
+  // Per-run event flags (multi-step events)
+  setRunFlag: (flag: string) => void;
+  hasRunFlag: (flag: string) => boolean;
+  getRunFlags: () => string[];
+
   // Reset for new game
   clearAllData: () => void;
   clearRamifications: () => void;
@@ -465,6 +470,26 @@ export const useDungeonStore = create<DungeonState>()(
             ? { ...state.floorContext, [flag]: true }
             : { ...FRESH_FLOOR_CONTEXT, [flag]: true },
         }));
+      },
+
+      setRunFlag: (flag) => {
+        const { currentRun } = get();
+        if (!currentRun) return;
+        if (currentRun.runFlags?.includes(flag)) return;
+        set((state) => ({
+          currentRun: state.currentRun
+            ? { ...state.currentRun, runFlags: [...(state.currentRun.runFlags ?? []), flag] }
+            : state.currentRun,
+        }));
+      },
+
+      hasRunFlag: (flag) => {
+        const { currentRun } = get();
+        return currentRun?.runFlags?.includes(flag) ?? false;
+      },
+
+      getRunFlags: () => {
+        return get().currentRun?.runFlags ?? [];
       },
 
       moveToNode: (nodeId) => {

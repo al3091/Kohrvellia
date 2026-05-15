@@ -15,12 +15,15 @@ export type EventOutcomeType =
   | 'buff'
   | 'debuff'
   | 'nothing'
-  | 'combat';
+  | 'combat'
+  | 'weapon_reward'  // Generates a weapon matched to outcome.stat
+  | 'set_flag';      // Sets a run-persistent flag for multi-step events
 
 export interface EventOutcome {
   type: EventOutcomeType;
   value?: number;
   stat?: StatName;
+  flag?: string;     // Used by 'set_flag' outcomes
   message: string;
 }
 
@@ -46,6 +49,7 @@ export interface DungeonEvent {
   minFloor: number;
   maxFloor: number;
   choices: EventChoice[];
+  requiresFlag?: string;  // Only appears if this run flag is active
 }
 
 // ===== DUNGEON EVENTS =====
@@ -391,6 +395,210 @@ export const DUNGEON_EVENTS: DungeonEvent[] = [
     ],
   },
 
+  // ===== MULTI-STAT WEAPON EVENTS (Buriedbornes-style) =====
+
+  {
+    id: 'gamblers_coin_found',
+    title: "The Gambler's Coin",
+    description: 'A coin glows faintly on the dungeon floor. One side is etched with a skull, the other with a crown. It pulses with chaotic energy.',
+    flavorText: '"Fortune favors the bold... or destroys them."',
+    minFloor: 1,
+    maxFloor: 30,
+    choices: [
+      {
+        id: 'pocket_coin',
+        label: 'Pocket the coin',
+        description: "Something about it calls to you. It's warm to the touch.",
+        outcomes: {
+          success: {
+            type: 'set_flag',
+            flag: 'gamblers_coin',
+            message: 'The coin burns in your pocket. You sense it watching. Perhaps its master will find you.',
+          },
+        },
+      },
+      {
+        id: 'leave_coin',
+        label: 'Leave it',
+        description: 'Bad luck comes in shiny packages.',
+        outcomes: {
+          success: {
+            type: 'stat_xp',
+            stat: 'WIS',
+            value: 10,
+            message: 'You resist the lure of unknown power. The dungeon respects the wise. (+10 WIS)',
+          },
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'gamblers_ghost_appears',
+    title: "The Gambler's Ghost",
+    description: "A translucent figure in tattered finery materializes before you. It stares at the coin in your pocket with hollow, hungry eyes.",
+    flavorText: '"Ah... you found my coin. Then let us play one final game."',
+    minFloor: 1,
+    maxFloor: 35,
+    requiresFlag: 'gamblers_coin',
+    choices: [
+      {
+        id: 'gamble_weapon',
+        label: 'Accept the wager',
+        description: 'Bet the coin against whatever fortune the ghost offers.',
+        statCheck: { stat: 'LCK', dc: 45 },
+        outcomes: {
+          success: {
+            type: 'weapon_reward',
+            stat: 'LCK',
+            message: "The ghost grins wide. 'The coin chose well.' A weapon materializes from the chaos.",
+          },
+          failure: {
+            type: 'damage',
+            value: 25,
+            message: "The ghost cackles as the coin vanishes. 'The house always wins.' Cold energy tears through you. (-25 HP)",
+          },
+        },
+      },
+      {
+        id: 'return_coin',
+        label: 'Return the coin',
+        description: 'Give back what was never yours.',
+        outcomes: {
+          success: {
+            type: 'gold',
+            value: 60,
+            message: "The ghost nods with unexpected dignity. 'Rare. Very rare.' Coins spill from thin air. (+60 Gold)",
+          },
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'fallen_clerics_cache',
+    title: "Fallen Cleric's Cache",
+    description: 'The remains of a robed figure slump against the wall. A satchel rests beside them, holy symbols still faintly glowing.',
+    flavorText: '"May whatever remains of their faith be worth the taking."',
+    minFloor: 3,
+    maxFloor: 40,
+    choices: [
+      {
+        id: 'commune_spirit',
+        label: 'Commune with their spirit',
+        description: 'Offer a moment of reverence. See what wisdom — or weapons — remain.',
+        statCheck: { stat: 'WIS', dc: 40 },
+        outcomes: {
+          success: {
+            type: 'weapon_reward',
+            stat: 'WIS',
+            message: 'A faint warmth passes through your hands. The cleric\'s weapon answers your reverence.',
+          },
+          failure: {
+            type: 'debuff',
+            message: 'Their spirit recoils — you are found unworthy. A chill follows you for the next three rooms. (Cursed)',
+          },
+        },
+      },
+      {
+        id: 'loot_remains',
+        label: 'Take what you can',
+        description: "The dead have no more use for gold.",
+        outcomes: {
+          success: {
+            type: 'gold',
+            value: 40,
+            message: 'A few coins and components. Not what you hoped for, but something. (+40 Gold)',
+          },
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'sorcerers_laboratory',
+    title: "Sorcerer's Laboratory",
+    description: 'A collapsed study. Half-burned tomes, shattered glass vessels, and strange implements litter the floor. Something here still hums with arcane residue.',
+    flavorText: '"Knowledge abandoned is knowledge waiting to be stolen."',
+    minFloor: 5,
+    maxFloor: 45,
+    choices: [
+      {
+        id: 'study_implements',
+        label: 'Study the remaining implements',
+        description: 'Identify the safest-looking arcane tool and take it.',
+        statCheck: { stat: 'INT', dc: 45 },
+        outcomes: {
+          success: {
+            type: 'weapon_reward',
+            stat: 'INT',
+            message: 'The implement hums with recognition. Your mind opens to its resonance.',
+          },
+          failure: {
+            type: 'damage',
+            value: 20,
+            message: "The implement misfires spectacularly. Arcane feedback chars your hands. (-20 HP)",
+          },
+        },
+      },
+      {
+        id: 'take_books',
+        label: 'Grab the least-burned tome',
+        description: "Knowledge has weight. Maybe this one's useful.",
+        outcomes: {
+          success: {
+            type: 'stat_xp',
+            stat: 'INT',
+            value: 20,
+            message: 'The tome contains fragmented spellwork. You absorb what you can before it crumbles. (+20 INT)',
+          },
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'devils_deal',
+    title: "The Devil's Deal",
+    description: "A well-dressed figure with too-perfect teeth sits on a throne of stacked coins, smiling like they've been waiting for you specifically.",
+    flavorText: '"Everything has a price. The real question is whether YOU know yours."',
+    minFloor: 3,
+    maxFloor: 35,
+    choices: [
+      {
+        id: 'negotiate',
+        label: 'Negotiate terms',
+        description: "Match their silver tongue. Get more than they intend to give.",
+        statCheck: { stat: 'CHA', dc: 40 },
+        outcomes: {
+          success: {
+            type: 'weapon_reward',
+            stat: 'CHA',
+            message: 'You out-charmed a devil. Their grudging respect manifests as a weapon from their collection.',
+          },
+          failure: {
+            type: 'gold',
+            value: -50,
+            message: 'They out-talked you and took their cut. The smile never wavered. (-50 Gold)',
+          },
+        },
+      },
+      {
+        id: 'ignore_devil',
+        label: 'Walk past without making eye contact',
+        description: "You know better than to deal with this.",
+        outcomes: {
+          success: {
+            type: 'stat_xp',
+            stat: 'WIS',
+            value: 15,
+            message: 'Their laughter echoes behind you. You keep walking. (+15 WIS)',
+          },
+        },
+      },
+    ],
+  },
+
   // ===== DEEPER FLOORS (10+) =====
   {
     id: 'soul_well',
@@ -596,16 +804,26 @@ export const TRAP_TYPES: Record<TrapType, TrapData> = {
 // ===== UTILITY FUNCTIONS =====
 
 /**
- * Get random event for a floor
+ * Get random event for a floor, respecting multi-step run flags.
+ * Flag-required events (requiresFlag) take priority when their flag is active.
  */
-export function getRandomEventForFloor(floorNumber: number): DungeonEvent {
-  const available = DUNGEON_EVENTS.filter(
+export function getRandomEventForFloor(floorNumber: number, activeFlags: string[] = []): DungeonEvent {
+  const inRange = DUNGEON_EVENTS.filter(
     (e) => e.minFloor <= floorNumber && e.maxFloor >= floorNumber
   );
-  if (available.length === 0) {
-    return DUNGEON_EVENTS[0]; // Fallback to first event
+  if (inRange.length === 0) return DUNGEON_EVENTS[0];
+
+  // Priority: flag-gated follow-up events (e.g. Gambler's Ghost) when flag is active
+  const flagGated = inRange.filter(
+    (e) => e.requiresFlag && activeFlags.includes(e.requiresFlag)
+  );
+  if (flagGated.length > 0) {
+    return flagGated[Math.floor(Math.random() * flagGated.length)];
   }
-  return available[Math.floor(Math.random() * available.length)];
+
+  // Normal pool: events with no flag requirement
+  const normal = inRange.filter((e) => !e.requiresFlag);
+  return normal[Math.floor(Math.random() * normal.length)] ?? inRange[0];
 }
 
 /**

@@ -32,6 +32,9 @@ import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { ALL_ACHIEVEMENTS } from '../../src/data/achievements';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
+import type { Weapon } from '../../src/types/Weapon';
+import { generateLeveledWeaponDrop } from '../../src/data/weapons';
+import { registerWeapon } from '../../src/data/weaponRegistry';
 
 // Node descriptions
 const NODE_DESCRIPTIONS: Record<NodeType, string> = {
@@ -63,7 +66,7 @@ export default function RoomScreen() {
   const router = useRouter();
   const haptics = useHaptics();
   const { playSFX } = useSoundStore();
-  const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery } = useDungeonStore();
+  const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery, setRunFlag, getRunFlags } = useDungeonStore();
   const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, removeFromInventory, addToInventory, modifyDeityFavor, addStatusEffect, modifySatiation } = useCharacterStore();
   const { prepareEncounter } = useCombatStore();
   const { equipmentStock, purchaseEquipment, getEquipmentPrice, shouldRefreshStock, refreshStock } = useShopStore();
@@ -78,6 +81,7 @@ export default function RoomScreen() {
   const [trapResult, setTrapResult] = useState<{ detected: boolean; evaded?: boolean; message: string } | null>(null);
   const [eventCompleted, setEventCompleted] = useState(false);
   const [trapCompleted, setTrapCompleted] = useState(false);
+  const [pendingWeaponReward, setPendingWeaponReward] = useState<Weapon | null>(null);
 
   // Treasure loot state
   const [treasureLoot, setTreasureLoot] = useState<{
@@ -94,16 +98,15 @@ export default function RoomScreen() {
   // Shop node state
   const [shopDone, setShopDone] = useState(false);
 
-  // Generate event data once per node visit (also for mystery nodes that reveal to event)
+  // Generate event data once per node visit, passing active run flags for multi-step events
   const currentEvent = useMemo<DungeonEvent | null>(() => {
     if (!map) return null;
-    // Regular event node
+    const activeFlags = getRunFlags();
     if (node?.type === 'event') {
-      return getRandomEventForFloor(map.floorNumber);
+      return getRandomEventForFloor(map.floorNumber, activeFlags);
     }
-    // Mystery node that revealed to event
     if (node?.type === 'mystery' && mysteryRevealed && mysteryRevealedType === 'event') {
-      return getRandomEventForFloor(map.floorNumber);
+      return getRandomEventForFloor(map.floorNumber, activeFlags);
     }
     return null;
   }, [map?.floorNumber, node?.id, mysteryRevealed, mysteryRevealedType]);
@@ -622,6 +625,16 @@ export default function RoomScreen() {
           return;
         }
         break;
+      case 'set_flag':
+        if (outcome.flag) setRunFlag(outcome.flag);
+        break;
+      case 'weapon_reward':
+        if (outcome.stat && map && character) {
+          const weapon = generateLeveledWeaponDrop(map.floorNumber, character.level, [outcome.stat as import('../../src/types/Weapon').WeaponCategory]);
+          registerWeapon(weapon);
+          setPendingWeaponReward(weapon);
+        }
+        break;
     }
 
     // Ancient Altar deity favor adjustments
@@ -1082,6 +1095,47 @@ export default function RoomScreen() {
             ]}>
               {eventResult}
             </Text>
+
+            {pendingWeaponReward && (
+              <View style={styles.weaponRewardContainer}>
+                <Text style={styles.weaponRewardTitle}>
+                  {pendingWeaponReward.base.range === 'ranged' ? '🏹' : '⚔️'} {pendingWeaponReward.displayName}
+                </Text>
+                <Text style={styles.weaponRewardStats}>
+                  {pendingWeaponReward.base.category} · DMG {pendingWeaponReward.finalDamage} · CRIT {pendingWeaponReward.finalCritChance}%
+                </Text>
+                <View style={styles.weaponRewardButtons}>
+                  <Pressable
+                    style={styles.weaponTakeButton}
+                    onPress={() => {
+                      const added = addToInventory({
+                        id: pendingWeaponReward.id,
+                        type: 'weapon',
+                        stackable: false,
+                        quantity: 1,
+                        name: pendingWeaponReward.displayName,
+                        icon: pendingWeaponReward.base.range === 'ranged' ? '🏹' : '⚔️',
+                        weaponData: pendingWeaponReward,
+                      });
+                      if (!added) {
+                        Alert.alert('Bag Full', 'Drop an item to claim this weapon.');
+                      } else {
+                        haptics.success();
+                        setPendingWeaponReward(null);
+                      }
+                    }}
+                  >
+                    <Text style={styles.weaponTakeButtonText}>Take It</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.weaponLeaveButton}
+                    onPress={() => { setPendingWeaponReward(null); haptics.light(); }}
+                  >
+                    <Text style={styles.weaponLeaveButtonText}>Leave It</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -1933,6 +1987,53 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     ...Typography.buttonSmall,
+    color: Colors.text.muted,
+  },
+  weaponRewardContainer: {
+    marginTop: Spacing.lg,
+    padding: Padding.md,
+    backgroundColor: Colors.background.primary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.resource.gold,
+    borderRadius: BorderRadius.sm,
+  },
+  weaponRewardTitle: {
+    ...Typography.body,
+    color: Colors.resource.gold,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  weaponRewardStats: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    marginBottom: Spacing.md,
+  },
+  weaponRewardButtons: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  weaponTakeButton: {
+    flex: 1,
+    backgroundColor: Colors.ui.success,
+    borderRadius: BorderRadius.sm,
+    padding: Padding.sm,
+    alignItems: 'center',
+  },
+  weaponTakeButtonText: {
+    ...Typography.button,
+    color: Colors.text.inverse,
+  },
+  weaponLeaveButton: {
+    flex: 1,
+    backgroundColor: Colors.background.tertiary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.primary,
+    borderRadius: BorderRadius.sm,
+    padding: Padding.sm,
+    alignItems: 'center',
+  },
+  weaponLeaveButtonText: {
+    ...Typography.button,
     color: Colors.text.muted,
   },
 });

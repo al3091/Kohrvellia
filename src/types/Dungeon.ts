@@ -169,6 +169,9 @@ export interface DungeonRun {
   totalRamifications: number;
   totalBlessingsReceived: number;
 
+  // Per-run event flags (multi-step events, Buriedbornes-style encounters)
+  runFlags: string[];
+
   // Timestamps
   startedAt: number;
   lastActivityAt: number;
@@ -377,6 +380,7 @@ export function createDungeonRun(): DungeonRun {
     totalEventsCompleted: 0,
     totalRamifications: 0,
     totalBlessingsReceived: 0,
+    runFlags: [],
     startedAt: Date.now(),
     lastActivityAt: Date.now(),
   };
