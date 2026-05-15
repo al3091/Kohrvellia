@@ -1095,11 +1095,14 @@ export default function CombatScreen() {
       }
     }
 
-    // Permanently defeat milestone boss (meta-progression — survives character deletion)
+    // Record milestone boss defeat:
+    // - Run-scoped: clears each new character (boss fights reset per run)
+    // - Account-scoped: kept for dialogue flavor ("another comes to test what defeated me")
     if (monster?.isBoss && currentRun?.currentFloor) {
       const milestoneBoss = getMilestoneBoss(currentRun.currentFloor);
       if (milestoneBoss) {
-        useGameStore.getState().defeatBoss(milestoneBoss.id);
+        useDungeonStore.getState().recordBossCleared(milestoneBoss.id);
+        useGameStore.getState().defeatBoss(milestoneBoss.id); // lore/dialogue tracking only
       }
     }
 

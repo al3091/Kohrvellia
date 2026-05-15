@@ -89,9 +89,9 @@ export default function FloorScreen() {
     endRun,
     lastRamifications,
     clearRamifications,
+    isMilestoneChestClaimedThisRun,
+    claimMilestoneChestThisRun,
   } = useDungeonStore();
-
-  const { milestoneChestsOpened, claimMilestoneChest } = useGameStore();
 
   const { relationship, getPatronDeity } = useDeityStore();
   const activeChallenge = relationship?.currentChallenge ?? null;
@@ -157,7 +157,7 @@ export default function FloorScreen() {
     if (!bossCompleted || !map || !character) return;
     const floor = map.floorNumber;
     if (floor % 5 !== 0) return;
-    if (milestoneChestsOpened.includes(floor)) return;
+    if (isMilestoneChestClaimedThisRun(floor)) return;
 
     // Build top-3 stat list sorted by current points investment
     const statNames: StatName[] = ['STR', 'PER', 'END', 'CHA', 'INT', 'AGI', 'WIS', 'LCK'];
@@ -187,7 +187,7 @@ export default function FloorScreen() {
       Alert.alert('Bag Full', 'Drop an item first to claim this reward.');
       return;
     }
-    claimMilestoneChest(map!.floorNumber);
+    claimMilestoneChestThisRun(map!.floorNumber);
     setShowMilestoneChest(false);
     haptics.success();
   };
@@ -380,12 +380,6 @@ export default function FloorScreen() {
     if (currentNode.type === 'boss' && isMilestoneFloor(map.floorNumber)) {
       const gameState = useGameStore.getState();
       const milestoneBoss = getMilestoneBoss(map.floorNumber);
-
-      // Boss was already killed by a previous character — show lore tablet instead
-      if (milestoneBoss && gameState.isBossDefeated(milestoneBoss.id)) {
-        router.push('/dungeon/boss-cleared');
-        return;
-      }
 
       // Build PlayerSnapshot for the conversation system
       const soul = useSoulStore.getState();
@@ -847,7 +841,7 @@ export default function FloorScreen() {
             <Pressable
               style={styles.milestoneSkipButton}
               onPress={() => {
-                claimMilestoneChest(map!.floorNumber);
+                claimMilestoneChestThisRun(map!.floorNumber);
                 setShowMilestoneChest(false);
               }}
             >

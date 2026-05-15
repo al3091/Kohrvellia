@@ -375,6 +375,12 @@ interface DungeonState {
   bossSnapshot: import('../types/PlayerSnapshot').PlayerSnapshot | null;
   setBossSnapshot: (snapshot: import('../types/PlayerSnapshot').PlayerSnapshot | null) => void;
 
+  // Per-run milestone tracking
+  recordBossCleared: (bossId: string) => void;
+  isBossClearedThisRun: (bossId: string) => boolean;
+  claimMilestoneChestThisRun: (floor: number) => void;
+  isMilestoneChestClaimedThisRun: (floor: number) => boolean;
+
   // Reset for new game
   clearAllData: () => void;
   clearRamifications: () => void;
@@ -499,6 +505,40 @@ export const useDungeonStore = create<DungeonState>()(
 
       setBossSnapshot: (snapshot) => {
         set({ bossSnapshot: snapshot });
+      },
+
+      recordBossCleared: (bossId) => {
+        set((state) => {
+          if (!state.currentRun) return state;
+          if (state.currentRun.clearedBossIds?.includes(bossId)) return state;
+          return {
+            currentRun: {
+              ...state.currentRun,
+              clearedBossIds: [...(state.currentRun.clearedBossIds ?? []), bossId],
+            },
+          };
+        });
+      },
+
+      isBossClearedThisRun: (bossId) => {
+        return get().currentRun?.clearedBossIds?.includes(bossId) ?? false;
+      },
+
+      claimMilestoneChestThisRun: (floor) => {
+        set((state) => {
+          if (!state.currentRun) return state;
+          if (state.currentRun.milestoneChestsOpenedThisRun?.includes(floor)) return state;
+          return {
+            currentRun: {
+              ...state.currentRun,
+              milestoneChestsOpenedThisRun: [...(state.currentRun.milestoneChestsOpenedThisRun ?? []), floor],
+            },
+          };
+        });
+      },
+
+      isMilestoneChestClaimedThisRun: (floor) => {
+        return get().currentRun?.milestoneChestsOpenedThisRun?.includes(floor) ?? false;
       },
 
       moveToNode: (nodeId) => {

@@ -172,6 +172,10 @@ export interface DungeonRun {
   // Per-run event flags (multi-step events, Buriedbornes-style encounters)
   runFlags: string[];
 
+  // Per-run milestone tracking (resets on new character — gear rewards per run)
+  clearedBossIds: string[];           // Bosses defeated this run (for dialogue flavor)
+  milestoneChestsOpenedThisRun: number[]; // Floor milestones whose chests were claimed
+
   // Timestamps
   startedAt: number;
   lastActivityAt: number;
@@ -381,6 +385,8 @@ export function createDungeonRun(): DungeonRun {
     totalRamifications: 0,
     totalBlessingsReceived: 0,
     runFlags: [],
+    clearedBossIds: [],
+    milestoneChestsOpenedThisRun: [],
     startedAt: Date.now(),
     lastActivityAt: Date.now(),
   };
