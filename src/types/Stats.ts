@@ -313,7 +313,8 @@ export function calculateDerivedStats(
   armorMagicDef: number = 0,
   blessingMultiplier: number = 1.0,
   weaponMaxOutputCap: number = Infinity,
-  weaponLuck: number = 0
+  weaponLuck: number = 0,
+  weaponCritChance: number = 0
 ): DerivedStats {
   // Effective stats include current-level points + permanent carry from all previous levels
   const effSTR = calculateEffectiveStat(level, stats.STR.points, carryStats.STR ?? 0);
@@ -336,11 +337,11 @@ export function calculateDerivedStats(
   // C2: Weapon quality caps total physical attack — crude weapons cannot scale with high stats
   const basePhysicalAttack = Math.min(effSTR * 0.008 + weaponDamage, weaponMaxOutputCap);
   const baseMagicAttack = effINT * 0.008 + effWIS * 0.002 + weaponMagic;
-  const baseLuckAttack = effLCK * 0.008 + weaponLuck;
+  const baseLuckAttack = effLCK * 0.012 + weaponLuck;
   const basePhysicalDefense = effEND * 0.006 + armorDefense;
   const baseMagicDefense = effWIS * 0.008 + armorMagicDef + arcaneArmor;
   const baseSpeed = effAGI * 0.010 + effPER * 0.002;
-  const baseCritChance = 5 + effLCK * 0.0004 + effPER * 0.0002;
+  const baseCritChance = 5 + effLCK * 0.0004 + effPER * 0.0002 + weaponCritChance;
   const baseDodgeChance = effAGI * 0.0006 + effPER * 0.0002;
 
   // ── Accuracy & crit quality ──

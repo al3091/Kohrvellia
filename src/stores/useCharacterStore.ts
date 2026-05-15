@@ -175,13 +175,20 @@ function computeMaxResources(
   deityFavor: number
 ): { maxHP: number; maxSP: number } {
   const blessingMult = getBlessingMultiplier(deityFavor ?? 50);
-  const weaponDamage = equipment.weapon?.finalDamage ?? 0;
+  const weaponCategory = equipment.weapon?.base?.category;
+  const isLuckWeapon = weaponCategory === 'LCK';
+  const isMagicWeapon = equipment.weapon?.base?.damageTypes?.includes('magic') && !isLuckWeapon;
+  const rawDamage = equipment.weapon?.finalDamage ?? 0;
+  const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
+  const weaponMagic = isMagicWeapon ? rawDamage : 0;
+  const weaponLuck = isLuckWeapon ? rawDamage : 0;
+  const weaponCritChance = equipment.weapon?.finalCritChance ?? 0;
   const armorDefense = calculateTotalDefense(equipment);
   const armorMagicDef = calculateTotalMagicDefense(equipment);
   const weaponOutputCap = resolveWeaponOutputCap(equipment.weapon);
   const carryStats = computeCarryStats(levelHistory);
   const derived = calculateDerivedStats(
-    level, stats, carryStats, weaponDamage, 0, armorDefense, armorMagicDef, blessingMult, weaponOutputCap
+    level, stats, carryStats, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance
   );
   return { maxHP: derived.maxHP, maxSP: derived.maxSP };
 }
@@ -1166,6 +1173,7 @@ export const useCharacterStore = create<CharacterState>()(
         const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
         const weaponMagic = isMagicWeapon ? rawDamage : 0;
         const weaponLuck = isLuckWeapon ? rawDamage : 0;
+        const weaponCritChance = equippedWeapon?.finalCritChance ?? 0;
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
@@ -1180,7 +1188,8 @@ export const useCharacterStore = create<CharacterState>()(
           armorMagicDef,
           1.0,
           weaponOutputCap,
-          weaponLuck
+          weaponLuck,
+          weaponCritChance
         );
       },
 
@@ -1209,6 +1218,7 @@ export const useCharacterStore = create<CharacterState>()(
         const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
         const weaponMagic = isMagicWeapon ? rawDamage : 0;
         const weaponLuck = isLuckWeapon ? rawDamage : 0;
+        const weaponCritChance = equippedWeapon?.finalCritChance ?? 0;
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
@@ -1223,7 +1233,8 @@ export const useCharacterStore = create<CharacterState>()(
           armorMagicDef,
           blessingMult,
           weaponOutputCap,
-          weaponLuck
+          weaponLuck,
+          weaponCritChance
         );
 
         // Apply Paragon title buffs if character has reached Level 10 Denatus
