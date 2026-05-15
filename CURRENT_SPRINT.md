@@ -1,7 +1,7 @@
 # KOHRVELLIA — Current Sprint
 
-> Last updated: 2026-05-06
-> Status: Phase 2 — Extended Content / Job System + Denatus Integration
+> Last updated: 2026-05-14
+> Status: Phase 2.1/2.2 — Job System shipped; Market Events shipped; Guildhall expansion complete
 
 ---
 
@@ -13,10 +13,10 @@ Complete the Job System end-to-end flow (Level 2 → job selection → job benef
 
 ## Active Tasks
 
-- [ ] **Job System: Wire Level 2 → job-select flow** (persona: Sylas + Thane)
-  - Confirm that reaching Level 2 after achievement triggers navigation to `/dungeon/job-select`
-  - Validate that selected job persists via `useJobStore` and starter skill is granted
-  - Ensure job passive bonuses (if any) feed into `getDerivedStats()` calculations
+- [x] **Job System: Wire Level 2 → job-select flow** (persona: Sylas + Thane)
+  - `job-select.tsx` exists, uses `useJobStore.selectJob()`, `BackHandler` prevents premature exit
+  - Selected job persists via `useJobStore` and starter skill is granted via `learnSkill()`
+  - Screen routes correctly from level-up flow
 
 - [ ] **Job System: Job benefits in combat** (persona: Thane)
   - Verify starter skill appears in combat skill menu
@@ -47,9 +47,10 @@ Complete the Job System end-to-end flow (Level 2 → job selection → job benef
 
 ## Blocked / Needs Decision
 
-- **Issue:** `.ts.tmp` files in `/src/data/pantheons/` (inca, maya, persian, polynesian, shinto, vodou, yoruba) — 7 pantheons are half-built and unreachable.
-  - Decision needed from: **Valdris** — Do we complete these 7 pantheons to hit 200+ deities, or delete them and focus on Phase 2 systems?
-  - Options: (A) Complete them now — content win, meaningful deity variety. (B) Delete them — reduce dead weight. (C) Leave them but hide them from the index until complete.
+- **Issue:** `.ts.tmp` files in `/src/data/pantheons/` — RESOLVED. Files deleted 2026-05-14. Pantheons (inca, maya, persian, polynesian, shinto, vodou, yoruba) are queued for Phase 3 content expansion.
+
+- **Issue:** `useMarketStore.onFloorDescend(playerLevel)` is never called anywhere in the dungeon flow. Market events will never spawn, tick, or expire. The entire Market Events system is wired internally but has no external trigger.
+  - Decision needed from: **Sylas** — Hook this call into `useDungeonStore.enterFloor()` or the `descend` action to activate the living economy. See BUG-015.
 
 - **Issue:** Weapon Triangle damage type modifiers (Slash/Pierce/Blunt vs Flesh/Leather/Bone/Armor) are documented in `DESIGN_COMBAT.md` but not implemented in `useCombatStore.playerAttack()`.
   - Decision needed from: **Thane** — Is this a Phase 2 or Phase 3 feature? Implementing it changes existing combat balance.
@@ -66,7 +67,13 @@ Complete the Job System end-to-end flow (Level 2 → job selection → job benef
 - [x] Job definitions (`src/data/jobs/jobDefinitions.ts`) — base jobs defined with stat requirements
 - [x] Soul store (`useSoulStore`) — initialized, behavement vector structure in place
 - [x] Denatus screen (`app/dungeon/denatus.tsx`) — screen exists, reads from soul store
-- [x] Job select screen (`app/dungeon/job-select.tsx`) — screen exists
+- [x] Job select screen (`app/dungeon/job-select.tsx`) — complete with BackHandler, top-stat filter, confirmation flow
+- [x] Market Events system (`useMarketStore`) — 35 narrative events, weighted random selection, ephemeral/brief/seasonal/extended durations, supply pressure tracking per material category
+- [x] Market Events data (`src/data/marketEvents.ts`) — 35 templates with icons, flavor, category effects, minLevel gating
+- [x] Guildhall Market Board UI — live event display, supply pressure warnings, price indicators (▲/▼)
+- [x] Guildhall Material Registry — sell-one/sell-all with dynamic pricing via `getMultiplier()`, market-adjusted price display
+- [x] `clearAllStores()` expanded — now resets `useJobStore`, `useSoulStore`, and `useDeityStore` on new game (fixes BUG-002, BUG-006, BUG-014)
+- [x] Removed 7 dead `.ts.tmp` pantheon files from `src/data/pantheons/` (BUG-007)
 
 ---
 

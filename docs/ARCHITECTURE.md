@@ -59,6 +59,9 @@ useJobStore ──────────────────────�
 useInventoryStore ─────────────────────────────── stash management
     └── depends on: (none — consumed by others)
 
+useMarketStore ─────────────────────────────────── living economy (market events + supply pressure)
+    └── depends on: (none — consumed by others)
+
 useShopStore ──────────────────────────────────── shop state
     └── depends on: (none — consumed by others)
 
@@ -92,7 +95,7 @@ Which stores each screen reads from. Screens only listed once; child routes shar
 | `app/town/familia/index.tsx` | useCharacterStore, useDeityStore | Deity greeting + favor |
 | `app/town/familia/blessing-rite.tsx` | useCharacterStore, useDeityStore | Excelia commitment ceremony |
 | `app/town/character/index.tsx` | useCharacterStore, useDeityStore, useJobStore | Character sheet |
-| `app/town/guildhall/index.tsx` | useCharacterStore, useAchievementStore | Guild board |
+| `app/town/guildhall/index.tsx` | useCharacterStore, useAchievementStore, useMarketStore | Guild board + market |
 | `app/town/inventory/index.tsx` | useCharacterStore | Full inventory management |
 | `app/town/blacksmith/*` | useCharacterStore, useBlacksmithStore | Crafting screens |
 | `app/town/shops/*` | useCharacterStore, useShopStore | Shop screens |
@@ -219,7 +222,29 @@ Level-up ceremony (dungeon/level-up.tsx):
     → If Level 10: navigate to /dungeon/denatus (Paragon)
 ```
 
-### 4. Death and New Game Path
+### 4. Market Events Path
+
+```
+Player descends to a new floor (useDungeonStore.descendFloor):
+    → useMarketStore.onFloorDescent() called
+    → Tick existing events (decrement ticksRemaining)
+        → Ephemeral events: 20-35% random expiration chance per descent
+        → brief/seasonal/extended: expire when ticksRemaining reaches 0
+    → 30% chance to spawn a new event if < 2 active events
+        → Weighted random selection from MARKET_EVENT_TEMPLATES + NULL_EVENT_WEIGHT
+        → Event assigned duration by type: ephemeral (-1), brief (8-12), seasonal (15-25), extended (30-50)
+    → Active events visible in guildhall/inventory sell screens (price multipliers applied)
+
+Player sells material (town/inventory sell screen):
+    → useMarketStore.recordSale(materialId, category, quantity)
+    → supplyPressure[category] += quantity
+    → Effective sell price = basePrice × eventMultiplier × supplyMultiplier
+        supplyMultiplier = max(0.4, 1 - supplyPressure[category] × 0.02)
+
+Event visibility: event titles and flavor shown; countdown NOT shown (hidden by design).
+```
+
+### 5. Death and New Game Path
 
 ```
 Player HP reaches 0 in combat:
@@ -262,6 +287,7 @@ New game from title screen:
 | useJobStore | `kohrvellia-job` | Selected job ID |
 | useShopStore | `kohrvellia-shop` | Shop reputation, stock |
 | useBlacksmithStore | `kohrvellia-blacksmith` | Crafting state |
+| useMarketStore | `kohrvellia-market` | Active market events, supply pressure per category |
 | useInventoryStore | *(check store definition)* | Stash management |
 
 ### What Is Ephemeral (NOT Persisted, Lost on App Close)
