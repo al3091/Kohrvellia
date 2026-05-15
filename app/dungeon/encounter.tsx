@@ -30,7 +30,7 @@ export default function EncounterScreen() {
 
   const { monster, startCombatWithMonster, setSneakPenalty } = useCombatStore();
   const { character, initializePendingExcelia } = useCharacterStore();
-  const { currentRun } = useDungeonStore();
+  const { currentRun, getCurrentNode, markNodeAvoided } = useDungeonStore();
   const monsterKnowledge = useGameStore(s => monster ? s.monsterKnowledge[monster.base.id] : undefined);
 
   const [phase, setPhase] = useState<EncounterPhase>('preview');
@@ -100,6 +100,8 @@ export default function EncounterScreen() {
       // Successfully escaped
       haptics.success();
       playSFX('victory');
+      const sneakNode = getCurrentNode();
+      if (sneakNode) markNodeAvoided(sneakNode.id);
       router.back();
     } else {
       // Failed - start combat with penalty

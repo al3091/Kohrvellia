@@ -340,6 +340,7 @@ interface DungeonState {
 
   // Actions - Node state
   completeNode: (nodeId: string) => void;
+  markNodeAvoided: (nodeId: string) => void;
   revealAdjacentNodes: (nodeId: string) => void;
 
   // Actions - Node interactions
@@ -616,6 +617,21 @@ export const useDungeonStore = create<DungeonState>()(
       },
 
       // Node state
+      markNodeAvoided: (nodeId) => {
+        set((state) => {
+          if (!state.currentRun?.currentMap) return state;
+          const updatedNodes = state.currentRun.currentMap.nodes.map(node =>
+            node.id === nodeId ? { ...node, isAvoided: true } : node
+          );
+          return {
+            currentRun: {
+              ...state.currentRun,
+              currentMap: { ...state.currentRun.currentMap, nodes: updatedNodes },
+            },
+          };
+        });
+      },
+
       completeNode: (nodeId) => {
         set((state) => {
           if (!state.currentRun || !state.currentRun.currentMap) return state;

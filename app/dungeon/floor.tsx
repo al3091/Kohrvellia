@@ -522,7 +522,7 @@ export default function FloorScreen() {
                   const isCurrent = node.isCurrent;
                   const isOption = isPathOption(node.id);
                   const isPreview = previewNodeId === node.id;
-                  const nodeColor = NODE_COLORS[node.type];
+                  const nodeColor = node.isAvoided ? Colors.text.muted : NODE_COLORS[node.type];
                   const revealState = getNodeRevealState(node, currentNode);
 
                   if (revealState === 'shrouded') return null;
@@ -562,7 +562,9 @@ export default function FloorScreen() {
                           ]}
                         >
                           {revealState === 'revealed' ? (
-                            <Text style={styles.nodeIcon}>{getNodeIcon(node.type)}</Text>
+                            <Text style={styles.nodeIcon}>
+                              {node.isAvoided ? '⚠️' : getNodeIcon(node.type)}
+                            </Text>
                           ) : (
                             <Text style={styles.nodeIconHidden}>?</Text>
                           )}
@@ -702,6 +704,11 @@ export default function FloorScreen() {
               </Text>
               {tooltipNode.isCompleted && (
                 <Text style={styles.tooltipStatus}>Cleared</Text>
+              )}
+              {tooltipNode.isAvoided && !tooltipNode.isCompleted && (
+                <Text style={[styles.tooltipStatus, { color: Colors.text.muted }]}>
+                  Fled — Monster still lurks
+                </Text>
               )}
               {isPathOption(tooltipNode.id) && !tooltipNode.isCurrent && (
                 <Pressable

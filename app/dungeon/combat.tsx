@@ -131,7 +131,7 @@ export default function CombatScreen() {
 
   const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, updateRunStats, equipWeapon, removeFromInventory, addToInventory, getDerivedStats: _getDerivedStats, getDerivedStatsWithBlessings, updatePendingExceliaStats, discardExcelia, killCharacter, isBagFull } = useCharacterStore();
   const getDerivedStats = getDerivedStatsWithBlessings;
-  const { completeNode, getCurrentNode, endRun, currentRun } = useDungeonStore();
+  const { completeNode, getCurrentNode, endRun, currentRun, markNodeAvoided } = useDungeonStore();
   const { incrementProgress, updateProgress } = useAchievementStore();
 
   // Check if player died
@@ -338,6 +338,8 @@ export default function CombatScreen() {
       addPendingExcelia('AGI', 2);
       useSoulStore.getState().incrementBehavement('evade_flees_10');
       useSoulStore.getState().incrementBehavement('evade_flees_50');
+      const fleeNode = getCurrentNode();
+      if (fleeNode) markNodeAvoided(fleeNode.id);
       setTimeout(() => router.back(), 1000);
     }
     // If flee fails, handleLockIn sees phase is still 'resolve_queue' and proceeds to enemy turn
@@ -394,6 +396,8 @@ export default function CombatScreen() {
     if (result.success) {
       useSoulStore.getState().incrementBehavement('caution_consumable_use');
       if (result.effect?.type === 'flee') {
+        const fleeNode = getCurrentNode();
+        if (fleeNode) markNodeAvoided(fleeNode.id);
         setTimeout(() => router.back(), 1000);
       }
     }

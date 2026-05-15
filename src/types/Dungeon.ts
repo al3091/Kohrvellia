@@ -45,6 +45,7 @@ export interface MapNode {
   isRevealed: boolean;   // Can player see this node?
   isCompleted: boolean;  // Has player cleared this node?
   isCurrent: boolean;    // Is player here now?
+  isAvoided?: boolean;   // Player fled/sneaked past — traversable but no rewards
 
   // Type-specific data
   combatData?: {

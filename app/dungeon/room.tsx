@@ -131,7 +131,8 @@ export default function RoomScreen() {
     if (
       node &&
       (node.type === 'combat' || node.type === 'elite') &&
-      !node.isCompleted
+      !node.isCompleted &&
+      !node.isAvoided
     ) {
       haptics.warning();
       Alert.alert(
@@ -846,11 +847,22 @@ export default function RoomScreen() {
         />
 
         {/* Node-specific content with dramatic reveals */}
-        {node.type === 'combat' && (
+        {node.type === 'combat' && !node.isAvoided && (
           <DramaticReveal delay={800} duration={500}>
             <View style={styles.nodeContent}>
               <Text style={styles.warningText}>Enemies detected!</Text>
               <Text style={styles.hintText}>Prepare yourself for battle.</Text>
+            </View>
+          </DramaticReveal>
+        )}
+
+        {(node.type === 'combat' || node.type === 'elite') && node.isAvoided && (
+          <DramaticReveal delay={400} duration={500}>
+            <View style={styles.nodeContent}>
+              <Text style={styles.warningText}>You fled from this encounter.</Text>
+              <Text style={styles.hintText}>
+                The creature still lurks. Re-entering means immediate combat — no quarter given.
+              </Text>
             </View>
           </DramaticReveal>
         )}
