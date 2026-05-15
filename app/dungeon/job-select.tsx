@@ -12,6 +12,7 @@ import {
   ScrollView,
   Pressable,
   Animated,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -55,6 +56,7 @@ export default function JobSelectScreen() {
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const allowBack = React.useRef(false);
 
   const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -65,6 +67,14 @@ export default function JobSelectScreen() {
       duration: 700,
       useNativeDriver: true,
     }).start();
+  }, []);
+
+  // Block hardware back until router.back() fires — prevents BUG-006 and race condition
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      return !allowBack.current; // Block until navigation is explicitly initiated
+    });
+    return () => subscription.remove();
   }, []);
 
   const { topThree, availableJobs } = useMemo(() => {
@@ -93,7 +103,10 @@ export default function JobSelectScreen() {
     playSFX('achievement');
     setConfirmed(true);
     selectJob(selectedJobId);
-    setTimeout(() => router.back(), 1200);
+    setTimeout(() => {
+      allowBack.current = true;
+      router.back();
+    }, 1200);
   };
 
   if (!character) {

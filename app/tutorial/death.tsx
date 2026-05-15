@@ -14,6 +14,7 @@ import { Spacing, Padding } from '../../src/constants/Spacing';
 import { Button, CeremonialDivider } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
+import { clearAllStores } from '../../src/lib/clearAllStores';
 
 export default function TutorialLedgerScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function TutorialLedgerScreen() {
   const handleEnter = () => {
     haptics.heavy();
     completeTutorial();
+    clearAllStores();
     router.replace('/character-creation/name');
   };
 

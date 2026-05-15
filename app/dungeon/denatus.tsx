@@ -16,7 +16,7 @@ import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { CeremonialDivider } from '../../src/components/ui/CeremonialDivider';
-import type { GeneratedTitle } from '../../src/types/Behavement';
+import type { GeneratedTitle, BehaviorVector } from '../../src/types/Behavement';
 import type { StatName } from '../../src/types/Stats';
 
 type CeremonyPhase =
@@ -26,11 +26,38 @@ type CeremonyPhase =
   | 'adjective2'
   | 'noun'
   | 'buffs'
+  | 'vectors'
   | 'complete';
 
 const PHASE_ORDER: CeremonyPhase[] = [
-  'witness', 'score', 'adjective1', 'adjective2', 'noun', 'buffs', 'complete',
+  'witness', 'score', 'adjective1', 'adjective2', 'noun', 'buffs', 'vectors', 'complete',
 ];
+
+const VECTOR_LABELS: Record<string, string> = {
+  COMBAT_PHYSICAL: 'Physical',
+  COMBAT_MAGIC: 'Magic',
+  DEFENSE_TANK: 'Endurance',
+  DEFENSE_EVASION: 'Evasion',
+  RISK_TAKING: 'Recklessness',
+  CAUTION: 'Caution',
+  SOCIAL: 'Social',
+  EXPLORATION: 'Exploration',
+  RESOURCE: 'Resource',
+  GLORY: 'Glory',
+};
+
+const VECTOR_COLORS: Record<string, string> = {
+  COMBAT_PHYSICAL: '#C84832',
+  COMBAT_MAGIC: '#7B5BBF',
+  DEFENSE_TANK: '#487850',
+  DEFENSE_EVASION: '#4A9080',
+  RISK_TAKING: '#D4781E',
+  CAUTION: '#9A6030',
+  SOCIAL: '#C89030',
+  EXPLORATION: '#5B8DD9',
+  RESOURCE: '#C89030',
+  GLORY: '#C89030',
+};
 
 const CR_SCORE_LABELS: Record<string, string> = {
   novice: 'Novice',
@@ -71,6 +98,7 @@ export default function DenatusScreen() {
   const { character } = useCharacterStore();
   const [phase, setPhase] = useState<CeremonyPhase>('witness');
   const [title, setTitle] = useState<GeneratedTitle | null>(null);
+  const [vectorScores, setVectorScores] = useState<Partial<Record<BehaviorVector, number>>>({});
 
   // Animations
   const containerOpacity = useRef(new Animated.Value(0)).current;
@@ -82,7 +110,7 @@ export default function DenatusScreen() {
     // Fade in
     Animated.timing(containerOpacity, { toValue: 1, duration: 800, useNativeDriver: true }).start();
 
-    // Generate title once
+    // Generate title once and capture vector scores
     if (character && !isCeremonyCompleted()) {
       const topStats = getTopTwoStats(character);
       const generated = performDenatus(topStats);
@@ -90,6 +118,9 @@ export default function DenatusScreen() {
     } else if (character) {
       setTitle(useSoulStore.getState().getGeneratedTitle());
     }
+    // Capture vector scores AFTER performDenatus has updated state
+    const scores = useSoulStore.getState().denatus?.vectorScores ?? {};
+    setVectorScores(scores as Record<string, number>);
 
     useSoundStore.getState().crossfadeBGM('blessing_generic', 1000);
   }, []);
@@ -119,6 +150,12 @@ export default function DenatusScreen() {
 
   const handleFinish = () => {
     haptics.heavy();
+
+    // Persist the Paragon title onto the character — this is what makes it mechanically real
+    if (title) {
+      useCharacterStore.getState().setParagonTitle(title);
+    }
+
     useSoundStore.getState().crossfadeBGM('dungeon', 800);
     router.replace('/dungeon/floor');
   };
@@ -249,12 +286,45 @@ export default function DenatusScreen() {
           </View>
         )}
 
+        {/* PHASE: VECTORS — behavioral breakdown */}
+        {phase === 'vectors' && (
+          <View style={styles.centeredBody}>
+            <Text style={styles.phaseLabel}>YOUR SOUL VECTORS</Text>
+            <Text style={[styles.scoreDescription, { marginBottom: 8 }]}>
+              What the Tower recorded about you.
+            </Text>
+            <CeremonialDivider variant="thin" spacing="sm" />
+            <View style={{ width: '100%', gap: 8 }}>
+              {Object.entries(VECTOR_LABELS).map(([key, label]) => {
+                const score = vectorScores[key as BehaviorVector] ?? 0;
+                const maxScore = Math.max(...Object.values(vectorScores).filter((v): v is number => v !== undefined), 1);
+                const barWidth = Math.min(100, Math.round((score / maxScore) * 100));
+                const isDominant = score === maxScore && score > 0;
+                const color = VECTOR_COLORS[key] ?? Colors.text.muted;
+                return (
+                  <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ ...Typography.label, fontSize: 10, color: isDominant ? color : Colors.text.secondary, width: 90, textAlign: 'right' }}>
+                      {label.toUpperCase()}{isDominant ? ' ★' : ''}
+                    </Text>
+                    <View style={{ flex: 1, height: 6, backgroundColor: Colors.background.card ?? '#111', borderRadius: 3 }}>
+                      <View style={{ width: `${barWidth}%`, height: 6, backgroundColor: color, borderRadius: 3, opacity: isDominant ? 1 : 0.6 }} />
+                    </View>
+                    <Text style={{ ...Typography.label, fontSize: 10, color: Colors.text.muted, width: 30 }}>
+                      {Math.round(score)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Footer */}
         <View style={styles.footer}>
           {phase !== 'complete' ? (
             <Pressable style={styles.continueBtn} onPress={advance}>
               <Text style={styles.continueBtnText}>
-                {phase === 'buffs' ? 'See Your Title' : 'Continue'}
+                {phase === 'buffs' ? 'See Your Soul' : phase === 'vectors' ? 'Claim Your Title' : 'Continue'}
               </Text>
             </Pressable>
           ) : (

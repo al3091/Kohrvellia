@@ -8,6 +8,7 @@ import { getGradeFromPoints } from './Stats';
 import type { Equipment, Armor, Accessory } from './Armor';
 import type { AchievementProgress } from './Achievement';
 import type { Weapon } from './Weapon';
+import type { GeneratedTitle } from './Behavement';
 
 // Pending excelia from dungeon runs - NOT applied until Blessing Rite
 export interface PendingExcelia {
@@ -251,6 +252,9 @@ export interface Character {
     timePlayedSeconds: number;
   };
 
+  // Paragon title (set at Level 10 Denatus ceremony — persists on character)
+  paragonTitle?: GeneratedTitle | null;
+
   // Metadata
   createdAt: number; // Unix timestamp
   lastPlayedAt: number;
@@ -371,6 +375,7 @@ export function createNewCharacter(
     deityFavor: 50, // Start neutral
 
     pendingExcelia: null, // No pending growth at creation
+    paragonTitle: null,
 
     runStats: {
       floorsCleared: 0,

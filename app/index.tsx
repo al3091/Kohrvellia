@@ -5,8 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useGameStore } from '../src/stores/useGameStore';
 import { useCharacterStore } from '../src/stores/useCharacterStore';
 import { useDungeonStore } from '../src/stores/useDungeonStore';
-import { useAchievementStore } from '../src/stores/useAchievementStore';
-import { clearWeaponRegistry } from '../src/data/weaponRegistry';
+import { clearAllStores } from '../src/lib/clearAllStores';
 import { useSoundStore } from '../src/stores/useSoundStore';
 import { Colors } from '../src/constants/Colors';
 
@@ -26,7 +25,7 @@ export default function TitleScreen() {
   const epitaphOpacity = useRef(new Animated.Value(0)).current;
 
   const { hasCompletedTutorial, runHistory } = useGameStore();
-  const { character, deleteCharacter } = useCharacterStore();
+  const { character } = useCharacterStore();
   const { currentRun } = useDungeonStore();
 
   const hasExistingSave = !!character && !character.isDead;
@@ -82,12 +81,6 @@ export default function TitleScreen() {
     }, 800);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clearAllStores = () => {
-    deleteCharacter();
-    useDungeonStore.getState().clearAllData();
-    useAchievementStore.getState().resetAllProgress();
-    clearWeaponRegistry();
-  };
 
   const handleNewGame = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

@@ -31,6 +31,7 @@ import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { ALL_ACHIEVEMENTS } from '../../src/data/achievements';
 import { useShopStore } from '../../src/stores/useShopStore';
+import { useSoulStore } from '../../src/stores/useSoulStore';
 
 // Node descriptions
 const NODE_DESCRIPTIONS: Record<NodeType, string> = {
@@ -116,6 +117,15 @@ export default function RoomScreen() {
     }
     return null;
   }, [map?.floorNumber, node?.id, node?.treasureData]);
+
+  // Track shop visits on entry
+  React.useEffect(() => {
+    const nodeType = node?.type;
+    if (nodeType === 'shop') {
+      useSoulStore.getState().incrementBehavement('social_shop_visits');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.id, node?.type]);
 
   const handleBack = () => {
     if (
@@ -245,6 +255,7 @@ export default function RoomScreen() {
       message: lootMessage,
     });
     setTreasureOpened(true);
+    useSoulStore.getState().incrementBehavement('explore_treasure_rooms');
   };
 
   const handleTreasureContinue = () => {
@@ -287,6 +298,7 @@ export default function RoomScreen() {
     const hungerNote = hungerState === 'hungry' ? ' (hungry — reduced recovery)' : hungerState === 'starving' ? ' (starving — minimal recovery)' : '';
     setRestMessage(`You eat a ration and rest by the fire.${hungerNote}\n\n+${hpRestore} HP | +${spRestore} SP`);
     setRestChoice('done');
+    useSoulStore.getState().incrementBehavement('caution_rest_sites');
     useRestSite(node.id);
   };
 
@@ -305,6 +317,7 @@ export default function RoomScreen() {
 
     setRestMessage(`You rest without food. Your body aches with hunger.\n\n+${hpRestore} HP (no SP recovery)`);
     setRestChoice('done');
+    useSoulStore.getState().incrementBehavement('caution_rest_sites');
     useRestSite(node.id);
   };
 
@@ -541,6 +554,7 @@ export default function RoomScreen() {
       }
     }
 
+    useSoulStore.getState().incrementBehavement('social_shrine_visits');
     setShrineUsed(true);
   };
 
@@ -636,6 +650,7 @@ export default function RoomScreen() {
 
   const handleEventContinue = () => {
     if (!node) return;
+    useSoulStore.getState().incrementBehavement('social_event_rooms');
     completeNode(node.id);
     router.back();
   };
@@ -657,6 +672,8 @@ export default function RoomScreen() {
         addPendingExcelia(currentTrap.detectStat, 15);
       } else {
         haptics.warning();
+        useSoulStore.getState().incrementBehavement('risk_trap_triggers');
+        useDungeonStore.getState().setFloorFlag('triggeredTrap');
         // Failed detection - trap triggers, try to evade
         const evadePoints = character.stats[currentTrap.evadeStat].points;
         const evadeCheck = performStatCheck(evadePoints, currentTrap.evadeDC);
@@ -682,6 +699,8 @@ export default function RoomScreen() {
     } else {
       // Proceed without checking - trap definitely triggers
       haptics.error();
+      useSoulStore.getState().incrementBehavement('risk_trap_triggers');
+      useDungeonStore.getState().setFloorFlag('triggeredTrap');
       const evadePoints = character.stats[currentTrap.evadeStat].points;
       const evadeCheck = performStatCheck(evadePoints, currentTrap.evadeDC + 10);
 
@@ -754,7 +773,7 @@ export default function RoomScreen() {
     if (node?.type === 'shop' && shouldRefreshStock()) {
       refreshStock();
     }
-  }, [node?.id]);
+  }, [node?.id, node?.type]);
 
   const handleShopBuy = (index: number) => {
     const result = purchaseEquipment(index);

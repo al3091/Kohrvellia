@@ -356,6 +356,22 @@ export default function InventoryScreen() {
   const handleDiscardItem = () => {
     if (!selectedItem) return;
 
+    // Key items cannot be discarded
+    if (selectedItem.type === 'key') {
+      Alert.alert('Cannot Discard', 'Key items cannot be discarded.');
+      return;
+    }
+
+    // Materials should be sold at the Guild, not discarded
+    if (selectedItem.type === 'material') {
+      Alert.alert(
+        'Sell at the Guild',
+        'Dungeon materials are purchased by the Guild at regulated prices. Visit the Guild Hall to sell them.',
+        [{ text: 'Understood' }]
+      );
+      return;
+    }
+
     haptics.warning();
     Alert.alert(
       'Discard Item',

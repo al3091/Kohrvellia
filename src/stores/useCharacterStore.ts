@@ -14,7 +14,9 @@ import type {
   Skill,
   InventoryItem,
   PendingExcelia,
+  JobProgress,
 } from '../types/Character';
+import type { GeneratedTitle } from '../types/Behavement';
 import { BAG_CAPACITY } from '../types/Character';
 import type { AchievementProgress } from '../types/Achievement';
 import type { Stats, StatName } from '../types/Stats';
@@ -39,6 +41,7 @@ import { getBlessingMultiplier } from '../types/Deity';
 import { QUALITY_OUTPUT_CAP_MULTIPLIER } from '../types/Weapon';
 import type { QualityTier } from '../types/Weapon';
 import { useAchievementStore } from './useAchievementStore';
+import { useSoulStore } from './useSoulStore';
 
 /** Resolve weapon output cap — handles old saves that predate C2 (no maxOutputCap field) */
 function resolveWeaponOutputCap(weapon: Weapon | null | undefined): number {
@@ -144,6 +147,13 @@ interface CharacterState {
 
   // Actions - Primary stat
   setPrimaryStat: (stat: StatName) => void;
+
+  // Job system
+  applyJobStatBonus: (stat: StatName, value: number) => void;
+  setCurrentJob: (jobProgress: JobProgress) => void;
+
+  // Paragon title
+  setParagonTitle: (title: GeneratedTitle) => void;
 
   // Computed values
   getEffectiveStats: () => Record<StatName, number>;
@@ -401,6 +411,21 @@ export const useCharacterStore = create<CharacterState>()(
           }
         }
 
+        // Soul: track cumulative excelia committed per stat (proficiency milestones)
+        {
+          const soul = useSoulStore.getState();
+          for (const stat of Object.keys(pending.stats) as StatName[]) {
+            const amount = pending.stats[stat];
+            if (amount <= 0) continue;
+            if (stat === 'END') soul.incrementBehavement('tank_end_growth', amount);
+            else if (stat === 'AGI') soul.incrementBehavement('evade_agi_growth', amount);
+            else if (stat === 'WIS') soul.incrementBehavement('caution_wis_growth', amount);
+            else if (stat === 'CHA') soul.incrementBehavement('social_cha_growth', amount);
+            else if (stat === 'PER') soul.incrementBehavement('explore_per_growth', amount);
+            else if (stat === 'STR') soul.incrementBehavement('resource_str_growth', amount);
+          }
+        }
+
         // Apply the pre-computed state
         set((state) => {
           if (!state.character) return state;
@@ -595,7 +620,7 @@ export const useCharacterStore = create<CharacterState>()(
         });
       },
 
-      // Equipment - swapping equipment stores old item in inventory
+      // Equipment - swapping equipment stores old weapon in inventory if there's space
       equipWeapon: (weapon) => {
         set((state) => {
           if (!state.character) return state;
@@ -603,8 +628,8 @@ export const useCharacterStore = create<CharacterState>()(
           const oldWeapon = state.character.equipment.weapon;
           let newInventory = [...state.character.inventory];
 
-          // If there's an old weapon, store it in inventory
-          if (oldWeapon) {
+          // Only add old weapon to inventory if there's room — avoids silent overflow (BUG-003)
+          if (oldWeapon && newInventory.length < BAG_CAPACITY) {
             const inventoryItem: InventoryItem = {
               id: oldWeapon.id,
               type: 'weapon',
@@ -616,6 +641,7 @@ export const useCharacterStore = create<CharacterState>()(
             };
             newInventory = [...newInventory, inventoryItem];
           }
+          // If bag is full, old weapon is discarded (caller must show confirmation first)
 
           return {
             character: {
@@ -1008,10 +1034,10 @@ export const useCharacterStore = create<CharacterState>()(
           };
         });
 
-        // Reveal next level's standard achievements after level-up
+        // Reveal current level's standard achievements so player knows what to work on
         const updatedCharacter = get().character;
         if (updatedCharacter) {
-          useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level + 1);
+          useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level);
         }
       },
 
@@ -1187,7 +1213,7 @@ export const useCharacterStore = create<CharacterState>()(
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
 
-        return calculateDerivedStats(
+        const base = calculateDerivedStats(
           character.level,
           character.stats,
           carryStats,
@@ -1199,6 +1225,108 @@ export const useCharacterStore = create<CharacterState>()(
           weaponOutputCap,
           weaponLuck
         );
+
+        // Apply Paragon title buffs if character has reached Level 10 Denatus
+        const paragonTitle = character.paragonTitle;
+        if (!paragonTitle) return base;
+
+        const derived = { ...base };
+        const { statBonus, nounPassive } = paragonTitle.buffs;
+        const pct = statBonus.percentage;
+
+        // Stat bonus: map each of the two boosted stats to its primary derived output
+        const applyStatBonus = (stat: StatName) => {
+          switch (stat) {
+            case 'STR': derived.physicalAttack = Math.floor(derived.physicalAttack * (1 + pct)); break;
+            case 'END': derived.physicalDefense = Math.floor(derived.physicalDefense * (1 + pct)); break;
+            case 'AGI': derived.speed = Math.floor(derived.speed * (1 + pct)); derived.dodgeChance = Math.min(80, Math.floor(derived.dodgeChance * (1 + pct))); break;
+            case 'INT': derived.magicAttack = Math.floor(derived.magicAttack * (1 + pct)); break;
+            case 'WIS': derived.magicDefense = Math.floor(derived.magicDefense * (1 + pct)); break;
+            case 'PER': derived.critChance = Math.min(75, Math.floor(derived.critChance * (1 + pct))); break;
+            case 'LCK': derived.critChance = Math.min(75, Math.floor(derived.critChance * (1 + pct))); derived.dodgeChance = Math.min(80, Math.floor(derived.dodgeChance * (1 + pct))); break;
+            default: break;
+          }
+        };
+        applyStatBonus(statBonus.stat1);
+        if (statBonus.stat2 !== statBonus.stat1) applyStatBonus(statBonus.stat2);
+
+        // Noun passive: apply combat-relevant effects to derived stats
+        switch (nounPassive.effect.type) {
+          case 'physical_damage':
+            derived.physicalAttack = Math.floor(derived.physicalAttack * (1 + nounPassive.effect.value));
+            break;
+          case 'magic_damage':
+            derived.magicAttack = Math.floor(derived.magicAttack * (1 + nounPassive.effect.value));
+            break;
+          case 'damage_reduction':
+            derived.physicalDefense = Math.floor(derived.physicalDefense * (1 + nounPassive.effect.value));
+            derived.magicDefense = Math.floor(derived.magicDefense * (1 + nounPassive.effect.value));
+            break;
+          case 'dodge_chance':
+            derived.dodgeChance = Math.min(80, derived.dodgeChance + Math.round(nounPassive.effect.value * 100));
+            break;
+          case 'crit_damage':
+            // Approximated as crit chance bonus until critDamage is a first-class derived stat
+            derived.critChance = Math.min(75, derived.critChance + Math.round(nounPassive.effect.value * 30));
+            break;
+          case 'max_hp_bonus':
+            derived.maxHP = Math.floor(derived.maxHP * (1 + nounPassive.effect.value));
+            break;
+          case 'speed_bonus':
+            derived.speed = Math.floor(derived.speed * (1 + nounPassive.effect.value));
+            break;
+          case 'physical_defense_only':
+            derived.physicalDefense = Math.floor(derived.physicalDefense * (1 + nounPassive.effect.value));
+            break;
+          case 'magic_defense_only':
+            derived.magicDefense = Math.floor(derived.magicDefense * (1 + nounPassive.effect.value));
+            break;
+          default:
+            break;
+        }
+
+        return derived;
+      },
+
+      applyJobStatBonus: (stat, value) => {
+        set((state) => {
+          if (!state.character) return state;
+          const newPoints = Math.min(999, state.character.stats[stat].points + value);
+          const newGrade = getGradeFromPoints(newPoints);
+          const newStats = {
+            ...state.character.stats,
+            [stat]: { ...state.character.stats[stat], points: newPoints, grade: newGrade },
+          };
+          const { maxHP, maxSP } = computeMaxResources(
+            state.character.level,
+            newStats,
+            state.character.levelHistory,
+            state.character.equipment,
+            state.character.deityFavor ?? 50,
+          );
+          return {
+            character: {
+              ...state.character,
+              stats: newStats,
+              maxHP,
+              maxSP,
+              currentHP: Math.min(state.character.currentHP, maxHP),
+              currentSP: Math.min(state.character.currentSP, maxSP),
+            },
+          };
+        });
+      },
+
+      setCurrentJob: (jobProgress) => {
+        set((state) => ({
+          character: state.character ? { ...state.character, currentJob: jobProgress } : null,
+        }));
+      },
+
+      setParagonTitle: (title) => {
+        set((state) => ({
+          character: state.character ? { ...state.character, paragonTitle: title } : null,
+        }));
       },
 
       /**

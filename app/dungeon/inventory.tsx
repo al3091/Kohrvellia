@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
@@ -42,7 +42,7 @@ const RARITY_COLORS: Record<string, string> = {
 export default function InventoryScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { character, equipWeapon, unequipSlot, getDerivedStatsWithBlessings, removeFromInventory, modifyHP, modifySP, modifySatiation } = useCharacterStore();
+  const { character, equipWeapon, unequipSlot, getDerivedStatsWithBlessings, removeFromInventory, destroyItem, modifyHP, modifySP, modifySatiation } = useCharacterStore();
   const { isInCombat } = useCombatStore();
   const derivedStats = getDerivedStatsWithBlessings();
   const [selectedWeapon, setSelectedWeapon] = useState<Weapon | null>(null);
@@ -129,6 +129,25 @@ export default function InventoryScreen() {
     setSelectedWeapon(null);
   };
 
+  const handleDrop = (itemId: string, itemName: string) => {
+    haptics.warning();
+    Alert.alert(
+      'Drop Item',
+      `Drop ${itemName}? It will be left behind — permanently lost.`,
+      [
+        { text: 'Keep It', style: 'cancel' },
+        {
+          text: 'Drop',
+          style: 'destructive',
+          onPress: () => {
+            destroyItem(itemId);
+            haptics.medium();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -198,20 +217,19 @@ export default function InventoryScreen() {
               {character.inventory.map((item) => {
                 if (item.type === 'weapon') {
                   return (
-                    <Pressable
-                      key={item.id}
-                      style={styles.inventoryItem}
-                      onPress={() => haptics.light()}
-                    >
+                    <View key={item.id} style={styles.inventoryItem}>
                       <Text style={styles.inventoryIcon}>⚔️</Text>
                       <View style={styles.inventoryInfo}>
                         <Text style={styles.inventoryName}>{item.name ?? item.id}</Text>
                         <Text style={styles.inventoryType}>Weapon</Text>
                       </View>
-                      {item.quantity > 1 && (
-                        <Text style={styles.inventoryQuantity}>x{item.quantity}</Text>
-                      )}
-                    </Pressable>
+                      <Pressable
+                        style={styles.dropButton}
+                        onPress={() => handleDrop(item.id, item.name ?? 'weapon')}
+                      >
+                        <Text style={styles.dropButtonText}>Drop</Text>
+                      </Pressable>
+                    </View>
                   );
                 }
 
@@ -235,15 +253,27 @@ export default function InventoryScreen() {
                   );
                 }
 
+                // Materials and other non-key items can be dropped (weapon/consumable already handled above)
+                const canDrop = item.type !== 'key';
                 return (
                   <View key={item.id} style={styles.inventoryItem}>
                     <Text style={styles.inventoryIcon}>{item.icon ?? '📦'}</Text>
                     <View style={styles.inventoryInfo}>
                       <Text style={styles.inventoryName}>{item.name ?? item.id}</Text>
-                      <Text style={styles.inventoryType}>{item.type}</Text>
+                      <Text style={styles.inventoryType}>
+                        {item.type === 'material' ? 'Material · Sell at Guild' : item.type}
+                      </Text>
                     </View>
                     {item.quantity > 1 && (
                       <Text style={styles.inventoryQuantity}>x{item.quantity}</Text>
+                    )}
+                    {canDrop && (
+                      <Pressable
+                        style={styles.dropButton}
+                        onPress={() => handleDrop(item.id, item.name ?? item.id)}
+                      >
+                        <Text style={styles.dropButtonText}>Drop</Text>
+                      </Pressable>
                     )}
                   </View>
                 );
@@ -524,6 +554,18 @@ const styles = StyleSheet.create({
   inventoryQuantity: {
     ...Typography.caption,
     color: Colors.text.secondary,
+  },
+  dropButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: BorderRadius.sm,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.ui.error,
+  },
+  dropButtonText: {
+    ...Typography.caption,
+    color: Colors.ui.error,
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',

@@ -42,6 +42,7 @@ interface DeityState {
   // Actions - Setup
   setPatronDeity: (deityId: string) => void;
   clearPatronDeity: () => void;
+  reset: () => void;
 
   // Actions - Favor
   adjustFavor: (amount: number, reason: string) => void;
@@ -90,6 +91,10 @@ export const useDeityStore = create<DeityState>()(
 
       clearPatronDeity: () => {
         set({ relationship: null });
+      },
+
+      reset: () => {
+        set({ relationship: null, completedChallengeIds: [] });
       },
 
       // Favor

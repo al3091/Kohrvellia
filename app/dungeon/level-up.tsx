@@ -12,6 +12,7 @@ import {
   ScrollView,
   Pressable,
   Animated,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,7 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
+import { useSoulStore } from '../../src/stores/useSoulStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { ACHIEVEMENT_TIER_REWARDS, type AchievementTier } from '../../src/types/Achievement';
@@ -116,6 +118,15 @@ export default function LevelUpScreen() {
       startLevelUpCeremony(character.level + 1);
     }
   }, [isInCeremony, character, startLevelUpCeremony]);
+
+  // Block back navigation during ceremony — level-up must be completed (BUG-004)
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (phase !== 'complete') return true; // Block until ceremony is fully done
+      return false;
+    });
+    return () => subscription.remove();
+  }, [phase]);
 
   // Intro animation sequence
   useEffect(() => {
@@ -232,6 +243,14 @@ export default function LevelUpScreen() {
       playSFX('victory');
     }, 2500);
 
+    // Soul: track glory from achievement tiers selected
+    {
+      const soul = useSoulStore.getState();
+      const highestSelected = getHighestTier();
+      if (highestSelected === 'legendary') soul.incrementBehavement('glory_legendary_achievement');
+      if (highestSelected === 'mythic') soul.incrementBehavement('glory_mythic_achievement');
+    }
+
     // Complete the level up after celebration
     setTimeout(() => {
       setPhase('complete');
@@ -241,6 +260,19 @@ export default function LevelUpScreen() {
       // Navigate based on new level
       setTimeout(() => {
         const newLevel = useCharacterStore.getState().character?.level ?? 0;
+        // Soul: glory tracking for level milestones
+        {
+          const soul = useSoulStore.getState();
+          if (newLevel >= 10) soul.setBehavementProgress('glory_level_10', 1);
+          // Check if all stats are at grade C or better
+          const char = useCharacterStore.getState().character;
+          if (char) {
+            const gradeOrder = ['I','H','G','F','E','D','C','B','A','S','SS','SSS'];
+            const cIndex = gradeOrder.indexOf('C');
+            const allC = Object.values(char.stats).every(s => gradeOrder.indexOf(s.grade) >= cIndex);
+            if (allC) soul.setBehavementProgress('glory_all_stats_c', 1);
+          }
+        }
         if (newLevel >= 10) {
           router.replace('/dungeon/denatus');
         } else if (newLevel === 2) {

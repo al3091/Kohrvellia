@@ -19,6 +19,7 @@ import type { MapNode, NodeType } from '../../src/types/Dungeon';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
+import { useSoulStore } from '../../src/stores/useSoulStore';
 
 // Node type colors
 const NODE_COLORS: Record<NodeType, string> = {
@@ -245,6 +246,13 @@ export default function FloorScreen() {
     const newFloor = map.floorNumber + 1;
     enterFloor(newFloor);
     useAchievementStore.getState().updateProgress('floor_reach', newFloor);
+
+    // Soul: floor progression thresholds (reaching alive = no deaths this run by definition of permadeath)
+    const soul = useSoulStore.getState();
+    if (newFloor >= 10) soul.setBehavementProgress('explore_floors_10', 1);
+    if (newFloor >= 25) soul.setBehavementProgress('explore_floors_25', 1);
+    if (newFloor >= 5) soul.setBehavementProgress('glory_no_death_floor5', 1);
+    if (newFloor >= 10) soul.setBehavementProgress('glory_no_death_floor10', 1);
 
     // Decrement challenge floor countdown — auto-fails if time runs out
     useDeityStore.getState().checkChallengeExpiry(newFloor);

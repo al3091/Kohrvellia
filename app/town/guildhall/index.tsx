@@ -25,6 +25,8 @@ import { useHaptics } from '../../../src/hooks/useHaptics';
 import type { AchievementProgress } from '../../../src/types/Achievement';
 import { getAchievementById, getAchievementsForLevel } from '../../../src/data/achievements';
 import { AchievementTracker } from '../../../src/components/achievement/AchievementTracker';
+import { getMaterialById, MATERIAL_TIER_COLORS } from '../../../src/data/materials';
+import { useMarketStore } from '../../../src/stores/useMarketStore';
 
 // ─── Advisor NPC ──────────────────────────────────────────────────────────────
 
@@ -227,7 +229,8 @@ function LevelUpPanel({
 export default function GuildHallScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { character, canLevelUp, setDeityApproval, performLevelUp } = useCharacterStore();
+  const { character, canLevelUp, setDeityApproval, performLevelUp, modifyGold, removeFromInventory } = useCharacterStore();
+  const { getMultiplier, getActiveEvents, getSupplyPressures, recordSale } = useMarketStore();
   const gameStore = useGameStore.getState();
   const achievementStore = useAchievementStore();
 
@@ -344,6 +347,185 @@ export default function GuildHallScreen() {
             <Text style={styles.dialogueText}>"{greeting}"</Text>
           </View>
         </View>
+
+        {/* Guild Market Board — active economic conditions */}
+        {(() => {
+          const activeEvents = getActiveEvents();
+          const pressures = getSupplyPressures();
+          const hasAnything = activeEvents.length > 0 || pressures.length > 0;
+
+          const CATEGORY_LABELS: Record<string, string> = {
+            metal: 'Metal', monster: 'Monster', gem: 'Gem', essence: 'Essence', all: 'All Materials',
+          };
+
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Guild Market Board</Text>
+
+              {!hasAnything ? (
+                <View style={styles.marketBoard}>
+                  <Text style={styles.marketCalmText}>No active conditions.</Text>
+                  <Text style={styles.marketCalmHint}>Trade at base rates. The market is at peace.</Text>
+                </View>
+              ) : (
+                <View style={styles.marketBoard}>
+                  {activeEvents.map(event => (
+                    <View key={event.templateId} style={styles.marketEventCard}>
+                      <View style={styles.marketEventHeader}>
+                        <Text style={styles.marketEventIcon}>{event.icon}</Text>
+                        <Text style={styles.marketEventTitle}>{event.title}</Text>
+                        <View style={styles.marketActiveTag}>
+                          <Text style={styles.marketActiveText}>● ACTIVE</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.marketEventFlavor}>"{event.flavor}"</Text>
+                      {event.effects.map((fx, i) => {
+                        const isBoost = fx.multiplier >= 1.0;
+                        return (
+                          <Text key={i} style={[styles.marketEffect, { color: isBoost ? Colors.ui.success : Colors.ui.error }]}>
+                            {isBoost ? '▲' : '▼'} {CATEGORY_LABELS[fx.category] ?? fx.category}{'  '}
+                            ×{fx.multiplier.toFixed(1)}
+                          </Text>
+                        );
+                      })}
+                    </View>
+                  ))}
+                  {pressures.map(p => (
+                    <View key={p.category} style={[styles.marketEventCard, styles.marketPressureCard]}>
+                      <View style={styles.marketEventHeader}>
+                        <Text style={styles.marketEventIcon}>⚠️</Text>
+                        <Text style={styles.marketEventTitle}>Supply Pressure</Text>
+                        <Text style={styles.marketPressureTag}>(your sales)</Text>
+                      </View>
+                      <Text style={styles.marketEventFlavor}>"{p.reason}"</Text>
+                      <Text style={[styles.marketEffect, { color: Colors.ui.error }]}>
+                        ▼ {CATEGORY_LABELS[p.category]}{'  '}×0.75
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })()}
+
+        {/* Material Registry — sell dungeon drops at dynamic Guild prices */}
+        {(() => {
+          const materials = character.inventory.filter(i => i.type === 'material');
+          const totalValue = materials.reduce((sum, item) => {
+            const mat = getMaterialById(item.id);
+            if (!mat) return sum;
+            const multiplier = getMultiplier(item.id);
+            return sum + Math.floor(mat.sellPrice * multiplier * item.quantity);
+          }, 0);
+
+          const handleSellAll = () => {
+            if (materials.length === 0) return;
+            haptics.heavy();
+            Alert.alert(
+              'Sell All Materials',
+              `The Guild will purchase your materials for ${totalValue}G at current market rates.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: `Sell (${totalValue}G)`,
+                  style: 'default',
+                  onPress: () => {
+                    for (const item of materials) {
+                      const mat = getMaterialById(item.id);
+                      if (mat) recordSale(mat.category as 'metal' | 'monster' | 'gem' | 'essence', item.quantity);
+                    }
+                    modifyGold(totalValue);
+                    for (const item of materials) {
+                      removeFromInventory(item.id, item.quantity);
+                    }
+                    haptics.success();
+                  },
+                },
+              ]
+            );
+          };
+
+          const handleSellOne = (itemId: string) => {
+            const mat = getMaterialById(itemId);
+            const item = materials.find(i => i.id === itemId);
+            if (!mat || !item) return;
+            const multiplier = getMultiplier(itemId);
+            const value = Math.floor(mat.sellPrice * multiplier * item.quantity);
+            const baseNote = multiplier !== 1.0
+              ? ` (Base: ${mat.sellPrice * item.quantity}G × ${multiplier.toFixed(2)} market rate)`
+              : '';
+            haptics.medium();
+            Alert.alert(
+              `Sell ${mat.name}`,
+              `${item.quantity}x ${mat.name} for ${value}G.${baseNote}`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: `Sell (${value}G)`,
+                  onPress: () => {
+                    recordSale(mat.category as 'metal' | 'monster' | 'gem' | 'essence', item.quantity);
+                    modifyGold(value);
+                    removeFromInventory(itemId, item.quantity);
+                    haptics.success();
+                  },
+                },
+              ]
+            );
+          };
+
+          return (
+            <View style={styles.section}>
+              <View style={styles.materialHeader}>
+                <Text style={styles.sectionTitle}>Material Registry</Text>
+                <Text style={styles.materialGoldLabel}>{character.gold ?? 0}G</Text>
+              </View>
+              <Text style={styles.materialSubtitle}>
+                The Guild maintains regulated prices for all dungeon materials.
+              </Text>
+
+              {materials.length === 0 ? (
+                <View style={styles.materialEmpty}>
+                  <Text style={styles.materialEmptyText}>No materials to record.</Text>
+                  <Text style={styles.materialEmptyHint}>Venture deeper into the Tower.</Text>
+                </View>
+              ) : (
+                <>
+                  {materials.map(item => {
+                    const mat = getMaterialById(item.id);
+                    if (!mat) return null;
+                    const multiplier = getMultiplier(item.id);
+                    const effectivePrice = Math.floor(mat.sellPrice * multiplier);
+                    const lineValue = effectivePrice * item.quantity;
+                    const tierColor = MATERIAL_TIER_COLORS[mat.tier] ?? Colors.text.secondary;
+                    const priceChanged = multiplier !== 1.0;
+                    return (
+                      <Pressable key={item.id} style={styles.materialRow} onPress={() => handleSellOne(item.id)}>
+                        <Text style={styles.materialIcon}>{mat.icon}</Text>
+                        <View style={styles.materialInfo}>
+                          <Text style={[styles.materialName, { color: tierColor }]}>{mat.name}</Text>
+                          <Text style={styles.materialTier}>
+                            {mat.tier.toUpperCase()} · x{item.quantity}
+                            {priceChanged ? (multiplier > 1.0 ? '  ▲' : '  ▼') : ''}
+                          </Text>
+                        </View>
+                        <Text style={[
+                          styles.materialValue,
+                          priceChanged && { color: multiplier > 1.0 ? Colors.ui.success : Colors.ui.error }
+                        ]}>
+                          {lineValue}G
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable style={styles.sellAllButton} onPress={handleSellAll}>
+                    <Text style={styles.sellAllText}>Sell All Materials — {totalValue}G</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Achievement Tracker */}
         <View style={styles.trackerWrapper}>
@@ -692,6 +874,152 @@ const styles = StyleSheet.create({
 
   trackerWrapper: {
     marginBottom: Spacing.lg,
+  },
+
+  // Market Board
+  marketBoard: {
+    gap: Spacing.sm,
+  },
+  marketCalmText: {
+    ...Typography.body,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    paddingVertical: Spacing.md,
+  },
+  marketCalmHint: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: -Spacing.sm,
+  },
+  marketEventCard: {
+    backgroundColor: Colors.background.elevated,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    gap: Spacing.xs,
+  },
+  marketPressureCard: {
+    borderColor: Colors.ui.error,
+    opacity: 0.9,
+  },
+  marketEventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  marketEventIcon: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  marketEventTitle: {
+    ...Typography.h6,
+    color: Colors.text.primary,
+    flex: 1,
+  },
+  marketActiveTag: {
+    backgroundColor: Colors.background.card ?? Colors.background.secondary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  marketActiveText: {
+    ...Typography.caption,
+    fontSize: 10,
+    color: Colors.ui.success,
+    fontWeight: '700',
+  },
+  marketPressureTag: {
+    ...Typography.caption,
+    color: Colors.ui.error,
+    fontStyle: 'italic',
+  },
+  marketEventFlavor: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    lineHeight: 16,
+  },
+  marketEffect: {
+    ...Typography.bodySmall,
+    fontWeight: '600',
+  },
+
+  // Material Registry
+  materialHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  materialGoldLabel: {
+    ...Typography.h5,
+    color: Colors.resource.gold,
+  },
+  materialSubtitle: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    marginBottom: Spacing.sm,
+  },
+  materialEmpty: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  materialEmptyText: {
+    ...Typography.body,
+    color: Colors.text.muted,
+  },
+  materialEmptyHint: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    marginTop: Spacing.xs,
+  },
+  materialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.background.elevated,
+    borderRadius: BorderRadius.md,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.primary,
+  },
+  materialIcon: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+  materialInfo: {
+    flex: 1,
+  },
+  materialName: {
+    ...Typography.bodySmall,
+    fontWeight: '600',
+  },
+  materialTier: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+  },
+  materialValue: {
+    ...Typography.bodySmall,
+    color: Colors.resource.gold,
+    fontWeight: '700',
+  },
+  sellAllButton: {
+    backgroundColor: Colors.domain.fortune ?? Colors.resource.gold,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    marginTop: Spacing.xs,
+  },
+  sellAllText: {
+    ...Typography.button,
+    color: Colors.background.primary,
+    fontWeight: '700',
   },
 
   // Discovery Banner

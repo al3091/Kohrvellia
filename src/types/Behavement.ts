@@ -156,18 +156,64 @@ export interface NounPassive {
 }
 
 export const NOUN_PASSIVES: Partial<Record<SkillNoun, NounPassive>> = {
-  Slayer: { noun: 'Slayer', description: '+20% physical damage', effect: { type: 'physical_damage', value: 0.2 } },
-  Invoker: { noun: 'Invoker', description: '+20% magic damage, -10% SP cost', effect: { type: 'magic_damage', value: 0.2 } },
-  Guardian: { noun: 'Guardian', description: '+25% damage reduction', effect: { type: 'damage_reduction', value: 0.25 } },
-  Shadow: { noun: 'Shadow', description: '+30% dodge chance', effect: { type: 'dodge_chance', value: 0.3 } },
-  Gambler: { noun: 'Gambler', description: '+50% crit damage, -10% HP', effect: { type: 'crit_damage', value: 0.5 } },
-  Tactician: { noun: 'Tactician', description: '+20% item effectiveness', effect: { type: 'item_effectiveness', value: 0.2 } },
-  Diplomat: { noun: 'Diplomat', description: '+30% reputation gain', effect: { type: 'reputation_gain', value: 0.3 } },
-  Seeker: { noun: 'Seeker', description: '+25% loot discovery', effect: { type: 'loot_discovery', value: 0.25 } },
-  Artisan: { noun: 'Artisan', description: '+20% gold, +15% crafting', effect: { type: 'gold_bonus', value: 0.2 } },
-  Champion: { noun: 'Champion', description: '+25% achievement tier bonuses', effect: { type: 'tier_bonus', value: 0.25 } },
-  Legend: { noun: 'Legend', description: '+50% tier bonuses, -10% enemy accuracy', effect: { type: 'tier_bonus', value: 0.5 } },
-  Demigod: { noun: 'Demigod', description: 'Auto-dodge first lethal per floor, +100% tier bonuses', effect: { type: 'tier_bonus', value: 1.0 } },
+  // COMBAT_PHYSICAL
+  Slayer:    { noun: 'Slayer',    description: '+20% physical damage',           effect: { type: 'physical_damage',      value: 0.20 } },
+  Warrior:   { noun: 'Warrior',   description: '+15% physical damage',           effect: { type: 'physical_damage',      value: 0.15 } },
+  Destroyer: { noun: 'Destroyer', description: '+18% physical damage',           effect: { type: 'physical_damage',      value: 0.18 } },
+  Berserker: { noun: 'Berserker', description: '+45% crit damage',               effect: { type: 'crit_damage',          value: 0.45 } },
+
+  // COMBAT_MAGIC
+  Invoker:   { noun: 'Invoker',   description: '+20% magic damage',             effect: { type: 'magic_damage',         value: 0.20 } },
+  Mage:      { noun: 'Mage',      description: '+15% magic damage',             effect: { type: 'magic_damage',         value: 0.15 } },
+  Sorcerer:  { noun: 'Sorcerer',  description: '+25% magic damage',             effect: { type: 'magic_damage',         value: 0.25 } },
+  Arcanist:  { noun: 'Arcanist',  description: '+20% speed (arcane precision)', effect: { type: 'speed_bonus',          value: 0.20 } },
+
+  // DEFENSE_TANK
+  Guardian:  { noun: 'Guardian',  description: '+25% damage reduction',         effect: { type: 'damage_reduction',     value: 0.25 } },
+  Sentinel:  { noun: 'Sentinel',  description: '+15% max HP',                   effect: { type: 'max_hp_bonus',         value: 0.15 } },
+  Bulwark:   { noun: 'Bulwark',   description: '+30% physical defense',         effect: { type: 'physical_defense_only',value: 0.30 } },
+  Protector: { noun: 'Protector', description: '+20% damage reduction',         effect: { type: 'damage_reduction',     value: 0.20 } },
+
+  // DEFENSE_EVASION
+  Shadow:    { noun: 'Shadow',    description: '+30% dodge chance',             effect: { type: 'dodge_chance',         value: 0.30 } },
+  Phantom:   { noun: 'Phantom',   description: '+20% dodge chance',             effect: { type: 'dodge_chance',         value: 0.20 } },
+  Ghost:     { noun: 'Ghost',     description: '+25% speed',                    effect: { type: 'speed_bonus',          value: 0.25 } },
+  Specter:   { noun: 'Specter',   description: '+25% crit damage',              effect: { type: 'crit_damage',          value: 0.25 } },
+
+  // RISK_TAKING
+  Gambler:   { noun: 'Gambler',   description: '+50% crit damage',             effect: { type: 'crit_damage',          value: 0.50 } },
+  Daredevil: { noun: 'Daredevil', description: '+35% crit damage',             effect: { type: 'crit_damage',          value: 0.35 } },
+  Madman:    { noun: 'Madman',    description: '+25% physical damage (reckless)', effect: { type: 'physical_damage',   value: 0.25 } },
+  Reckless:  { noun: 'Reckless',  description: '+40% crit damage',              effect: { type: 'crit_damage',          value: 0.40 } },
+
+  // CAUTION
+  Tactician: { noun: 'Tactician', description: '+20% item effectiveness',       effect: { type: 'item_effectiveness',  value: 0.20 } },
+  Strategist:{ noun: 'Strategist',description: '+15% item effectiveness',       effect: { type: 'item_effectiveness',  value: 0.15 } },
+  Planner:   { noun: 'Planner',   description: '+20% physical defense',         effect: { type: 'physical_defense_only',value: 0.20 } },
+  Analyst:   { noun: 'Analyst',   description: '+20% magic defense',            effect: { type: 'magic_defense_only',  value: 0.20 } },
+
+  // SOCIAL
+  Diplomat:  { noun: 'Diplomat',  description: '+30% reputation gain',          effect: { type: 'reputation_gain',     value: 0.30 } },
+  Negotiator:{ noun: 'Negotiator',description: '+15% gold earned',              effect: { type: 'gold_bonus',          value: 0.15 } },
+  Merchant:  { noun: 'Merchant',  description: '+12% gold earned',              effect: { type: 'gold_bonus',          value: 0.12 } },
+  Envoy:     { noun: 'Envoy',     description: '+20% reputation gain',          effect: { type: 'reputation_gain',     value: 0.20 } },
+
+  // EXPLORATION
+  Seeker:    { noun: 'Seeker',    description: '+25% loot discovery',           effect: { type: 'loot_discovery',      value: 0.25 } },
+  Explorer:  { noun: 'Explorer',  description: '+15% loot discovery',           effect: { type: 'loot_discovery',      value: 0.15 } },
+  Pioneer:   { noun: 'Pioneer',   description: '+15% speed',                    effect: { type: 'speed_bonus',         value: 0.15 } },
+  Wanderer:  { noun: 'Wanderer',  description: '+18% loot discovery',           effect: { type: 'loot_discovery',      value: 0.18 } },
+
+  // RESOURCE
+  Artisan:   { noun: 'Artisan',   description: '+20% gold earned',              effect: { type: 'gold_bonus',          value: 0.20 } },
+  Smith:     { noun: 'Smith',     description: '+10% weapon damage',            effect: { type: 'physical_damage',     value: 0.10 } },
+  Creator:   { noun: 'Creator',   description: '+15% item effectiveness',       effect: { type: 'item_effectiveness',  value: 0.15 } },
+  Hoarder:   { noun: 'Hoarder',   description: '+15% gold earned',              effect: { type: 'gold_bonus',          value: 0.15 } },
+
+  // GLORY (tiered)
+  Champion:  { noun: 'Champion',  description: '+25% achievement tier bonuses', effect: { type: 'tier_bonus',          value: 0.25 } },
+  Legend:    { noun: 'Legend',    description: '+50% tier bonuses',             effect: { type: 'tier_bonus',          value: 0.50 } },
+  Demigod:   { noun: 'Demigod',   description: 'Auto-dodge first lethal per floor, +100% tier bonuses', effect: { type: 'tier_bonus', value: 1.0 } },
 };
 
 // Generated Paragon title

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { clearAllStores } from '../../src/lib/clearAllStores';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
@@ -87,7 +88,7 @@ export default function EpitaphScreen() {
         <View style={styles.actions}>
           <Pressable
             style={styles.beginAgainButton}
-            onPress={() => router.replace('/character-creation/name')}
+            onPress={() => { clearAllStores(); router.replace('/character-creation/name'); }}
           >
             <Text style={styles.beginAgainText}>Begin Again</Text>
           </Pressable>

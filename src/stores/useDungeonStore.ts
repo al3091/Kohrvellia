@@ -31,6 +31,7 @@ import {
 
 import { rollStepRamifications } from '../data/ramifications';
 import { useCharacterStore } from './useCharacterStore';
+import { useMarketStore } from './useMarketStore';
 
 // ===== MAP GENERATION =====
 
@@ -311,12 +312,22 @@ function createSeededRNG(seed: number): () => number {
 
 // ===== STORE INTERFACE =====
 
+export interface FloorContext {
+  usedPhysicalAttack: boolean;
+  usedHealing: boolean;
+  triggeredTrap: boolean;
+  tookDamageThisFloor: boolean;
+}
+
 interface DungeonState {
   // Current run state
   currentRun: DungeonRun | null;
 
   // Last ramification result (for display)
   lastRamifications: RamificationResult | null;
+
+  // Per-floor behavioral flags (reset on each floor entry)
+  floorContext: FloorContext | null;
 
   // Actions - Run lifecycle
   startNewRun: () => void;
@@ -351,16 +362,27 @@ interface DungeonState {
   // Actions - Floor transitions
   ascendFloor: () => void;
 
+  // Per-floor context
+  setFloorFlag: (flag: keyof FloorContext) => void;
+
   // Reset for new game
   clearAllData: () => void;
   clearRamifications: () => void;
 }
+
+const FRESH_FLOOR_CONTEXT: FloorContext = {
+  usedPhysicalAttack: false,
+  usedHealing: false,
+  triggeredTrap: false,
+  tookDamageThisFloor: false,
+};
 
 export const useDungeonStore = create<DungeonState>()(
   persist(
     (set, get) => ({
       currentRun: null,
       lastRamifications: null,
+      floorContext: null,
 
       // Run lifecycle
       startNewRun: () => {
@@ -425,10 +447,23 @@ export const useDungeonStore = create<DungeonState>()(
               lastActivityAt: Date.now(),
             },
             lastRamifications: null,
+            floorContext: { ...FRESH_FLOOR_CONTEXT }, // Reset per-floor behavioral flags
           };
         });
 
+        // Market economy tick — advances on real floor descents, not enter/exit cycles
+        const playerLevel = useCharacterStore.getState().character?.level ?? 1;
+        useMarketStore.getState().onFloorDescend(playerLevel);
+
         return map;
+      },
+
+      setFloorFlag: (flag) => {
+        set((state) => ({
+          floorContext: state.floorContext
+            ? { ...state.floorContext, [flag]: true }
+            : { ...FRESH_FLOOR_CONTEXT, [flag]: true },
+        }));
       },
 
       moveToNode: (nodeId) => {
@@ -948,7 +983,7 @@ export const useDungeonStore = create<DungeonState>()(
 
       // Reset
       clearAllData: () => {
-        set({ currentRun: null, lastRamifications: null });
+        set({ currentRun: null, lastRamifications: null, floorContext: null });
       },
 
       clearRamifications: () => {

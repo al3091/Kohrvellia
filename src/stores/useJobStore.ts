@@ -47,7 +47,8 @@ export const useJobStore = create<JobState>()(
         set({ currentJobId: jobId, hasSelectedJob: true });
 
         // Grant the starter skill to the character immediately
-        const { learnSkill } = useCharacterStore.getState();
+        const charStore = useCharacterStore.getState();
+        const { learnSkill } = charStore;
         const starterSkill = {
           ...job.starterSkill,
           currentCooldown: 0,
@@ -59,6 +60,17 @@ export const useJobStore = create<JobState>()(
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         learnSkill(starterSkill as any);
+
+        // Apply the job's permanent stat bonus to character stats
+        charStore.applyJobStatBonus(job.statBonus.stat, job.statBonus.value);
+
+        // Record current job on character object
+        charStore.setCurrentJob({
+          id: jobId,
+          name: job.name,
+          level: 1,
+          skills: [job.starterSkill.id],
+        });
       },
 
       reset: () => {
