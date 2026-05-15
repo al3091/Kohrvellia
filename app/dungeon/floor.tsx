@@ -12,10 +12,15 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { useGameStore } from '../../src/stores/useGameStore';
 import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { getNodeIcon, getNodeDisplayName } from '../../src/types/Dungeon';
 import type { MapNode, NodeType } from '../../src/types/Dungeon';
+import type { Weapon, WeaponCategory } from '../../src/types/Weapon';
+import { generateLeveledWeaponDrop } from '../../src/data/weapons';
+import { registerWeapon } from '../../src/data/weaponRegistry';
+import type { StatName } from '../../src/types/Stats';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
@@ -66,7 +71,7 @@ const BIOME_GRADIENT_COLORS: Record<string, [string, string]> = {
 export default function FloorScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { character, modifyHP, modifySatiation } = useCharacterStore();
+  const { character, modifyHP, modifySatiation, addToInventory, isBagFull } = useCharacterStore();
   const {
     currentRun,
     getCurrentMap,
@@ -83,6 +88,8 @@ export default function FloorScreen() {
     clearRamifications,
   } = useDungeonStore();
 
+  const { milestoneChestsOpened, claimMilestoneChest } = useGameStore();
+
   const { relationship, getPatronDeity } = useDeityStore();
   const activeChallenge = relationship?.currentChallenge ?? null;
   const activeChallengeDeity = getPatronDeity();
@@ -98,6 +105,10 @@ export default function FloorScreen() {
   const satiation = character?.satiation ?? 60;
   const satiationDots = Math.round((satiation / 100) * 6);
   const hungerState = satiation >= 80 ? 'well' : satiation >= 60 ? 'adequate' : satiation >= 40 ? 'hungry' : satiation >= 20 ? 'starving' : 'famine';
+
+  // Milestone boss chest state
+  const [showMilestoneChest, setShowMilestoneChest] = useState(false);
+  const [chestWeapons, setChestWeapons] = useState<Weapon[]>([]);
 
   // Path preview state - shows which node is being considered
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
@@ -131,6 +142,52 @@ export default function FloorScreen() {
     pulse.start();
     return () => pulse.stop();
   }, []);
+
+  // Milestone boss chest — auto-offer on first clear of floors 5, 10, 15, 20...
+  const bossCompleted = useMemo(() => {
+    if (!map) return false;
+    const boss = map.nodes.find(n => n.id === map.bossNodeId);
+    return boss?.isCompleted ?? false;
+  }, [map]);
+
+  useEffect(() => {
+    if (!bossCompleted || !map || !character) return;
+    const floor = map.floorNumber;
+    if (floor % 5 !== 0) return;
+    if (milestoneChestsOpened.includes(floor)) return;
+
+    // Build top-3 stat list sorted by current points investment
+    const statNames: StatName[] = ['STR', 'PER', 'END', 'CHA', 'INT', 'AGI', 'WIS', 'LCK'];
+    const top3 = [...statNames]
+      .sort((a, b) => character.stats[b].points - character.stats[a].points)
+      .slice(0, 3) as WeaponCategory[];
+
+    const weapons = top3.map(stat =>
+      generateLeveledWeaponDrop(floor, character.level, [stat])
+    );
+    setChestWeapons(weapons);
+    setShowMilestoneChest(true);
+  }, [bossCompleted]);
+
+  const handleClaimChestWeapon = (weapon: Weapon) => {
+    registerWeapon(weapon);
+    const added = addToInventory({
+      id: weapon.id,
+      type: 'weapon',
+      stackable: false,
+      quantity: 1,
+      name: weapon.displayName,
+      icon: weapon.base.range === 'ranged' ? '🏹' : '⚔️',
+      weaponData: weapon,
+    });
+    if (!added) {
+      Alert.alert('Bag Full', 'Drop an item first to claim this reward.');
+      return;
+    }
+    claimMilestoneChest(map!.floorNumber);
+    setShowMilestoneChest(false);
+    haptics.success();
+  };
 
   // Play dungeon BGM on mount
   useEffect(() => {
@@ -726,6 +783,47 @@ export default function FloorScreen() {
           )}
         </Pressable>
       </Modal>
+
+      {/* Milestone Boss Chest Modal */}
+      <Modal visible={showMilestoneChest} transparent animationType="fade">
+        <View style={styles.milestoneOverlay}>
+          <View style={styles.milestoneContainer}>
+            <Text style={styles.milestoneTitle}>⚔️ BOSS CHEST</Text>
+            <Text style={styles.milestoneSubtitle}>
+              Floor {map?.floorNumber} Cleared — Fortune rewards your strength.
+            </Text>
+            <Text style={styles.milestoneInstruction}>
+              Choose one weapon. The others are lost to the deep.
+            </Text>
+            {chestWeapons.map((weapon, idx) => (
+              <Pressable
+                key={`chest-${idx}`}
+                style={styles.milestoneWeaponCard}
+                onPress={() => handleClaimChestWeapon(weapon)}
+              >
+                <Text style={styles.milestoneWeaponIcon}>
+                  {weapon.base.range === 'ranged' ? '🏹' : '⚔️'}
+                </Text>
+                <View style={styles.milestoneWeaponInfo}>
+                  <Text style={styles.milestoneWeaponName}>{weapon.displayName}</Text>
+                  <Text style={styles.milestoneWeaponStats}>
+                    {weapon.base.category} · DMG {weapon.finalDamage} · CRIT {weapon.finalCritChance}%
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.milestoneSkipButton}
+              onPress={() => {
+                claimMilestoneChest(map!.floorNumber);
+                setShowMilestoneChest(false);
+              }}
+            >
+              <Text style={styles.milestoneSkipText}>Leave it. Take nothing.</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1268,5 +1366,78 @@ const styles = StyleSheet.create({
   challengeStripFloorsDanger: {
     color: Colors.ui.error,
     fontWeight: 'bold',
+  },
+
+  // Milestone boss chest
+  milestoneOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Padding.lg,
+  },
+  milestoneContainer: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.medium,
+    borderColor: Colors.resource.gold,
+    borderRadius: BorderRadius.md,
+    padding: Padding.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  milestoneTitle: {
+    ...Typography.h3,
+    color: Colors.resource.gold,
+    textAlign: 'center',
+    letterSpacing: 3,
+    marginBottom: Spacing.xs,
+  },
+  milestoneSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  milestoneInstruction: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  milestoneWeaponCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.tertiary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.primary,
+    borderRadius: BorderRadius.sm,
+    padding: Padding.md,
+    marginBottom: Spacing.sm,
+  },
+  milestoneWeaponIcon: {
+    fontSize: 24,
+    marginRight: Spacing.md,
+  },
+  milestoneWeaponInfo: {
+    flex: 1,
+  },
+  milestoneWeaponName: {
+    ...Typography.body,
+    color: Colors.text.primary,
+    fontWeight: 'bold',
+  },
+  milestoneWeaponStats: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    marginTop: 2,
+  },
+  milestoneSkipButton: {
+    marginTop: Spacing.md,
+    padding: Padding.sm,
+    alignItems: 'center',
+  },
+  milestoneSkipText: {
+    ...Typography.caption,
+    color: Colors.text.muted,
   },
 });

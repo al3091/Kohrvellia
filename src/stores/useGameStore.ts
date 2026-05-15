@@ -105,6 +105,9 @@ interface GameState {
   // First combat protection
   hasHadFirstCombat: boolean;
 
+  // Milestone boss chest (5-floor intervals, first-clear only)
+  milestoneChestsOpened: number[];
+
   // Actions - Phase
   setPhase: (phase: GamePhase) => void;
 
@@ -129,6 +132,9 @@ interface GameState {
 
   // Actions - First combat
   setHasHadFirstCombat: () => void;
+
+  // Actions - Milestone chest
+  claimMilestoneChest: (floor: number) => void;
 
   // Computed
   isDeityUnlocked: (deityId: string) => boolean;
@@ -167,6 +173,7 @@ export const useGameStore = create<GameState>()(
       hasSkippedTutorial: false,
       tutorialStep: 0,
       hasHadFirstCombat: false,
+      milestoneChestsOpened: [],
 
       // Phase
       setPhase: (phase) => {
@@ -292,6 +299,13 @@ export const useGameStore = create<GameState>()(
       // First combat
       setHasHadFirstCombat: () => {
         set({ hasHadFirstCombat: true });
+      },
+
+      // Milestone chest
+      claimMilestoneChest: (floor) => {
+        set((state) => ({
+          milestoneChestsOpened: [...state.milestoneChestsOpened, floor],
+        }));
       },
 
       // Tutorial
