@@ -1,22 +1,63 @@
 /**
  * Milestone Bosses — 20 sentient guardians of the Tower's milestone floors.
- * Each boss has: character lore, a unique mechanic hint, and a personalized dialogue template.
- * Bosses appear on floors 5, 10, 15, 20, 25, ... 100.
  *
- * Orla (character + lore) + Thane (mechanics) + Eris (personalization) synthesis.
+ * DESIGN RULES:
+ * 1. Each character the player runs is a DIFFERENT MORTAL. The boss has never
+ *    met them. They sense ARCHETYPES from collective memory — not individuals.
+ * 2. Bosses are killed EXACTLY ONCE across all characters on the account.
+ * 3. The 3-exchange conversation can unlock secret outcomes (bypass, loot cache,
+ *    weakness reveal) gated by the right dialogue sequence + stat investment.
+ *
+ * Authors: Orla (character/lore) + Thane (mechanics) + Eris (personalization)
  */
 
 import type { PlayerSnapshot } from '../../types/PlayerSnapshot';
+import type { StatName } from '../../types/Stats';
 
-export interface BossChoice {
+// ===== TYPES =====
+
+export interface ChoiceTag {
   id: string;
   label: string;
   description: string;
-  bossReaction: string;
-  combatEffect: {
-    type: 'none' | 'dodge_boost' | 'first_attack_guaranteed' | 'damage_bonus' | 'enemy_enraged';
+  tags: string[];
+  statRequirement?: { stat: StatName; minPoints: number };
+  probability?: number; // For LCK options — shows as approximate % in UI
+}
+
+export type OutcomeType = 'fight' | 'bypass' | 'loot_cache' | 'weakness_revealed' | 'alternative_trial';
+
+export interface BossOutcome {
+  id: OutcomeType;
+  label: string;
+  description: string;
+  unlockConditions: {
+    requiredTags: string[];
+    statCheck?: { stat: StatName; minPoints: number };
+    probability?: number;
+  };
+  achievement?: string;
+  combatEffect?: {
+    type: 'none' | 'dodge_boost' | 'weakness_exposed' | 'first_attack_guaranteed' | 'enemy_weakened';
     value?: number;
     description?: string;
+  };
+  lootReward?: { gold: number; description: string };
+  bossClosingLine: string;
+}
+
+export interface BossConversation {
+  exchange1: {
+    bossOpening: string;
+    getChoices: (s: PlayerSnapshot) => ChoiceTag[];
+  };
+  exchange2: {
+    getBossText: (choice1Id: string, s: PlayerSnapshot) => string;
+    getChoices: (choice1Id: string, s: PlayerSnapshot) => ChoiceTag[];
+  };
+  exchange3: {
+    getBossText: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => string;
+    getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => BossOutcome[];
   };
 }
 
@@ -30,18 +71,24 @@ export interface MilestoneBoss {
   appearance: string;
   lore: string;
   theme: string;
+  bossDefeatedEcho: string; // Text shown to future characters who reach this cleared floor
   mechanic: {
     name: string;
-    hint: string;        // Shown in the encounter screen
-    observeReveal: string; // Shown if player used Observe on this boss type before
+    hint: string;
+    observeReveal: string;
   };
-  dialogue: {
-    opening: string;
-    personalizedTaunt: (s: PlayerSnapshot) => string;
-    choices: BossChoice[];
-    combatOpener: (s: PlayerSnapshot, choiceId: string) => string;
-  };
+  conversation: BossConversation;
 }
+
+// ===== THE FIGHT OUTCOME (always available) =====
+const ALWAYS_FIGHT: BossOutcome = {
+  id: 'fight',
+  label: 'Draw your weapon.',
+  description: 'Some things can only be answered with steel.',
+  unlockConditions: { requiredTags: [] },
+  combatEffect: { type: 'none' },
+  bossClosingLine: 'Then we settle this the only way that matters.',
+};
 
 // ──────────────────────────────────────────────────────────
 // FLOOR 5 — VANYA, THE FIRST WARDEN (Slavic)
@@ -54,60 +101,167 @@ const VANYA: MilestoneBoss = {
   pantheon: 'Slavic',
   appearanceEmoji: '🌲',
   appearance: 'A towering woman of oak and birch, her form shifting between bark and flesh. Antlers of pale bone crown her head. Her voice sounds like wind through winter forests.',
-  lore: 'Vanya guards the Tower\'s first true test. She has stood at this threshold since before the convergence, watching a thousand climbers pass. She remembers nearly all of them.',
+  lore: 'Vanya guards the Tower\'s first true test. She has stood at this threshold since before the convergence, watching a thousand climbers pass. She has never fallen. She wants to know if you are different.',
   theme: 'Memory & Recognition',
+  bossDefeatedEcho: 'Vanya\'s chamber stands empty. The ancient oak has become stone. She Who Kept the Threshold kept it no longer — an adventurer of the guild passed here, and ended her centuries-long vigil. The way is open.',
   mechanic: {
     name: 'Corrosive Shell',
     hint: 'Her defense grows harder each time she is struck. Brute force alone cannot prevail.',
-    observeReveal: 'Physical attacks increase her defense permanently. Status effects and magic bypass her shell entirely.',
+    observeReveal: 'Physical attacks increase Vanya\'s defense permanently. Magic damage and status effects bypass her shell entirely.',
   },
-  dialogue: {
-    opening: 'I have waited here longer than your bloodline has existed. You smell of ambition. Tell me — is it enough?',
-    personalizedTaunt: (s: PlayerSnapshot) => {
-      if (s.isFirstRun) {
-        return `Your first descent, ${s.characterName}. I know that smell — equal parts wonder and ignorance. The Tower has claimed better beginners.`;
-      }
-      if (s.isComebackRun) {
-        return `You returned so quickly. The wound is still fresh on your pride, I can see it. What changed between then and now?`;
-      }
-      if (s.totalDeaths >= 8) {
-        return `${s.totalDeaths} times. I have watched you fall ${s.totalDeaths} times and still you come back. Either you are courageous or you have not yet learned what death means.`;
-      }
-      if (s.isFleeer) {
-        return `You fled ${s.fleeCount} times to reach me. There is wisdom in survival, yes. But also a question: what exactly are you surviving *for*?`;
-      }
-      if (s.isAggressor) {
-        return `Your ${s.weaponName}. You've swung it at everything that moved. That rage will serve you poorly against something that does not bleed the same way.`;
-      }
-      return `${s.patronDeityName} watches from above. Do they see what I see? A climber who has not yet decided what they are.`;
+  conversation: {
+    exchange1: {
+      bossOpening: 'I have kept this threshold since before your kind learned to name the gods. You carry a weapon and the scent of something that wants to cross. Tell me — do you understand what you are crossing?',
+      getChoices: (s: PlayerSnapshot) => [
+        {
+          id: 'honest',
+          label: 'I came to cross your threshold.',
+          description: 'Direct, honest. You make no claims you cannot back.',
+          tags: ['threshold_honest'],
+        },
+        {
+          id: 'aggressive',
+          label: 'I came to take what lies beyond.',
+          description: 'Raw ambition. No pretense.',
+          tags: ['aggressive_honest'],
+        },
+        {
+          id: 'curious',
+          label: 'I\'ve heard stories of what you guard.',
+          description: s.isFirstEverEncounter
+            ? 'Curiosity before combat. She\'s been here since the beginning.'
+            : 'The stories are proven true — she is still here.',
+          tags: ['curious_approach'],
+        },
+      ],
     },
-    choices: [
-      {
-        id: 'challenge',
-        label: 'Step forward boldly',
-        description: 'Meet her gaze without flinching.',
-        bossReaction: 'Vanya\'s bark-skin cracks into something that might be a smile. "Conviction. Rare. Do not let it be the last interesting thing about you."',
-        combatEffect: { type: 'first_attack_guaranteed', description: 'Your resolve grants you first strike.' },
+    exchange2: {
+      getBossText: (choice1Id: string, s: PlayerSnapshot) => {
+        if (choice1Id === 'honest') {
+          return 'What do you understand of thresholds? They are not barriers. They are questions. The Tower asks: what have you become? What are you becoming? Most who cross here have not yet formed an answer.';
+        }
+        if (choice1Id === 'aggressive') {
+          return `The ${s.adventurerArchetype} who takes. I have seen your kind many times. Strong, yes. Clear in their want. But the Tower does not reward want. It rewards knowing. Do you know what you are taking, and why?`;
+        }
+        return `Stories. The guild collects them like stones. This one says I am ancient, relentless, unknowable. That one says I am simply waiting. Both are true. What did YOUR story say about what happens if you cross me?`;
       },
-      {
-        id: 'ask',
-        label: 'Ask what she remembers',
-        description: 'Seek knowledge before the fight.',
-        bossReaction: '"They always want to know their predecessors\' mistakes. Wisdom shows in the asking. I will remember this."',
-        combatEffect: { type: 'dodge_boost', value: 20, description: '+20% dodge first turn — she respects your caution.' },
+      getChoices: (choice1Id: string, s: PlayerSnapshot) => {
+        if (choice1Id === 'honest') return [
+          {
+            id: 'wisdom',
+            label: 'Some things must be earned before they\'re crossed.',
+            description: 'You acknowledge the weight of the threshold.',
+            tags: ['WIS_path'],
+          },
+          {
+            id: 'earned',
+            label: 'I\'ve earned mine. Ask the things I killed to get here.',
+            description: `${s.monstersKilledThisRun} monsters can testify.`,
+            tags: ['STR_path'],
+          },
+        ];
+        if (choice1Id === 'aggressive') return [
+          {
+            id: 'defiant',
+            label: 'The why is mine. My reason needs no approval.',
+            description: 'Unapologetic. This is who you are.',
+            tags: ['aggressive_path'],
+          },
+          {
+            id: 'soften',
+            label: '...You\'re right. I chose my words poorly.',
+            description: 'Acknowledge the overreach. There is dignity in this.',
+            tags: ['CHA_path'],
+            statRequirement: { stat: 'CHA', minPoints: 50 },
+          },
+        ];
+        // curious path
+        return [
+          {
+            id: 'respect_unbeaten',
+            label: 'That you\'ve never been beaten.',
+            description: 'Acknowledge what she is.',
+            tags: ['WIS_path'],
+          },
+          {
+            id: 'fortune',
+            label: 'That you remember every one who failed.',
+            description: 'Lean into the pattern-breaking. Maybe you\'re different.',
+            tags: ['LCK_path'],
+          },
+        ];
       },
-      {
-        id: 'silent',
-        label: 'Say nothing. Attack.',
-        description: 'No words. Only intent.',
-        bossReaction: 'Vanya closes her eyes slowly. "Silence can be strength. Or arrogance. We shall find out which."',
-        combatEffect: { type: 'damage_bonus', value: 15, description: '+15% first-strike damage — your silence unnerved her.' },
+    },
+    exchange3: {
+      getBossText: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        if (tags.includes('WIS_path')) {
+          return `You understand thresholds. That is rare — rarer than strength, rarer than speed. Most arrive and see a wall. You see a question. The Tower respects the question. I... may respect the asker. What do you choose?`;
+        }
+        if (tags.includes('LCK_path')) {
+          return `"Different." They all believe it, the ${s.adventurerArchetype} especially. Yet fortune is a capricious guardian. You may find that it has already prepared something for you here. Or it may simply watch you fail. Either way, you must choose.`;
+        }
+        if (tags.includes('CHA_path')) {
+          return `You caught yourself. That... takes something. Most who open with aggression carry it to the end. The fact that you can change course tells me something about your nature. What is your next move?`;
+        }
+        return `An honest ${s.adventurerArchetype}. I have seen many. The Tower chews through honesty as easily as deception. But it has its own respect for those who do not hide. Choose.`;
       },
-    ],
-    combatOpener: (s: PlayerSnapshot, choiceId: string) => {
-      if (choiceId === 'ask') return `"The threshold opens. What you find beyond it depends on what you bring with you."`;
-      if (choiceId === 'silent') return `"Very well, ${s.characterName}. Let your actions speak."`;
-      return `"Then let the threshold judge you."`;
+      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
+
+        // WIS path: weakness reveal
+        if (tags.includes('WIS_path')) {
+          outcomes.push({
+            id: 'weakness_revealed',
+            label: 'Ask what the threshold reveals about itself.',
+            description: 'The question earns an answer.',
+            unlockConditions: {
+              requiredTags: ['WIS_path'],
+              statCheck: { stat: 'WIS', minPoints: 100 },
+            },
+            achievement: 'vanya_the_understood',
+            combatEffect: {
+              type: 'weakness_exposed',
+              description: 'Vanya revealed her shell is bypassed by magic and status effects.',
+            },
+            bossClosingLine: 'Know this, then: my shell grows when struck. Go around it. Now — the threshold must still be crossed.',
+          });
+        }
+
+        // LCK path: fortune cache
+        if (tags.includes('LCK_path')) {
+          outcomes.push({
+            id: 'loot_cache',
+            label: 'Trust to fortune.',
+            description: 'Perhaps luck has already prepared something here.',
+            unlockConditions: {
+              requiredTags: ['LCK_path'],
+              probability: 0.30,
+            },
+            lootReward: { gold: 75, description: 'A fortune-touched cache — materials and gold, hidden by luck itself.' },
+            bossClosingLine: 'Fortune-seekers sometimes find what the careful miss. There — in the roots. Now prepare yourself.',
+          });
+        }
+
+        // CHA path: bypass
+        if (tags.includes('CHA_path')) {
+          outcomes.push({
+            id: 'bypass',
+            label: 'Convince her your cause is worthy.',
+            description: 'Make the case. She has heard a thousand others.',
+            unlockConditions: {
+              requiredTags: ['CHA_path'],
+              statCheck: { stat: 'CHA', minPoints: 150 },
+            },
+            achievement: 'walked_past_death',
+            combatEffect: { type: 'none' },
+            bossClosingLine: '...Go. The threshold was never meant to stop the worthy. I will remember the name that turned me without a blow.',
+          });
+        }
+
+        return outcomes;
+      },
     },
   },
 };
@@ -123,57 +277,139 @@ const SORATH: MilestoneBoss = {
   pantheon: 'Ars Goetia',
   appearanceEmoji: '🎭',
   appearance: 'A lean figure in nobleman\'s attire that shimmers between solid and mirage. His face never quite resolves — always beautiful, always unsettling. Eyes like amber coins.',
-  lore: 'Sorath was bound into the Tower as punishment for his deceptions in the world above. But here, in the convergence space, lies have more power than truth. He has made a kingdom of them.',
+  lore: 'Sorath was bound into the Tower as punishment for his deceptions in the world above. Here, lies have power. He has made a kingdom of them. He wants your agreement more than your defeat — to make you choose damnation willingly.',
   theme: 'Temptation & Corruption',
+  bossDefeatedEcho: 'Sorath\'s throne is empty. The thousand-tongued Duke was finally silenced by a mortal who refused his bargains. The amber eyes are gone. Whatever he offered the one who stood here — they chose the sword instead.',
   mechanic: {
     name: 'Rewind',
-    hint: 'He adapts. Repeat the same action three times and he will be waiting for it.',
-    observeReveal: 'Sorath reads your last three action types and builds resistance. Vary your approach: mix strikes, defenses, and skills each turn cycle.',
+    hint: 'He adapts. Repeat the same action three times and he will be ready for it.',
+    observeReveal: 'Sorath reads your last three action types and builds resistance. Vary your approach: mix strikes, defenses, and skills each turn cycle to prevent his adaptation.',
   },
-  dialogue: {
-    opening: 'Oh. Another one. You all have the same look — determined, slightly afraid, completely unaware that the real danger was never down here.',
-    personalizedTaunt: (s: PlayerSnapshot) => {
-      if (s.deityFavor === 'blessed') {
-        return `${s.patronDeityName}'s beloved. How touching. Tell me — if your god has blessed you so generously, why do you look so uncertain standing here?`;
-      }
-      if (s.deityFavor === 'abandoned') {
-        return `${s.patronDeityName} barely knows your name anymore. You can feel it, can't you? That silence where the divine warmth should be. Come. I\'ll give you something to believe in.`;
-      }
-      if (s.healingReliant) {
-        return `You carry ${s.consumablesUsed} used potions worth of desperation. You patch yourself up and call it strategy. That's not combat, darling — that's anxiety with a sword.`;
-      }
-      if (s.observer) {
-        return `Patient. Careful. You studied everything before you struck. What did all that watching teach you? Because from where I stand, it looks like fear wearing wisdom's clothes.`;
-      }
-      return `You fight with a ${s.weaponName}. You worship ${s.patronDeityName}. You've killed ${s.monstersKilledThisRun} things to get here. And you still don\'t know what you want from this place. That's the most interesting thing about you.`;
+  conversation: {
+    exchange1: {
+      bossOpening: 'Oh. Another one. You all have the same look — determined, slightly afraid, completely unaware that the real danger was never down here. Tell me: what do you think you\'re fighting for?',
+      getChoices: (s: PlayerSnapshot) => [
+        {
+          id: 'mission',
+          label: 'To get through. Nothing more.',
+          description: 'Simple, honest. You want no part of his games.',
+          tags: ['simple_honest'],
+        },
+        {
+          id: 'expose',
+          label: 'You\'re stalling. You\'re afraid of something.',
+          description: 'Turn his tactics back on him immediately.',
+          tags: ['INT_path'],
+          statRequirement: { stat: 'INT', minPoints: 80 },
+        },
+        {
+          id: 'engage',
+          label: 'Let\'s hear what you\'re offering.',
+          description: 'Play his game — carefully.',
+          tags: ['CHA_path'],
+        },
+      ],
     },
-    choices: [
-      {
-        id: 'refuse',
-        label: 'I want nothing from you.',
-        description: 'Reject his framing entirely.',
-        bossReaction: '"Nothing? How refreshingly honest. Most say that and mean the opposite. Perhaps you are different." He sounds almost impressed.',
-        combatEffect: { type: 'none', description: 'He takes you seriously. No advantage — but no disadvantage either.' },
+    exchange2: {
+      getBossText: (choice1Id: string, _s: PlayerSnapshot) => {
+        if (choice1Id === 'mission') return '"Nothing more." The simplest lie always. Everyone wants more. That\'s why you\'re here — not to survive, but to surpass. What are you surpassing *toward*?';
+        if (choice1Id === 'expose') return 'A pause. His face flickers. "...Clever. Most take until at least the second exchange to try that. I am... rarely caught off-balance." He recovers, amber eyes sharpening. "Fine. What gave me away?"';
+        return '"Ah — curiosity! My favorite weakness. I\'m offering the obvious: a guarantee. You step aside right now, and I give you passage without consequence. Worth considering, don\'t you think?"';
       },
-      {
-        id: 'negotiate',
-        label: 'What are you offering?',
-        description: 'Hear the deal before refusing it.',
-        bossReaction: '"Curiosity! My favorite weakness. Come then — I\'ll show you exactly what you\'re walking away from." He grins, and for a moment his face is perfectly clear.',
-        combatEffect: { type: 'dodge_boost', value: 15, description: 'You learned something — +15% dodge.' },
+      getChoices: (choice1Id: string, _s: PlayerSnapshot) => {
+        if (choice1Id === 'mission') return [
+          {
+            id: 'unmoved',
+            label: 'I said what I meant. Stand aside or don\'t.',
+            description: 'Unyielding. He can\'t work with someone who won\'t engage.',
+            tags: ['unmoved_path'],
+          },
+          {
+            id: 'admit',
+            label: '...Yes. There is something else.',
+            description: 'An honest admission. This surprises him.',
+            tags: ['CHA_path'],
+            statRequirement: { stat: 'CHA', minPoints: 80 },
+          },
+        ];
+        if (choice1Id === 'expose') return [
+          {
+            id: 'specifics',
+            label: 'Your eyes. They moved before your face changed. You\'re reading me.',
+            description: 'Precise observation. The INT play.',
+            tags: ['INT_path', 'exposed_liar'],
+            statRequirement: { stat: 'INT', minPoints: 120 },
+          },
+          {
+            id: 'gut',
+            label: 'I can\'t say. Instinct.',
+            description: 'Honest about the limit of your insight.',
+            tags: ['simple_honest'],
+          },
+        ];
+        return [
+          {
+            id: 'counter_offer',
+            label: 'What do YOU get from letting me through?',
+            description: 'Every deal has two sides. Find his.',
+            tags: ['CHA_path', 'bargainer'],
+            statRequirement: { stat: 'CHA', minPoints: 100 },
+          },
+          {
+            id: 'reject',
+            label: 'I don\'t make deals with bound demons.',
+            description: 'Shut it down. He expected this.',
+            tags: ['aggressive_path'],
+          },
+        ];
       },
-      {
-        id: 'expose',
-        label: 'You\'re afraid of the truth.',
-        description: 'Turn his tactics back on him.',
-        bossReaction: 'A pause. His face flickers. "...Clever. Very clever. I haven\'t heard that in some time." His amber eyes narrow.',
-        combatEffect: { type: 'enemy_enraged', description: 'He\'s rattled but furious — he fights harder.' },
+    },
+    exchange3: {
+      getBossText: (choice1Id: string, choice2Id: string, _s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        if (tags.includes('exposed_liar')) return '"You found the seam in my performance. That has not happened in..." He is quiet for a moment. "I will not insult you with another script. What now?"';
+        if (tags.includes('bargainer')) return '"What do I get?" A long pause. Then something almost like honesty crosses his face. "The same thing I always want. To matter to someone. For the transaction to mean something. It\'s pathetic, I know."';
+        if (tags.includes('CHA_path')) return '"You\'re unusual. Most choose the simple path — attack or flee. You stay and talk. I respect that. It changes nothing about my mandate, but I respect it."';
+        return '"Simple to the end. I appreciate the consistency, if not the conversation."';
       },
-    ],
-    combatOpener: (s: PlayerSnapshot, choiceId: string) => {
-      if (choiceId === 'expose') return `"You'll regret that, ${s.characterName}. I don't forget."`;
-      if (choiceId === 'negotiate') return `"Let me show you what your choices have earned. And cost."`;
-      return `"Nothing from me. I wonder if that remains true when we're done here."`;
+      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
+
+        if (tags.includes('exposed_liar')) {
+          outcomes.push({
+            id: 'weakness_revealed',
+            label: 'Ask what he\'s actually afraid of.',
+            description: 'A liar exposed will sometimes tell the truth.',
+            unlockConditions: {
+              requiredTags: ['exposed_liar'],
+              statCheck: { stat: 'INT', minPoints: 120 },
+            },
+            achievement: 'sorath_truth_extracted',
+            combatEffect: {
+              type: 'weakness_exposed',
+              description: 'Sorath revealed he adapts to repeated patterns — vary your action types each turn.',
+            },
+            bossClosingLine: '"Fine. The truth: I read what you repeat and build walls against it. So don\'t repeat. Now — let\'s settle this properly."',
+          });
+        }
+
+        if (tags.includes('bargainer') && s.statPoints.CHA >= 150) {
+          outcomes.push({
+            id: 'bypass',
+            label: 'Complete the bargain.',
+            description: 'He found his dignity in the honesty. Close the deal.',
+            unlockConditions: {
+              requiredTags: ['bargainer'],
+              statCheck: { stat: 'CHA', minPoints: 150 },
+            },
+            achievement: 'walked_past_death',
+            bossClosingLine: '"Go. It wasn\'t a victory I wanted from you anyway. Come back, if you survive. I\'d like to talk again."',
+          });
+        }
+
+        return outcomes;
+      },
     },
   },
 };
@@ -185,58 +421,151 @@ const KUTCHER: MilestoneBoss = {
   id: 'kutcher_floor15',
   floor: 15,
   name: 'Kutcher',
-  epithet: 'The Death-Choir\'s Conductor',
+  epithet: "The Death-Choir's Conductor",
   pantheon: 'Mesopotamian',
   appearanceEmoji: '🦴',
-  appearance: 'A skeletal figure draped in funerary linen, wrapped in clay tablets inscribed with forgotten names. Small bones dangle from threads at his wrists, chiming softly.',
-  lore: 'Kutcher came to the Tower seeking the names of the dead. In the convergence, he began to collect them, singing their ghosts into harmonies. He wants to add your name to his chorus.',
+  appearance: 'A skeletal figure draped in funerary linen. Clay tablets inscribed with forgotten names cover his body. Small bones dangle from threads at his wrists, chiming softly.',
+  lore: "Kutcher came to the Tower seeking the names of the dead. Every mortal who ever drew breath and returned to dust. In the convergence, he began to collect them, singing their ghosts into harmonies. He wants to add your name to his chorus.",
   theme: 'Mortality & the Inevitability of Ending',
+  bossDefeatedEcho: "Kutcher's choir is silent. The Bone-Singer who collected ten thousand names has had his own name written — by the hand of a mortal adventurer. The clay tablets stand empty. His collection will grow no further.",
   mechanic: {
     name: 'Static Siphon',
-    hint: 'Each action you take drains your momentum. Too many actions and you lose your edge.',
-    observeReveal: 'He siphons your speed with each action you stage. If your bonus action threshold drops below his speed, you lose it. Use skills and items to preserve your action economy.',
+    hint: 'Each action drains your momentum. Too many actions and you lose your edge.',
+    observeReveal: "Kutcher siphons your speed with each action staged. If your speed drops below his threshold, you lose your bonus action. Use skills and items to preserve your action economy.",
   },
-  dialogue: {
-    opening: 'What a lovely name you carry. I\'ve been collecting names for centuries. Yours... has a particular resonance. When it\'s time, I\'ll sing it properly.',
-    personalizedTaunt: (s: PlayerSnapshot) => {
-      if (s.totalDeaths > 0) {
-        return `I already know the shape of your ending, ${s.characterName}. I have seen it ${s.totalDeaths} time${s.totalDeaths > 1 ? 's' : ''}. Each one sounded slightly different. More surprised. Then less surprised. Now I wonder — have you made your peace with the melody?`;
-      }
-      if (s.isFirstRun) {
-        return `You have never died. How extraordinary — and how temporary. Don't worry. First deaths are always the most memorable. I'll sing yours beautifully.`;
-      }
-      if (s.reckless) {
-        return `You court death like a reckless lover. ${s.fleeCount > 0 ? `Even fleeing ${s.fleeCount} times couldn't slow you down.` : ''} It would be romantic if it weren't so final.`;
-      }
-      return `The ${s.weaponName} you carry. The ${s.patronDeityName} you pray to. Neither will keep your name from my collection. I wait for all of them. I am patient.`;
+  conversation: {
+    exchange1: {
+      bossOpening: "What a lovely name you carry. I've been collecting names for centuries — each one a different note. Yours has a particular resonance. Before I add it to my choir... introduce yourself. Tell me something the name doesn't.",
+      getChoices: (s: PlayerSnapshot) => [
+        {
+          id: 'sing',
+          label: 'Sing something.',
+          description: 'Meet him on his terms. Whatever comes to mind.',
+          tags: ['WIS_path', 'singer'],
+        },
+        {
+          id: 'name_refuse',
+          label: 'My name isn\'t yours to take.',
+          description: 'Defiance. Simple, clear.',
+          tags: ['defiant_path'],
+        },
+        {
+          id: 'ask_list',
+          label: 'Tell me whose names you\'ve collected.',
+          description: 'Learn about those who came before.',
+          tags: ['curious_path'],
+        },
+      ],
     },
-    choices: [
-      {
-        id: 'sing',
-        label: 'Sing something back.',
-        description: 'Meet him on his own terms.',
-        bossReaction: 'Kutcher stops. The bones at his wrists go still. "...You sang. No one has ever..." A long silence. "Your name earns a gentler note than most."',
-        combatEffect: { type: 'dodge_boost', value: 25, description: 'His surprise grants you a grace period — +25% dodge first turn.' },
+    exchange2: {
+      getBossText: (choice1Id: string, s: PlayerSnapshot) => {
+        if (choice1Id === 'sing') return 'The bones at his wrists go still. A long silence. "...You sang. No one has ever—" He stops himself. "The melody was imperfect. But the attempt. The attempt was genuine. Tell me — do you understand why that matters to me?"';
+        if (choice1Id === 'name_refuse') return `"Oh, but it already IS mine. It simply hasn\'t arrived yet." He sounds almost gentle. "Every ${s.adventurerArchetype} who comes to me says something like that. Most in those exact words. What makes you different from all the others who refused?"`;
+        return `"Whose names." A pause. "All of them. The warriors who trusted their arms. The mages who trusted their spells. The gamblers who trusted the dice. Do you want to know which kind survived longest? You might be surprised."`;
       },
-      {
-        id: 'defiant',
-        label: 'My name isn\'t yours to take.',
-        description: 'Refuse his ownership of your fate.',
-        bossReaction: '"Oh, but it already is. It is simply waiting." He sounds almost kind. "Defiance is the most common final verse. But sometimes it changes the ending."',
-        combatEffect: { type: 'first_attack_guaranteed', description: 'Your defiance earns initiative.' },
+      getChoices: (choice1Id: string, _s: PlayerSnapshot) => {
+        if (choice1Id === 'sing') return [
+          {
+            id: 'why_singing',
+            label: 'Because silence means agreement. I disagreed.',
+            description: 'Philosophical. You knew exactly what you were doing.',
+            tags: ['WIS_path', 'philosopher'],
+            statRequirement: { stat: 'WIS', minPoints: 80 },
+          },
+          {
+            id: 'honest_song',
+            label: 'I don\'t know. It felt right.',
+            description: 'Honest in its simplicity.',
+            tags: ['honest_path'],
+          },
+        ];
+        if (choice1Id === 'name_refuse') return [
+          {
+            id: 'made_it',
+            label: 'What I\'ve done since I chose to descend.',
+            description: 'Not defiance — accomplishment.',
+            tags: ['STR_path'],
+          },
+          {
+            id: 'mortality',
+            label: 'I know I\'m going to die. I just choose when and where.',
+            description: 'Embrace mortality without surrendering to it.',
+            tags: ['WIS_path'],
+          },
+        ];
+        return [
+          {
+            id: 'want_to_know',
+            label: 'Yes. Tell me which kind survived longest.',
+            description: 'The honest gamble — ask the thing that might help you.',
+            tags: ['LCK_path'],
+          },
+          {
+            id: 'doesnt_matter',
+            label: 'Patterns don\'t determine individuals.',
+            description: 'Reject the statistical frame.',
+            tags: ['defiant_path'],
+          },
+        ];
       },
-      {
-        id: 'ask_list',
-        label: 'Whose names have you collected?',
-        description: 'Ask about those who came before.',
-        bossReaction: 'He pauses and tilts his skull. "You want to know your predecessors. How curious. Very well — they mostly arrived confident and departed surprised."',
-        combatEffect: { type: 'none', description: 'He respected the question. No advantage; but no ambush either.' },
+    },
+    exchange3: {
+      getBossText: (choice1Id: string, choice2Id: string, _s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        if (tags.includes('philosopher')) return '"Silence means agreement." He tilts his skull, considering. "That is... new. The names I collect never saw their silence as consent. They saw it as absence. You see it as position. That changes something in how I hear your name."';
+        if (tags.includes('mortality')) return '"Choose when and where." His voice softens to something almost respectful. "Every warrior who ever said that eventually found out if they meant it. Most didn\'t. What will you do with your choice now?"';
+        if (tags.includes('LCK_path')) return '"The survivors? The WIS-built ones. The Paladins. The methodical. Not because they hit harder — because they knew when to endure. Does knowing that change your approach? It shouldn\'t. It should terrify you."';
+        return '"The defiant. Always the defiant. Choose what comes next."';
       },
-    ],
-    combatOpener: (_s: PlayerSnapshot, choiceId: string) => {
-      if (choiceId === 'sing') return `"Let us compose the final verse together."`;
-      if (choiceId === 'defiant') return `"Then prove it. The choir is listening."`;
-      return `"Their names remembered you, in a way. Let us see if yours will too."`;
+      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
+
+        if (tags.includes('singer') || tags.includes('philosopher')) {
+          outcomes.push({
+            id: 'weakness_revealed',
+            label: 'Ask him what note your fate should take.',
+            description: 'The singer might answer a singer.',
+            unlockConditions: {
+              requiredTags: ['WIS_path'],
+              statCheck: { stat: 'WIS', minPoints: 100 },
+            },
+            achievement: 'kutcher_song_of_truth',
+            combatEffect: {
+              type: 'weakness_exposed',
+              description: 'Kutcher drains your speed each action. Conserve your moves — fewer, heavier actions preserve your bonus slot.',
+            },
+            bossClosingLine: '"Every action you take, I take a note of your speed. Slow your rhythm. Fewer, harder. That is the only song I respect."',
+          });
+        }
+
+        if (tags.includes('LCK_path') && Math.random() < 0.25) {
+          outcomes.push({
+            id: 'loot_cache',
+            label: 'Ask to see the effects of a survivor\'s name.',
+            description: 'The Paladin types who survived — they left something behind.',
+            unlockConditions: { requiredTags: ['LCK_path'], probability: 0.25 },
+            lootReward: { gold: 50, description: 'An echo of a past survivor\'s fortune — materials from the long-ago.' },
+            bossClosingLine: '"The Bulwark who survived left this behind. Take it. It will not spare you what comes next."',
+          });
+        }
+
+        if (tags.includes('mortality') && s.statPoints.CHA >= 120) {
+          outcomes.push({
+            id: 'bypass',
+            label: 'The choice is to walk past.',
+            description: 'You chose your moment. This is it.',
+            unlockConditions: {
+              requiredTags: ['mortality'],
+              statCheck: { stat: 'CHA', minPoints: 120 },
+            },
+            achievement: 'walked_past_death',
+            bossClosingLine: '"Then you have chosen your moment. I will record this. Not your name — not yet. But this choice." He steps aside. "Go. The choir can wait for another voice."',
+          });
+        }
+
+        return outcomes;
+      },
     },
   },
 };
@@ -251,61 +580,155 @@ const KALINDI: MilestoneBoss = {
   epithet: 'Current of All Life',
   pantheon: 'Hindu',
   appearanceEmoji: '🌊',
-  appearance: 'A form of constant flowing water held temporarily in womanly shape. She glows faintly with bioluminescent algae. When she moves, water trails and pools at her feet.',
-  lore: 'Kalindi is the animating force of all waters. She dwells in the Tower\'s depths, not as a prisoner, but as the current that runs through everything. She wants to purify the climbers by returning them to her waters.',
+  appearance: 'A form of constant flowing water held temporarily in womanly shape. She glows with bioluminescent algae. When she moves, water pools at her feet. Her voice is soft and continuous — like a gentle current.',
+  lore: 'Kalindi is the animating force of all waters. The convergence awakened her to purpose: to purify climbers, to return them to her waters, to cycle them into the world anew. She is not cruel. She simply operates on a scale where individual lives are temporary ripples.',
   theme: 'Purification & Natural Cycles',
+  bossDefeatedEcho: 'Kalindi\'s waters are still. The River-Mother who sought to purify all things has herself been stilled by a mortal hand. The current has no conductor now. Whether she will reform, or whether this pool is all that remains — the Tower has not said.',
   mechanic: {
     name: 'Spreading Contagion',
-    hint: 'Whatever you give her, she gives back worse. Status effects return to you amplified.',
-    observeReveal: 'Any debuff you apply to Kalindi reflects back at 1.5× strength and bypasses your resistance. Use pure damage only — no poison, no curses, no status effects.',
+    hint: 'Whatever affliction you give her, she gives back worse. Status effects reflect at amplified potency.',
+    observeReveal: 'Any debuff you apply to Kalindi reflects to you at 1.5× strength, bypassing your resistance. Use pure damage — no poison, no curses, no status effects.',
   },
-  dialogue: {
-    opening: 'You thirst, yes? I can see it. All living things thirst. Come drink. The river will take you, and you will be... refreshed.',
-    personalizedTaunt: (s: PlayerSnapshot) => {
-      if (s.deityFavor === 'blessed') {
-        return `${s.patronDeityName} has given you so much. Their blessing flows through you like water. Beautiful. Temporary. Water always returns to me eventually.`;
-      }
-      if (s.healingReliant) {
-        return `You have consumed ${s.consumablesUsed} healing draughts. You patch the vessel when you should strengthen it. I am not unkind — I will simply teach you what real restoration feels like.`;
-      }
-      if (s.monstersKilledThisRun > 20) {
-        return `${s.monstersKilledThisRun} lives taken since the descent began. I do not judge — I simply note that much has been poured out. Rivers require filling. What fills you, ${s.characterName}?`;
-      }
-      return `The ${s.primaryStat} that defines you — it is strength, yes, but all strength flows from somewhere. From something. When was the last time you considered the source?`;
+  conversation: {
+    exchange1: {
+      bossOpening: 'You thirst, yes? I can see it. All living things thirst. The water you were made from remembers me. Before we proceed — tell me what you carry. Not the weapon. What you carry inside.',
+      getChoices: (s: PlayerSnapshot) => [
+        {
+          id: 'purpose',
+          label: 'Purpose. I know why I\'m here.',
+          description: 'Confident answer. Purpose is a kind of water too.',
+          tags: ['WIS_path'],
+        },
+        {
+          id: 'anger',
+          label: 'Anger. Something to prove.',
+          description: `The ${s.adventurerArchetype}'s honest answer, perhaps.`,
+          tags: ['STR_path'],
+        },
+        {
+          id: 'question',
+          label: 'A question I can\'t answer any other way.',
+          description: 'Philosophical honesty. The water appreciates questions.',
+          tags: ['LCK_path', 'philosopher'],
+        },
+      ],
     },
-    choices: [
-      {
-        id: 'drink',
-        label: 'Accept the river\'s gift.',
-        description: 'Drink deeply before the battle.',
-        bossReaction: '"There. Yes. You understand instinctively what others spend lifetimes refusing." She seems genuinely pleased. "Perhaps the river will be gentle."',
-        combatEffect: { type: 'dodge_boost', value: 20, description: 'The water grants clarity — +20% dodge.' },
+    exchange2: {
+      getBossText: (choice1Id: string, _s: PlayerSnapshot) => {
+        if (choice1Id === 'purpose') return '"Purpose. Yes. The purposeful ones survive longer. But the water does not reward purpose — only persistence. Your purpose may be true. Is it also patient?"';
+        if (choice1Id === 'anger') return '"Anger burns. Water doesn\'t. I have outlasted more anger than you can imagine — centuries of it. It always purifies into something quieter. What will yours become?"';
+        return '"A question you can\'t answer another way. Tell me the question, if you will. The water has heard many questions. Not all deserve answers. But all deserve asking."';
       },
-      {
-        id: 'stand_ground',
-        label: 'I flow on my own terms.',
-        description: 'Assert your will against her current.',
-        bossReaction: '"Your own terms." She considers this with tidal patience. "The river has heard this before. It does not argue. It simply continues."',
-        combatEffect: { type: 'first_attack_guaranteed', description: 'Your assertion earns the first move.' },
+      getChoices: (choice1Id: string, s: PlayerSnapshot) => {
+        if (choice1Id === 'purpose') return [
+          {
+            id: 'patient_yes',
+            label: 'It has to be. I\'ve survived this far by it.',
+            description: 'Grounding in evidence.',
+            tags: ['WIS_path', 'patient'],
+            statRequirement: { stat: 'WIS', minPoints: 80 },
+          },
+          {
+            id: 'patient_honest',
+            label: 'Not always. Sometimes I simply push.',
+            description: 'Honest about the limits.',
+            tags: ['honest_path'],
+          },
+        ];
+        if (choice1Id === 'anger') return [
+          {
+            id: 'transforms',
+            label: 'Into patience, I hope. One day.',
+            description: 'Awareness of the process.',
+            tags: ['WIS_path'],
+          },
+          {
+            id: 'stays_anger',
+            label: 'I don\'t know. Maybe it stays anger.',
+            description: 'Raw honesty.',
+            tags: ['STR_path'],
+          },
+        ];
+        const question = s.adventurerArchetype === 'Gambler' ? 'Whether luck is earned or given.' : 'Whether I can survive what I haven\'t prepared for.';
+        return [
+          {
+            id: 'share_question',
+            label: question,
+            description: 'Give her the real question.',
+            tags: ['LCK_path', 'question_asked'],
+          },
+          {
+            id: 'private',
+            label: 'It\'s private.',
+            description: 'Keep it.',
+            tags: ['honest_path'],
+          },
+        ];
       },
-      {
-        id: 'question',
-        label: 'What awaits after purification?',
-        description: 'Ask what lies beyond her trial.',
-        bossReaction: '"After? After, you return. Cleaner. More precisely yourself." Her voice softens. "Whether that is improvement or removal... the river decides."',
-        combatEffect: { type: 'none', description: 'She appreciates the philosophical inquiry. Neutral ground.' },
+    },
+    exchange3: {
+      getBossText: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        if (tags.includes('patient') && tags.includes('WIS_path')) return '"Patience and purpose together. These are not qualities water fights against. What would you ask of me, then, if asking is possible before combat?"';
+        if (tags.includes('question_asked')) return `"Whether luck is earned or given. The current doesn\'t judge it — luck is simply where the current takes you. But I can tell you this: the currents here favor those who know when to stop fighting the water and simply... float. What do you choose?"`;
+        if (tags.includes('STR_path')) return '"Strong. Honest. The river doesn\'t hold grudges against those who beat their path through it. Make your choice."';
+        return '"The water has heard your answer. It is neither wrong nor right — only what you carry. Choose what happens next."';
       },
-    ],
-    combatOpener: (_s: PlayerSnapshot, choiceId: string) => {
-      if (choiceId === 'drink') return `"The river flows. And in it, all things find their nature."`;
-      if (choiceId === 'question') return `"Then let the river answer for itself."`;
-      return `"Your terms are acknowledged. The current does not negotiate."`;
+      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
+
+        if (tags.includes('patient') && tags.includes('WIS_path')) {
+          outcomes.push({
+            id: 'weakness_revealed',
+            label: 'Ask the water what flows around the current.',
+            description: 'Patience earns an honest answer.',
+            unlockConditions: {
+              requiredTags: ['WIS_path', 'patient'],
+              statCheck: { stat: 'WIS', minPoints: 120 },
+            },
+            achievement: 'kalindi_river_wisdom',
+            combatEffect: {
+              type: 'weakness_exposed',
+              description: 'Kalindi reflects debuffs at 1.5×. Use pure damage — no status effects, no curses.',
+            },
+            bossClosingLine: '"The current I guard reflects what you throw at it. Do not poison a river. Strike directly. That is the only path."',
+          });
+        }
+
+        if (tags.includes('question_asked') && Math.random() < 0.30) {
+          outcomes.push({
+            id: 'loot_cache',
+            label: 'Float with the current briefly.',
+            description: 'Let the water show you what it carries.',
+            unlockConditions: { requiredTags: ['question_asked'], probability: 0.30 },
+            lootReward: { gold: 60, description: 'Items carried downstream by the river\'s current.' },
+            bossClosingLine: '"The river brought these here. Take what fortune carried. Then come — the current must still be crossed."',
+          });
+        }
+
+        if (tags.includes('WIS_path') && s.statPoints.CHA >= 130) {
+          outcomes.push({
+            id: 'bypass',
+            label: 'Offer to carry the water\'s question forward.',
+            description: 'Promise to bring her curiosity beyond her reach.',
+            unlockConditions: {
+              requiredTags: ['WIS_path'],
+              statCheck: { stat: 'CHA', minPoints: 130 },
+            },
+            achievement: 'walked_past_death',
+            bossClosingLine: '"...Yes. Carry it forward. The water cannot follow where you go. But perhaps you can." She parts. "Be worthy of the carrying."',
+          });
+        }
+
+        return outcomes;
+      },
     },
   },
 };
 
 // ──────────────────────────────────────────────────────────
-// FLOOR 25 — MALIK, THE VOID-KEEPER (Primordial)
+// FLOOR 25 — MALIK, LORD OF WHAT NEVER WAS (Primordial)
 // ──────────────────────────────────────────────────────────
 const MALIK: MilestoneBoss = {
   id: 'malik_floor25',
@@ -314,58 +737,150 @@ const MALIK: MilestoneBoss = {
   epithet: 'Lord of What Never Was',
   pantheon: 'Primordial',
   appearanceEmoji: '🌑',
-  appearance: 'An absence shaped like a man. Wherever you look at him, there\'s nothing — but you can see perfectly around him. Shadows cluster near him like iron filings to a magnet.',
-  lore: 'Malik existed before creation and will exist after ending. He slipped into the Tower through cracks in reality, drawn by the chaos of the convergence. He has one curiosity: what happens when you push a climber into true nothingness?',
+  appearance: 'An absence shaped like a man. Wherever you look at him, there\'s nothing — but you can see perfectly around him. Shadows cluster near him like iron filings to a magnet. When he speaks, the sound comes from everywhere at once.',
+  lore: 'Malik existed before creation. He slipped into the Tower through cracks in reality, drawn by the chaos of the convergence. He has no agenda beyond curiosity: what happens when you push a climber into true nothingness?',
   theme: 'Unreality & Dissolution',
+  bossDefeatedEcho: 'Where Malik stood, there is now a perfect absence — the shape of a man-sized nothing. He was dissolved by a mortal who refused to accept that dissolution was inevitable. The void has learned it can be fought. Whether it has learned to be afraid is another question.',
   mechanic: {
     name: 'Echo Chains',
     hint: 'Your consecutive strikes power his next blow. The longer your combo, the harder he hits back.',
     observeReveal: 'Malik mirrors your comboCount as bonus damage on his next attack. Deliberately take small hits or miss attacks to reset your combo before it becomes lethal.',
   },
-  dialogue: {
-    opening: 'You are here. You are not here. Both are equally true. I have been examining this paradox for some time. You will help me test it.',
-    personalizedTaunt: (s: PlayerSnapshot) => {
-      if (s.isFirstRun && !s.isComebackRun) {
-        return `You have existed for so brief a time. And you've spent a portion of that existence climbing toward something you can't quite name. I find that... not tragic, exactly. More like interesting mathematics.`;
-      }
-      if (s.reckless) {
-        return `You walk toward annihilation repeatedly and call it bravery. I am the annihilation you've been walking toward. The symmetry pleases me.`;
-      }
-      if (s.observer) {
-        return `You watch before you act. Careful. Thoughtful. You observe the shape of things before engaging them. Have you considered observing the absence of shape? That is where I live.`;
-      }
-      if (s.dominantVector) {
-        return `Your pattern is ${s.dominantVector.toLowerCase().replace('_', ' ')}. I can see the shape of your choices from outside time. They form an interesting trajectory. Toward what, I wonder? Perhaps nothing. Nothing is my domain.`;
-      }
-      return `The ${s.weaponName}. The ${s.patronDeityName}. The ${s.primaryStat}-trained body. All of it — real to you. Temporary to me. Shall we discover which perspective is correct?`;
+  conversation: {
+    exchange1: {
+      bossOpening: 'You are here. You are not here. Both are equally true. I have been examining this paradox for some time and you will help me test it. Tell me — what, to you, is real?',
+      getChoices: (s: PlayerSnapshot) => [
+        {
+          id: 'exist',
+          label: 'What I can touch, strike, and survive.',
+          description: 'Pragmatic. Real is what matters.',
+          tags: ['STR_path', 'pragmatic'],
+        },
+        {
+          id: 'choice',
+          label: 'What I choose to treat as real.',
+          description: `The ${s.adventurerArchetype}'s philosophical answer.`,
+          tags: ['WIS_path', 'philosopher'],
+        },
+        {
+          id: 'void_real',
+          label: 'Nothing is real. That\'s why I can do anything.',
+          description: 'Meet unreality with unreality.',
+          tags: ['LCK_path', 'void_embrace'],
+          statRequirement: { stat: 'LCK', minPoints: 60 },
+        },
+      ],
     },
-    choices: [
-      {
-        id: 'exist',
-        label: 'I exist. That\'s enough.',
-        description: 'Assert existence against the void.',
-        bossReaction: '"Enough." He seems to taste the word. "Mortals say that. The void has no concept of enough. But I respect the assertion."',
-        combatEffect: { type: 'first_attack_guaranteed', description: 'Your assertion anchors you in reality — first strike.' },
+    exchange2: {
+      getBossText: (choice1Id: string, _s: PlayerSnapshot) => {
+        if (choice1Id === 'exist') return '"What you can touch." Interesting. I am the space between what can be touched. Does that make me less real? Most who arrive with your conviction answer this question with their sword. A few answer it with their attention."';
+        if (choice1Id === 'choice') return '"What you choose to treat as real. I have heard this answer from scholars, prophets, and gamblers alike. Tell me — what do you choose to treat as real about ME?"';
+        return '"Nothing is real. Yes. And the gambler — the one who plays in the void — sometimes wins exactly because they refuse to believe in the rules. Tell me what winning looks like to someone who believes in nothing."';
       },
-      {
-        id: 'ask_nothing',
-        label: 'What is nothing like?',
-        description: 'Ask about the void on its own terms.',
-        bossReaction: '"Like..." A long pause. "Like the space between thoughts. Like the moment before you understand something. You have been there. You return there every time you sleep."',
-        combatEffect: { type: 'dodge_boost', value: 30, description: 'Understanding nothingness grants strange clarity — +30% dodge.' },
+      getChoices: (choice1Id: string, s: PlayerSnapshot) => {
+        if (choice1Id === 'exist') return [
+          {
+            id: 'threat_real',
+            label: 'Your threat is real enough. I\'ll treat it accordingly.',
+            description: 'Pragmatic and focused.',
+            tags: ['STR_path', 'pragmatic'],
+          },
+          {
+            id: 'attention',
+            label: 'I\'m paying attention right now.',
+            description: 'Choose the deeper answer.',
+            tags: ['INT_path'],
+            statRequirement: { stat: 'INT', minPoints: 90 },
+          },
+        ];
+        if (choice1Id === 'choice') return [
+          {
+            id: 'danger_real',
+            label: 'The danger you represent. That is real.',
+            description: 'Focused on the immediate.',
+            tags: ['WIS_path'],
+          },
+          {
+            id: 'paradox',
+            label: 'The paradox itself. You are a real absence.',
+            description: 'Acknowledge his nature without flinching.',
+            tags: ['INT_path', 'paradox_holder'],
+            statRequirement: { stat: 'INT', minPoints: 100 },
+          },
+        ];
+        return [
+          {
+            id: 'survive',
+            label: 'Surviving the void. That\'s winning.',
+            description: 'The gambler knows the house edge.',
+            tags: ['LCK_path', 'void_gambler'],
+          },
+          {
+            id: 'through_void',
+            label: 'Getting through it to what\'s beyond.',
+            description: 'The void as a door, not a destination.',
+            tags: ['LCK_path', 'void_walker'],
+          },
+        ];
       },
-      {
-        id: 'void_self',
-        label: 'Then let\'s see which of us is really nothing.',
-        description: 'Meet unreality with raw defiance.',
-        bossReaction: '"A challenge. How delightful. Most cling to existence. You weaponize it." Something in the dark shifts, excited.',
-        combatEffect: { type: 'damage_bonus', value: 25, description: '+25% damage — your defiance destabilizes him.' },
+    },
+    exchange3: {
+      getBossText: (choice1Id: string, choice2Id: string, _s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        if (tags.includes('paradox_holder')) return '"A real absence." He is quiet. Genuinely quiet. "I have never been named that way before. Not by anyone. The language fits in a way I cannot explain, which is unusual — I know the explanation for most things. Choose carefully what comes next. I am paying attention now."';
+        if (tags.includes('attention')) return '"You are paying attention. Yes. Most do not. They arrive with the answer already formed and the conversation is simply delay. But you — you are still forming it. That is rare. Choose."';
+        if (tags.includes('void_gambler')) return '"Surviving the void. The gamblers always bet on survival and then discover the void has better odds. But occasionally — occasionally — they win. Choose your odds."';
+        return '"An absence choosing its resolution. That is what you are to me right now — a shape in the space before decision. Choose."';
       },
-    ],
-    combatOpener: (_s: PlayerSnapshot, choiceId: string) => {
-      if (choiceId === 'ask_nothing') return `"Then let me show you. The lesson begins with dissolution."`;
-      if (choiceId === 'void_self') return `"Yes. Let us see. I have not been tested like this in... any time. All time."`;
-      return `"Enough. Let us examine your existence under proper conditions."`;
+      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+        const tags = [choice1Id, choice2Id];
+        const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
+
+        if (tags.includes('paradox_holder') || tags.includes('attention')) {
+          outcomes.push({
+            id: 'weakness_revealed',
+            label: 'Ask what the void looks like from inside.',
+            description: 'He is paying attention. He might answer.',
+            unlockConditions: {
+              requiredTags: ['INT_path'],
+              statCheck: { stat: 'INT', minPoints: 100 },
+            },
+            achievement: 'malik_void_scholar',
+            combatEffect: {
+              type: 'weakness_exposed',
+              description: 'Malik mirrors your combo count as damage. Reset your combo deliberately — take a hit or miss an attack before it stacks past 3.',
+            },
+            bossClosingLine: '"From inside: your consecutive strikes compound. I take that momentum and return it. Break the chain before it breaks you. Now — I have answered. Let us proceed."',
+          });
+        }
+
+        if (tags.includes('void_gambler') && Math.random() < 0.30) {
+          outcomes.push({
+            id: 'loot_cache',
+            label: 'Take the gambler\'s odds.',
+            description: '30% chance the void has already prepared something.',
+            unlockConditions: { requiredTags: ['LCK_path'], probability: 0.30 },
+            lootReward: { gold: 80, description: 'A void-cache — items that exist between what should exist and what does.' },
+            bossClosingLine: '"The void occasionally contains things. You found one. Take it. The odds were always in my favor, but I enjoy the exceptions."',
+          });
+        }
+
+        if (tags.includes('void_walker') && s.statPoints.CHA >= 140) {
+          outcomes.push({
+            id: 'bypass',
+            label: 'Step through him.',
+            description: 'If the void is a door — walk through it.',
+            unlockConditions: {
+              requiredTags: ['void_walker'],
+              statCheck: { stat: 'CHA', minPoints: 140 },
+            },
+            achievement: 'walked_past_death',
+            bossClosingLine: '"Through me. Yes. Through me — not past me. They are different. You understood the distinction." He parts. The absence closes behind you.',
+          });
+        }
+
+        return outcomes;
+      },
     },
   },
 };
@@ -379,7 +894,9 @@ export const MILESTONE_BOSSES: MilestoneBoss[] = [
   KUTCHER,
   KALINDI,
   MALIK,
-  // Floors 30-100 to be added in subsequent sprint
+  // Floors 30-100: Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr,
+  // Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
+  // — to be implemented in subsequent sprint
 ];
 
 export function getMilestoneBoss(floor: number): MilestoneBoss | null {

@@ -108,6 +108,9 @@ interface GameState {
   // Milestone boss chest (5-floor intervals, first-clear only)
   milestoneChestsOpened: number[];
 
+  // Permanently defeated milestone bosses (meta-progression — survives character deletion)
+  defeatedBosses: string[];
+
   // Actions - Phase
   setPhase: (phase: GamePhase) => void;
 
@@ -135,6 +138,10 @@ interface GameState {
 
   // Actions - Milestone chest
   claimMilestoneChest: (floor: number) => void;
+
+  // Actions - Boss defeats (permanent, cross-character meta-progression)
+  defeatBoss: (bossId: string) => void;
+  isBossDefeated: (bossId: string) => boolean;
 
   // Computed
   isDeityUnlocked: (deityId: string) => boolean;
@@ -174,6 +181,7 @@ export const useGameStore = create<GameState>()(
       tutorialStep: 0,
       hasHadFirstCombat: false,
       milestoneChestsOpened: [],
+      defeatedBosses: [],
 
       // Phase
       setPhase: (phase) => {
@@ -307,6 +315,16 @@ export const useGameStore = create<GameState>()(
           milestoneChestsOpened: [...state.milestoneChestsOpened, floor],
         }));
       },
+
+      defeatBoss: (bossId) => {
+        set((state) => ({
+          defeatedBosses: state.defeatedBosses.includes(bossId)
+            ? state.defeatedBosses
+            : [...state.defeatedBosses, bossId],
+        }));
+      },
+
+      isBossDefeated: (bossId) => get().defeatedBosses.includes(bossId),
 
       // Tutorial
       completeTutorial: () => {

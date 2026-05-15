@@ -21,7 +21,7 @@ import type { Weapon, WeaponCategory } from '../../src/types/Weapon';
 import { generateLeveledWeaponDrop } from '../../src/data/weapons';
 import { registerWeapon } from '../../src/data/weaponRegistry';
 import type { StatName } from '../../src/types/Stats';
-import { isMilestoneFloor } from '../../src/data/bosses/milestoneBosses';
+import { isMilestoneFloor, getMilestoneBoss } from '../../src/data/bosses/milestoneBosses';
 import { createPlayerSnapshot } from '../../src/types/PlayerSnapshot';
 import { getDeityById } from '../../src/data/pantheons';
 import { useSoundStore } from '../../src/stores/useSoundStore';
@@ -376,27 +376,31 @@ export default function FloorScreen() {
     // Clear any pending ramifications first
     if (lastRamifications) clearRamifications();
 
-    // Milestone boss floors: compute PlayerSnapshot and route to dialogue screen
+    // Milestone boss floors: check if boss already defeated, then route appropriately
     if (currentNode.type === 'boss' && isMilestoneFloor(map.floorNumber)) {
       const gameState = useGameStore.getState();
+      const milestoneBoss = getMilestoneBoss(map.floorNumber);
+
+      // Boss was already killed by a previous character — show lore tablet instead
+      if (milestoneBoss && gameState.isBossDefeated(milestoneBoss.id)) {
+        router.push('/dungeon/boss-cleared');
+        return;
+      }
+
+      // Build PlayerSnapshot for the conversation system
       const soul = useSoulStore.getState();
-      const deityStore = useDeityStore.getState();
-      const patronDeity = character.patronDeityId
-        ? getDeityById(character.patronDeityId)
-        : null;
+      const patronDeity = character.patronDeityId ? getDeityById(character.patronDeityId) : null;
       const patronDeityName = patronDeity?.name ?? 'No Deity';
+      const deityDomain = (patronDeity as { domain?: string } | null)?.domain ?? 'unknown';
 
       const snapshot = createPlayerSnapshot(
         character,
         map.floorNumber,
-        {
-          totalDeaths: gameState.totalDeaths,
-          totalRuns: gameState.totalRuns,
-          bestFloorReached: gameState.bestFloorReached,
-          runHistory: gameState.runHistory,
-        },
+        { defeatedBosses: gameState.defeatedBosses },
         soul,
-        patronDeityName
+        patronDeityName,
+        deityDomain,
+        milestoneBoss?.id
       );
       useDungeonStore.getState().setBossSnapshot(snapshot);
       router.push('/dungeon/boss-encounter');

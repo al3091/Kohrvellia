@@ -16,6 +16,8 @@ import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
 import { useDeityStore } from '../../src/stores/useDeityStore';
+import { useGameStore } from '../../src/stores/useGameStore';
+import { getMilestoneBoss } from '../../src/data/bosses/milestoneBosses';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { FloatingDamage, type DamagePopup } from '../../src/components/combat/FloatingDamage';
@@ -1090,6 +1092,14 @@ export default function CombatScreen() {
             deityStore.updateChallengeProgress(1);
           }
         }
+      }
+    }
+
+    // Permanently defeat milestone boss (meta-progression — survives character deletion)
+    if (monster?.isBoss && currentRun?.currentFloor) {
+      const milestoneBoss = getMilestoneBoss(currentRun.currentFloor);
+      if (milestoneBoss) {
+        useGameStore.getState().defeatBoss(milestoneBoss.id);
       }
     }
 
