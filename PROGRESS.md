@@ -221,8 +221,46 @@
 - [x] **Quality Tiers** - Crude, Standard, Fine, Superior, Masterwork, Legendary
 - [x] **Material Types** - Rusty, Iron, Steel, Damascus, Mithril, Adamantine
 - [x] **Enchantment System** - of Flame, of Frost, of Venom, of Lightning, of Vampirism, of Slaying, of the Dragon
-- [x] **Weapon Generation** - Random weapon drops with floor-scaled rarity
+- [x] **Weapon Generation** - Random weapon drops with floor-scaled rarity; anti-dupe reroll; level-gated pool via `generateLeveledWeaponDrop`
 - [x] **Starter Weapon System** - Stat-based weapon assignment at character creation
+- [x] **Combat Scaling** - `weapon.finalCritChance` wired into derived stats; `luckAttack` coefficient fixed; `computeMaxResources` routes weapon type correctly
+- [x] **Loot Pool Coverage** - INT/CHA added to humanoid drops; WIS to undead; LCK to demon; all 8 stats have at least one combat source
+
+---
+
+## Phase 1.X: Systems Built This Sprint
+
+### 1.X.1 Flee/Sneak Reform
+- [x] **Avoided Node State** - Successful flee/sneak sets `isAvoided` on node; unblocks "No Retreat" gate in room.tsx
+- [x] **Floor Map Visual** - Avoided nodes show ⚠️ icon and tooltip "Monster still lurks"
+- [x] **Re-entry Behavior** - Avoided nodes skip sneak window; combat starts immediately
+
+### 1.X.2 Multi-Step Dungeon Events
+- [x] **Run Flag System** - `DungeonRun.runFlags: string[]`; `setRunFlag()` / `getRunFlags()` in dungeon store
+- [x] **New Outcome Types** - `set_flag` and `weapon_reward` added to `EventOutcomeType`
+- [x] **New Events** (5 total):
+  - [x] The Gambler's Coin (LCK, step 1 — sets flag)
+  - [x] The Gambler's Ghost (LCK, step 2 — requires flag, weapon reward)
+  - [x] Fallen Cleric's Cache (WIS — weapon reward)
+  - [x] Sorcerer's Laboratory (INT — weapon reward)
+  - [x] The Devil's Deal (CHA — weapon reward)
+- [x] **Event Priority Logic** - Flag-gated events take priority when prerequisite flag is active
+- [x] **Room.tsx Integration** - Weapon reward pickup UI with "Take It / Leave It" buttons
+
+### 1.X.3 Milestone Boss System
+- [x] **PlayerSnapshot** (`src/types/PlayerSnapshot.ts`) - Archetype-based boss personalization; reads soul behavements for THIS run only; no cross-character history
+- [x] **8 Adventurer Archetypes** - Derived from weapon category: Berserker/Shadow/Hunter/Arcanist/Paladin/Performer/Bulwark/Gambler
+- [x] **Milestone Boss Chest** - Every 5 floors on boss clear: 3 weapon choices from top stats; `milestoneChestsOpenedThisRun` resets per character
+- [x] **Boss Conversation System** - 3-exchange dialogue tree; stat-gated secret outcomes (CHA bypass, LCK cache, WIS/INT weakness reveal)
+- [x] **Boss Defeat Tracking** - Per-run `DungeonRun.clearedBossIds`; account-level `useGameStore.defeatedBosses` (dialogue flavor only); bosses fight every run
+- [x] **5 Bosses Implemented** (floors 5-25):
+  - [x] Vanya (Floor 5, Slavic) — Memory & Recognition; Corrosive Shell
+  - [x] Sorath (Floor 10, Ars Goetia) — Temptation; Rewind
+  - [x] Kutcher (Floor 15, Mesopotamian) — Mortality; Static Siphon
+  - [x] Kalindi (Floor 20, Hindu) — Purification; Spreading Contagion
+  - [x] Malik (Floor 25, Primordial) — Unreality; Echo Chains
+- [ ] **Bosses 6-20** (floors 30-100): Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr, Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
+- [ ] **Boss Dialogue Achievements** - `walked_past_death`, `fortune_s_pet`, `boss_weakness_*` — need data in achievement files
 
 ---
 

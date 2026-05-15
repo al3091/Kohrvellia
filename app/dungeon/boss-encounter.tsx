@@ -22,7 +22,6 @@ import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useCombatStore } from '../../src/stores/useCombatStore';
-import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
@@ -149,10 +148,9 @@ export default function BossEncounterScreen() {
 
     switch (resolvedOutcome.id) {
       case 'bypass': {
-        // No combat — mark node complete, grant achievement, navigate back
-        if (resolvedOutcome.achievement) {
-          useAchievementStore.getState().updateProgress('boss_bypass', 1);
-        }
+        // No combat — mark node complete, navigate back
+        // TODO(achievements): add boss dialogue achievements to level achievement files
+        // resolvedOutcome.achievement contains the intended ID (e.g. 'walked_past_death')
         useDungeonStore.getState().setRunFlag('boss_bypassed');
         const node = getCurrentNode();
         if (node) completeNode(node.id);
@@ -166,9 +164,7 @@ export default function BossEncounterScreen() {
         if (resolvedOutcome.lootReward) {
           modifyGold(resolvedOutcome.lootReward.gold);
         }
-        if (resolvedOutcome.achievement) {
-          useAchievementStore.getState().updateProgress('boss_cache', 1);
-        }
+        // TODO(achievements): wire boss_cache achievement once data exists
         setRunFlag(`loot_cache_granted_${boss.id}`);
         startCombatAndGo();
         break;
@@ -176,9 +172,7 @@ export default function BossEncounterScreen() {
 
       case 'weakness_revealed': {
         // Flag the weakness, then proceed to combat
-        if (resolvedOutcome.achievement) {
-          useAchievementStore.getState().updateProgress('boss_weakness', 1);
-        }
+        // TODO(achievements): wire boss_weakness achievement once data exists
         setRunFlag(`weakness_revealed_${boss.id}`);
         if (resolvedOutcome.combatEffect?.type === 'weakness_exposed') {
           setRunFlag(`boss_mechanic_hint`);

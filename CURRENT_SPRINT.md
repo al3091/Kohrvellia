@@ -1,7 +1,7 @@
 # KOHRVELLIA — Current Sprint
 
-> Last updated: 2026-05-14
-> Status: Phase 2.1/2.2 — Job System shipped; Market Events shipped; Guildhall expansion complete
+> Last updated: 2026-05-15
+> Status: Phase 2.1/2.2 complete + Milestone Boss System + Multi-Step Events + Combat Scaling Fixes
 
 ---
 
@@ -74,6 +74,15 @@ Complete the Job System end-to-end flow (Level 2 → job selection → job benef
 - [x] Guildhall Material Registry — sell-one/sell-all with dynamic pricing via `getMultiplier()`, market-adjusted price display
 - [x] `clearAllStores()` expanded — now resets `useJobStore`, `useSoulStore`, and `useDeityStore` on new game (fixes BUG-002, BUG-006, BUG-014)
 - [x] Removed 7 dead `.ts.tmp` pantheon files from `src/data/pantheons/` (BUG-007)
+- [x] **Combat scaling fixes** — `weapon.finalCritChance` now feeds derived stats (was dead data); `luckAttack` coefficient raised for visible LCK rank progression; `computeMaxResources` routes weapon damage by category (BUG-016, BUG-017, BUG-018)
+- [x] **Shop stale data fix** — `shouldRefreshStock()` force-regenerates when `equipmentStock.length < 12`; shop uses `generateLeveledWeaponDrop` for level-appropriate per-stat weapons (BUG-019, BUG-020)
+- [x] **Loot pool expansion** — INT/CHA added to humanoid drops, WIS to undead, LCK to demon; anti-duplicate reroll on weapon combat drops
+- [x] **Flee/sneak fix** — Successful flee and sneak-past now set `isAvoided` on the node; `room.tsx` "No Retreat" gate unblocked; floor map shows ⚠️ for avoided rooms (BUG-021)
+- [x] **Milestone Boss Chest** — Every 5 floors, boss defeat offers 3 level-appropriate weapon choices based on top 3 stats; resets each run; stored in `DungeonRun.milestoneChestsOpenedThisRun`
+- [x] **Multi-step dungeon events** — 5 new events (Gambler's Coin 2-step, Fallen Cleric's Cache, Sorcerer's Laboratory, Devil's Deal); `set_flag`/`weapon_reward` outcome types; run-scoped `runFlags` system
+- [x] **PlayerSnapshot system** — Archetype-based boss personalization; reads soul behavements (THIS run only), weapon, deity domain, approach style; no cross-character personal history
+- [x] **5 Milestone Bosses (floors 5-25)** — Vanya, Sorath, Kutcher, Kalindi, Malik; each with full 3-exchange conversation tree, archetype-driven dialogue, stat-gated secret outcomes (CHA bypass, LCK cache, WIS/INT weakness reveal)
+- [x] **Boss defeat tracking** — Per-run (`DungeonRun.clearedBossIds`) resets each character; account-level (`useGameStore.defeatedBosses`) kept for dialogue flavor only; bosses fight every run for gear progression
 
 ---
 

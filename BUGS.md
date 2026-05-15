@@ -25,6 +25,17 @@
 
 ---
 
+## Major (Degrades Experience) — New 2026-05-15
+
+| ID | Screen | Issue | Reported | Status |
+|----|--------|-------|----------|--------|
+| BUG-022 | `app/dungeon/boss-encounter.tsx` | Boss dialogue outcome achievements (`walked_past_death`, `vanya_the_understood`, etc.) are referenced in `BossOutcome.achievement` fields and TODO comments, but no matching achievement definitions exist in any level achievement file. Achievement unlocks will silently not fire until data is added. | 2026-05-15 | OPEN — needs achievement data in `src/data/achievements/` |
+| BUG-023 | `app/dungeon/boss-cleared.tsx` | Screen exists and is complete but is currently unreachable — no routing points to it. With per-run boss fights, the screen only makes sense as an intro to the fight (showing that guild history exists) but it's not integrated. | 2026-05-15 | OPEN — needs routing decision |
+| BUG-024 | `useGameStore` + `useDungeonStore` | `useGameStore.milestoneChestsOpened` (account-level) is now shadowed by `DungeonRun.milestoneChestsOpenedThisRun` (run-level). The old field still exists in the store and in saved data but is no longer used. Confusing naming and stale field. | 2026-05-15 | NEEDS REVIEW — remove `milestoneChestsOpened` from `useGameStore` |
+| BUG-025 | `src/data/events/dungeonEvents.ts` | `runFlags` system for multi-step events has no documentation of flag names, semantics, or valid values. Flag names like `'gamblers_coin'` are string literals scattered across the codebase with no registry. | 2026-05-15 | OPEN — needs design doc entry |
+
+---
+
 ## Minor (Polish / Edge Cases)
 
 | ID | Screen | Issue | Reported | Status |
@@ -62,6 +73,12 @@
 | BUG-006 | Job select screen allowed back navigation before job was selected | 2026-05-14 | `BackHandler` subscription in `job-select.tsx` blocks hardware back until `allowBack.current` is true |
 | BUG-007 | 7 `.ts.tmp` pantheon files were dead weight in `src/data/pantheons/` | 2026-05-14 | Files deleted — will be replaced with complete implementations when pantheons are prioritized |
 | BUG-014 | Deity store not cleared on new game | 2026-05-14 | Resolved by same fix as BUG-002 — `useDeityStore.getState().reset()` added to `clearAllStores()` |
+| BUG-016 | `weapon.finalCritChance` was computed on weapon generation but never passed to `calculateDerivedStats` — every weapon in the game had 5-14% effective crit regardless of `baseCritChance` | 2026-05-15 | Added `weaponCritChance` param to `calculateDerivedStats`; all three call sites in `useCharacterStore` now extract and pass `equippedWeapon?.finalCritChance` |
+| BUG-017 | LCK weapon attack scaling (luckAttack) used coefficient 0.008 — same as STR — making Grade I vs Grade G difference only 1 damage point, invisible through variance | 2026-05-15 | Raised `effLCK * 0.008` to `effLCK * 0.012` in `Stats.ts`; Grade G now yields +18% over Grade I |
+| BUG-018 | `computeMaxResources()` passed `weaponDamage` for all weapon types including LCK and magic — omitting `weaponLuck` and `weaponMagic` entirely | 2026-05-15 | `computeMaxResources` now routes weapon damage via category (physical/magic/luck) matching `getDerivedStats` logic |
+| BUG-019 | Shop stale data: stock persisted from old code with only 4 items; `shouldRefreshStock()` never triggered refresh because floor/run counters were unchanged | 2026-05-15 | Added `if (state.equipmentStock.length < 12) return true` to `shouldRefreshStock()`; guarantees regeneration on stale saves |
+| BUG-020 | Shop guaranteed 1-per-stat weapon used `generateRandomWeapon` (4-weapon base pool) — LCK/WIS players always saw same Level 1 weapons regardless of character level | 2026-05-15 | Switched to `generateLeveledWeaponDrop(floor, characterLevel, [stat])` — shop now stocks tier-appropriate weapons |
+| BUG-021 | Flee/sneak success left player trapped in room.tsx — `handleBack()` fired "No Retreat" alert with only one button, no exit | 2026-05-15 | Flee and sneak now call `markNodeAvoided(nodeId)`; room.tsx checks `!node.isAvoided` before blocking back navigation |
 
 ---
 
