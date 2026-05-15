@@ -371,6 +371,10 @@ interface DungeonState {
   hasRunFlag: (flag: string) => boolean;
   getRunFlags: () => string[];
 
+  // Boss encounter snapshot (personalized dialogue)
+  bossSnapshot: import('../types/PlayerSnapshot').PlayerSnapshot | null;
+  setBossSnapshot: (snapshot: import('../types/PlayerSnapshot').PlayerSnapshot | null) => void;
+
   // Reset for new game
   clearAllData: () => void;
   clearRamifications: () => void;
@@ -389,6 +393,7 @@ export const useDungeonStore = create<DungeonState>()(
       currentRun: null,
       lastRamifications: null,
       floorContext: null,
+      bossSnapshot: null,
 
       // Run lifecycle
       startNewRun: () => {
@@ -490,6 +495,10 @@ export const useDungeonStore = create<DungeonState>()(
 
       getRunFlags: () => {
         return get().currentRun?.runFlags ?? [];
+      },
+
+      setBossSnapshot: (snapshot) => {
+        set({ bossSnapshot: snapshot });
       },
 
       moveToNode: (nodeId) => {

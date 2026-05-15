@@ -21,6 +21,9 @@ import type { Weapon, WeaponCategory } from '../../src/types/Weapon';
 import { generateLeveledWeaponDrop } from '../../src/data/weapons';
 import { registerWeapon } from '../../src/data/weaponRegistry';
 import type { StatName } from '../../src/types/Stats';
+import { isMilestoneFloor } from '../../src/data/bosses/milestoneBosses';
+import { createPlayerSnapshot } from '../../src/types/PlayerSnapshot';
+import { getDeityById } from '../../src/data/pantheons';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
@@ -366,16 +369,41 @@ export default function FloorScreen() {
   };
 
   const handleCurrentNodeAction = () => {
-    if (!currentNode) return;
+    if (!currentNode || !map || !character) return;
 
     haptics.medium();
 
     // Clear any pending ramifications first
-    if (lastRamifications) {
-      clearRamifications();
+    if (lastRamifications) clearRamifications();
+
+    // Milestone boss floors: compute PlayerSnapshot and route to dialogue screen
+    if (currentNode.type === 'boss' && isMilestoneFloor(map.floorNumber)) {
+      const gameState = useGameStore.getState();
+      const soul = useSoulStore.getState();
+      const deityStore = useDeityStore.getState();
+      const patronDeity = character.patronDeityId
+        ? getDeityById(character.patronDeityId)
+        : null;
+      const patronDeityName = patronDeity?.name ?? 'No Deity';
+
+      const snapshot = createPlayerSnapshot(
+        character,
+        map.floorNumber,
+        {
+          totalDeaths: gameState.totalDeaths,
+          totalRuns: gameState.totalRuns,
+          bestFloorReached: gameState.bestFloorReached,
+          runHistory: gameState.runHistory,
+        },
+        soul,
+        patronDeityName
+      );
+      useDungeonStore.getState().setBossSnapshot(snapshot);
+      router.push('/dungeon/boss-encounter');
+      return;
     }
 
-    // Navigate to room interaction based on node type
+    // Default: navigate to room interaction
     router.replace('/dungeon/room');
   };
 
