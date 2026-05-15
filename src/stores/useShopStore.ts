@@ -29,6 +29,7 @@ import { useInventoryStore } from './useInventoryStore';
 import { useGameStore } from './useGameStore';
 import { useCharacterStore } from './useCharacterStore';
 import { generateRandomWeapon } from '../data/weapons/baseWeapons';
+import { generateLeveledWeaponDrop } from '../data/weapons';
 import { registerWeapon } from '../data/weaponRegistry';
 import { generateRandomArmor } from '../data/armor/baseArmors';
 
@@ -100,6 +101,8 @@ export const useShopStore = create<ShopStoreState>()(
         // Refresh if never generated
         if (state.lastRefresh === 0) return true;
         if (state.generalStock.length === 0) return true;
+        // Refresh if stock is too low (stale data from older code versions)
+        if (state.equipmentStock.length < 12) return true;
         // Refresh when player reaches a new deepest floor
         if (currentBestFloor > state.deepestFloorAtRefresh) return true;
         // Refresh on every completed dungeon run — shop wares change between expeditions
@@ -126,9 +129,11 @@ export const useShopStore = create<ShopStoreState>()(
         const equipmentStock: EquipmentStock[] = [];
 
         // Always guarantee one weapon per stat category and one armor per slot
+        // Uses level-gated pool so LCK/WIS/INT/CHA players get tier-appropriate weapons
+        const characterLevel = useCharacterStore.getState().character?.level ?? 1;
         const statCategories = ['STR', 'AGI', 'PER', 'INT', 'WIS', 'CHA', 'END', 'LCK'] as const;
         for (const stat of statCategories) {
-          const weapon = generateRandomWeapon(currentBestFloor, [stat]);
+          const weapon = generateLeveledWeaponDrop(currentBestFloor, characterLevel, [stat]);
           registerWeapon(weapon);
           equipmentStock.push({ item: weapon, basePrice: calculateWeaponPrice(weapon), sold: false });
         }

@@ -8,18 +8,18 @@ import type { WeaponCategory } from '../../types/Weapon';
 
 // Loot pools for each monster category
 export const MONSTER_LOOT_POOLS: Record<MonsterCategory, LootPool> = {
-  // Humanoids carry weapons and equipment
+  // Humanoids carry weapons and equipment (mages, bards, sorcerers are humanoids too)
   humanoid: {
-    weaponCategories: ['STR', 'AGI', 'PER', 'END'], // Physical weapons
+    weaponCategories: ['STR', 'AGI', 'PER', 'END', 'INT', 'CHA'], // Physical + arcane + performance
     materials: ['cloth', 'leather'],
     consumables: ['health_potion_small', 'bread'],
     weaponDropModifier: 1.0,
     goldModifier: 1.2, // Humanoids carry more gold
   },
 
-  // Undead carry the weapons they died with
+  // Undead carry the weapons they died with (skeletal clerics carry cursed holy relics)
   undead: {
-    weaponCategories: ['STR', 'END'], // Swords, axes, shields
+    weaponCategories: ['STR', 'END', 'WIS'], // Swords, axes, shields, and haunted divine relics
     materials: ['bone', 'ectoplasm'],
     consumables: [],
     weaponDropModifier: 0.7, // Weapons are often decayed
@@ -53,9 +53,9 @@ export const MONSTER_LOOT_POOLS: Record<MonsterCategory, LootPool> = {
     goldModifier: 1.5, // Often found in treasure rooms
   },
 
-  // Demons carry infernal weapons
+  // Demons carry infernal weapons (chaos dice, gambling relics fit their nature)
   demon: {
-    weaponCategories: ['STR', 'INT', 'CHA'], // Swords, staves, scepters
+    weaponCategories: ['STR', 'INT', 'CHA', 'LCK'], // Swords, staves, scepters, infernal luck weapons
     materials: ['demon_essence', 'horn'],
     consumables: [],
     weaponDropModifier: 1.2, // Good weapon drops
