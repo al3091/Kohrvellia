@@ -20,6 +20,7 @@ import { EnemyPreview } from '../../src/components/combat/EnemyPreview';
 import { SneakRollAnimation, type SneakResult } from '../../src/components/combat/SneakRollAnimation';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
 import { CeremonialDivider } from '../../src/components/ui/CeremonialDivider';
+import { getMonsterFlavorText } from '../../src/data/monsters/monsterFlavor';
 
 type EncounterPhase = 'preview' | 'sneaking' | 'sneak_result';
 
@@ -53,6 +54,11 @@ export default function EncounterScreen() {
     const chance = ((20 + modifier - dc) / 20) * 100;
     return Math.max(5, Math.min(95, chance));
   }, [character, monster, currentRun]);
+
+  const flavorText = useMemo(() => {
+    if (!monster) return null;
+    return getMonsterFlavorText(monster.prefix?.name, monster.suffix?.name);
+  }, [monster]);
 
   if (!monster || !character) {
     return (
@@ -142,6 +148,11 @@ export default function EncounterScreen() {
                 knowledge={monsterKnowledge}
               />
             </DramaticReveal>
+            {flavorText && (
+              <DramaticReveal delay={400} duration={400}>
+                <Text style={styles.flavorText}>{flavorText}</Text>
+              </DramaticReveal>
+            )}
           </View>
 
           {/* Action Buttons */}
@@ -245,6 +256,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: Padding.screen.horizontal,
+  },
+  flavorText: {
+    ...Typography.body,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: Spacing.md,
   },
 
   // Actions

@@ -28,6 +28,7 @@ import {
   type CraftingMaterial,
 } from '../data/materials';
 import type { Weapon } from '../types/Weapon';
+import { getDamageEffectiveness } from '../types/Weapon';
 import type { StatusEffect, StatusEffectType } from '../types/StatusEffect';
 import type { ConsumableEffect } from '../types/Consumable';
 import { getConsumableById } from '../data/consumables';
@@ -501,12 +502,27 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     const effectiveEnemyDef = Math.max(0, monster.defense - derived.armorPierce);
     const defenseReduction = effectiveEnemyDef / (effectiveEnemyDef + 100);
 
-    // ── 5. Base damage — LCK weapons use luckAttack, others use physicalAttack ──
+    // ── 5. Base damage — route by weapon category ──
     const equippedWeaponCategory = useCharacterStore.getState().character?.equipment.weapon?.base?.category;
-    const baseAttackStat = equippedWeaponCategory === 'LCK'
-      ? (derived.luckAttack ?? 0)
+    const baseAttackStat =
+      equippedWeaponCategory === 'LCK' ? (derived.luckAttack ?? 0)
+      : (equippedWeaponCategory === 'INT' || equippedWeaponCategory === 'WIS') ? (derived.magicAttack ?? derived.physicalAttack)
       : derived.physicalAttack;
     let rawDamage = Math.max(1, baseAttackStat * (1 - defenseReduction));
+
+    // ── 5b. Weapon Triangle — damage type vs monster armor type ──
+    const equippedWeapon = useCharacterStore.getState().character?.equipment.weapon;
+    const weaponDamageType = equippedWeapon?.base?.damageTypes?.[0];
+    let triangleMultiplier = 1.0;
+    if (weaponDamageType) {
+      const armor = monster.base.armorType;
+      const normalizedArmor = armor === 'plate' ? 'armor'
+        : armor === 'scales' ? 'leather'
+        : armor === 'ethereal' ? 'spirit'
+        : armor;
+      triangleMultiplier = getDamageEffectiveness(weaponDamageType, normalizedArmor as any);
+    }
+    rawDamage *= triangleMultiplier;
 
     // ── 6. Situational bonuses ──
     const hpFraction = maxHP > 0 ? currentHP / maxHP : 1;
@@ -540,6 +556,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     const narration = getPlayerAttackNarration(true, isCrit, killed && !alreadyDead, monster.displayName);
     get().addLogEntry(narration, 'player_action', ` (${damage} dmg)`, 'damage');
+
+    if (triangleMultiplier > 1.1) {
+      get().addLogEntry('Effective!', 'system');
+    } else if (triangleMultiplier < 0.9) {
+      get().addLogEntry('Resisted.', 'system');
+    }
 
     if (killed && !alreadyDead) {
       set({ phase: 'victory' });

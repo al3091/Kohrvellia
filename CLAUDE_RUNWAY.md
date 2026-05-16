@@ -438,23 +438,11 @@ Dead tappable slots that do nothing erode trust. Pick one and execute.
 
 ---
 
-## Task 6: Item Drop / Destroy
+## Task 6: Item Drop / Destroy — ✅ ALREADY IMPLEMENTED
 
-**Status:** OPEN — Phase 1.8 checkbox unchecked in PROGRESS.md
-**Effort:** ~1 day
-**Files:** `app/dungeon/inventory.tsx`, `src/stores/useCharacterStore.ts`
-
-### Steps
-
-1. Add long-press or swipe gesture on inventory items to reveal a "Destroy" action.
-2. Confirmation modal: "This item will be lost forever. The Tower keeps what the Tower takes."
-3. Add `destroyItem(itemId: string)` to `useCharacterStore` — filters `character.inventory`.
-4. Confirm `BAG_CAPACITY` check works correctly after destroy.
-
-### Why it matters
-
-Without destroy, inventory caps at 16 and forces an unwanted town return. This breaks the
-core "push deeper for better loot" loop.
+Code audit confirmed: `app/dungeon/inventory.tsx:132-149` has full drop/destroy with
+confirmation modal and `destroyItem()` call. The PROGRESS.md checkbox was stale.
+Nothing to do here.
 
 ---
 
@@ -594,12 +582,12 @@ GLORY:            glory_no_death_floor5, glory_no_death_floor10, glory_boss_stre
 
 ```
 [ ] Item 0: Progressive Disclosure             (1-2d)  tutorial trim + 4 first-use overlays
-[ ] Task 1: Weapon Triangle in combat math     (~2h)   useCombatStore.ts:504-509
-[ ] Task 2: Monster Flavor Text                (~1h)   new monsterFlavor.ts + encounter.tsx:138
+[x] Task 1: Weapon Triangle in combat math     DONE    useCombatStore.ts — triangle + INT/WIS routing
+[x] Task 2: Monster Flavor Text                DONE    monsterFlavor.ts + encounter.tsx
 [ ] Task 3: Denatus full wiring               (3-5d)  combat + floor + room + character stores
 [ ] Task 4: Job combat integration audit       (1-2d)  useJobStore.ts:62 + combat.tsx skill menu
 [ ] DECISION: Armor slots — hide or build      (ask)   inventory.tsx BUG-031
-[ ] Task 5: Item drop/destroy                  (~1d)   inventory.tsx + useCharacterStore
+[x] Task 5: Item drop/destroy                  DONE    Already implemented in inventory.tsx
 [ ] DECISION: BUG-026 soul cross-run           (ask)   Eris decides
 [ ] DECISION: BUG-027 GLORY UI orphan          (ask)   Valdris decides
 ```
