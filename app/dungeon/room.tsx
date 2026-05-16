@@ -304,6 +304,7 @@ export default function RoomScreen() {
     setRestMessage(`You eat a ration and rest by the fire.${hungerNote}\n\n+${hpRestore} HP | +${spRestore} SP`);
     setRestChoice('done');
     useSoulStore.getState().incrementBehavement('caution_rest_sites');
+    useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
   };
 
@@ -323,6 +324,7 @@ export default function RoomScreen() {
     setRestMessage(`You rest without food. Your body aches with hunger.\n\n+${hpRestore} HP (no SP recovery)`);
     setRestChoice('done');
     useSoulStore.getState().incrementBehavement('caution_rest_sites');
+    useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
   };
 
@@ -758,6 +760,9 @@ export default function RoomScreen() {
 
     // Get the actual type (don't update store yet - we want to show reveal UI first)
     const actualType = node.mysteryData.actualType;
+
+    // Soul: secret/mystery room discovered
+    useSoulStore.getState().incrementBehavement('explore_secret_rooms');
 
     // Update local state to show reveal UI
     setMysteryRevealedType(actualType);

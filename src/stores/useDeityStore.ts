@@ -282,6 +282,8 @@ export const useDeityStore = create<DeityState>()(
             characterStore.addPendingExcelia('PER', pointsPerStat);
           }
         }
+        // Soul: challenge completed
+        useSoulStore.getState().incrementBehavement('glory_challenge_complete');
         void relationship; // suppress unused warning
       },
 

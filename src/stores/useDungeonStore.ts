@@ -317,6 +317,7 @@ export interface FloorContext {
   usedHealing: boolean;
   triggeredTrap: boolean;
   tookDamageThisFloor: boolean;
+  restedThisFloor: boolean;
 }
 
 interface DungeonState {
@@ -391,6 +392,7 @@ const FRESH_FLOOR_CONTEXT: FloorContext = {
   usedHealing: false,
   triggeredTrap: false,
   tookDamageThisFloor: false,
+  restedThisFloor: false,
 };
 
 export const useDungeonStore = create<DungeonState>()(

@@ -381,6 +381,11 @@ export default function FloorScreen() {
     if (currentNode.type === 'boss' && isMilestoneFloor(map.floorNumber)) {
       const gameState = useGameStore.getState();
       const milestoneBoss = getMilestoneBoss(map.floorNumber);
+      // Soul: boss rush — entered boss room without resting this floor
+      const fc = useDungeonStore.getState().floorContext;
+      if (fc && !fc.restedThisFloor) {
+        useSoulStore.getState().incrementBehavement('risk_boss_rush');
+      }
 
       // Build PlayerSnapshot for the conversation system
       const soul = useSoulStore.getState();
