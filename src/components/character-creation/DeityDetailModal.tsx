@@ -122,13 +122,25 @@ export function DeityDetailModal({ deity, visible, onClose, onSelect }: DeityDet
                       </Text>
                     )}
                     <View style={styles.inlineStats}>
-                      <Text style={styles.inlineStatBonus}>
-                        +{deity.statBonus.value} {deity.statBonus.stat}
-                      </Text>
+                      <View style={styles.inlineStatImpact}>
+                        <Text style={styles.inlineStatBonus}>
+                          +{deity.statBonus.value} {deity.statBonus.stat}
+                        </Text>
+                        <View style={styles.statBarTrack}>
+                          <View style={[styles.statBar, styles.statBarBonus,
+                            { width: Math.min(deity.statBonus.value * 4, 60) }]} />
+                        </View>
+                      </View>
                       <Text style={styles.inlineStatDivider}>•</Text>
-                      <Text style={styles.inlineStatPenalty}>
-                        -{deity.statPenalty.value} {deity.statPenalty.stat}
-                      </Text>
+                      <View style={styles.inlineStatImpact}>
+                        <Text style={styles.inlineStatPenalty}>
+                          -{deity.statPenalty.value} {deity.statPenalty.stat}
+                        </Text>
+                        <View style={styles.statBarTrack}>
+                          <View style={[styles.statBar, styles.statBarPenalty,
+                            { width: Math.min(deity.statPenalty.value * 4, 60) }]} />
+                        </View>
+                      </View>
                     </View>
                   </View>
 
@@ -301,6 +313,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     gap: Spacing.sm,
   },
+  inlineStatImpact: {
+    alignItems: 'center',
+    gap: 4,
+  },
   inlineStatBonus: {
     ...Typography.bodySmall,
     color: Colors.ui.success,
@@ -314,6 +330,22 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.ui.error,
     fontWeight: '600',
+  },
+  statBarTrack: {
+    height: 3,
+    width: 60,
+    backgroundColor: Colors.background.overlay,
+    borderRadius: 2,
+  },
+  statBar: {
+    height: 3,
+    borderRadius: 2,
+  },
+  statBarBonus: {
+    backgroundColor: Colors.ui.success,
+  },
+  statBarPenalty: {
+    backgroundColor: Colors.ui.error,
   },
   detailSection: {
     marginTop: Spacing.lg,

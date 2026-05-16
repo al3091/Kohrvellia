@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../src/constants/Colors';
 import { Typography } from '../../../src/constants/Typography';
-import { Spacing, Padding, BorderRadius } from '../../../src/constants/Spacing';
+import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
 import { Header } from '../../../src/components/ui';
 import { DeityCard } from '../../../src/components/character-creation/DeityCard';
 import { DeitySearchBar } from '../../../src/components/character-creation/DeitySearchBar';
@@ -39,6 +39,11 @@ export default function DeityListScreen() {
   const deities = useMemo(() => {
     return getDeityByPantheon(pantheonId || '');
   }, [pantheonId]);
+
+  const selectedDeity = useMemo(() => {
+    if (!selectedDeityId || !deities) return null;
+    return deities.find(d => d.id === selectedDeityId) ?? null;
+  }, [deities, selectedDeityId]);
 
   const affinityDomains = useMemo(() => {
     if (!backstoryId) return [];
@@ -200,6 +205,24 @@ export default function DeityListScreen() {
         onClose={handleCloseDetail}
         onSelect={handleConfirmDeity}
       />
+
+      {selectedDeity && (
+        <View style={styles.selectionBar}>
+          <View style={styles.selectionBarContent}>
+            <Text style={styles.selectionBarName}>{selectedDeity.name}</Text>
+            <Text style={styles.selectionBarStats}>
+              <Text style={styles.selectionBarBonus}>
+                +{selectedDeity.statBonus.value} {selectedDeity.statBonus.stat}
+              </Text>
+              {'  ·  '}
+              <Text style={styles.selectionBarPenalty}>
+                -{selectedDeity.statPenalty.value} {selectedDeity.statPenalty.stat}
+              </Text>
+            </Text>
+          </View>
+          <Text style={styles.selectionBarCheck}>✓ Selected</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -260,6 +283,41 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: Padding.screen.horizontal,
     paddingBottom: Spacing.xl,
+  },
+  selectionBar: {
+    backgroundColor: Colors.background.secondary,
+    borderTopWidth: BorderWidth.thin,
+    borderTopColor: Colors.border.accent,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Padding.screen.horizontal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectionBarContent: {
+    flex: 1,
+    gap: 2,
+  },
+  selectionBarName: {
+    ...Typography.h6,
+    color: Colors.text.primary,
+  },
+  selectionBarStats: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+  },
+  selectionBarBonus: {
+    color: Colors.ui.success,
+    fontWeight: '600',
+  },
+  selectionBarPenalty: {
+    color: Colors.ui.error,
+    fontWeight: '600',
+  },
+  selectionBarCheck: {
+    ...Typography.caption,
+    color: Colors.text.accent,
+    letterSpacing: 0.5,
   },
   emptyState: {
     alignItems: 'center',

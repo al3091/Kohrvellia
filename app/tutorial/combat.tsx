@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding } from '../../src/constants/Spacing';
-import { Button } from '../../src/components/ui';
+import { Button, TutorialProgress } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 
@@ -24,8 +24,8 @@ export default function TutorialKairosScreen() {
   const { advanceTutorial } = useGameStore();
   const [phase, setPhase] = useState<KairosPhase>('idle');
 
-  // Bonus slot opacity — dims at start, animates to full when primary stages
-  const bonusOpacity = useRef(new Animated.Value(0.25)).current;
+  // Bonus slot opacity — visible but dimmed at start, animates to full when primary stages
+  const bonusOpacity = useRef(new Animated.Value(0.5)).current;
 
   // Invoke button slide-up — off-screen until both slots staged
   const invokeTranslateY = useRef(new Animated.Value(60)).current;
@@ -89,6 +89,7 @@ export default function TutorialKairosScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TutorialProgress currentStep={2} totalSteps={6} />
       <View style={styles.header}>
         <Text style={styles.title}>The Kairos Protocol</Text>
         <Text style={styles.subtitle}>Stage both. Then invoke.</Text>
@@ -156,6 +157,7 @@ export default function TutorialKairosScreen() {
         {/* Post-invoke: resolution + FLOW hint */}
         {invoked && (
           <View style={styles.resolvedBlock}>
+            <Text style={styles.resolvedTitle}>Both actions fired. This is a full turn.</Text>
             <View style={styles.resolvedRow}>
               <View style={[styles.resolvedSlot, styles.resolvedSlotGold]}>
                 <Text style={styles.resolvedSlotText}>OBSERVE fires</Text>
@@ -165,9 +167,9 @@ export default function TutorialKairosScreen() {
                 <Text style={styles.resolvedSlotText}>ATTACK fires</Text>
               </View>
             </View>
-            <Text style={styles.resolvedNote}>Bonus resolves before Primary. Speed wins initiative.</Text>
+            <Text style={styles.resolvedNote}>Bonus resolves before Primary. Stage them in any order — Kairos always fires Bonus first.</Text>
             <View style={styles.flowHint}>
-              <Text style={styles.flowText}>Varied actions build FLOW — bonus damage for unpredictability.</Text>
+              <Text style={styles.flowText}>Tip: Vary your actions each turn to build FLOW — a damage multiplier that rewards unpredictability.</Text>
             </View>
           </View>
         )}
@@ -175,6 +177,13 @@ export default function TutorialKairosScreen() {
         {/* Warning strip — always present */}
         <View style={styles.warningStrip}>
           <Text style={styles.warningText}>Nothing fires until you invoke.</Text>
+        </View>
+
+        {/* Archetype hint */}
+        <View style={styles.archetypeHint}>
+          <Text style={styles.archetypeHintText}>
+            New here? Stage <Text style={styles.archetypeEmphasis}>ATTACK</Text>, then <Text style={styles.archetypeEmphasis}>OBSERVE</Text>. Then invoke.
+          </Text>
         </View>
       </View>
 
@@ -296,6 +305,13 @@ const styles = StyleSheet.create({
   resolvedBlock: {
     gap: Spacing.sm,
   },
+  resolvedTitle: {
+    ...Typography.body,
+    color: Colors.text.accent,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
   resolvedRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -338,6 +354,22 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
   },
 
+  archetypeHint: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+  },
+  archetypeHintText: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  archetypeEmphasis: {
+    color: Colors.text.secondary,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
   // Warning strip
   warningStrip: {
     backgroundColor: Colors.text.accent + '15',

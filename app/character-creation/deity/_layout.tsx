@@ -17,6 +17,7 @@ export default function DeityLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="[pantheonId]" />
+      <Stack.Screen name="compare" />
     </Stack>
   );
 }

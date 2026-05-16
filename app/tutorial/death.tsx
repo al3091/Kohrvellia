@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding } from '../../src/constants/Spacing';
-import { Button, CeremonialDivider } from '../../src/components/ui';
+import { Button, CeremonialDivider, TutorialProgress } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 import { clearAllStores } from '../../src/lib/clearAllStores';
@@ -30,6 +30,7 @@ export default function TutorialLedgerScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TutorialProgress currentStep={6} totalSteps={6} />
       <View style={styles.body}>
         {/* Kill vs Deed contrast */}
         <View style={styles.contrastBlock}>

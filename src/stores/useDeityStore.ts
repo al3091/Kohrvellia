@@ -115,10 +115,10 @@ export const useDeityStore = create<DeityState>()(
           };
         });
 
-        // Track high-favor milestone in soul system
+        // Track high-favor milestone in soul system (target is 80, so set to actual favor value)
         const newFavor = get().relationship?.favor;
         if (newFavor !== undefined && newFavor >= 80) {
-          useSoulStore.getState().setBehavementProgress('social_deity_favor_high', 1);
+          useSoulStore.getState().setBehavementProgress('social_deity_favor_high', newFavor);
         }
       },
 

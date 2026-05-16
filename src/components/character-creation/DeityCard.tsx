@@ -96,18 +96,26 @@ export function DeityCard({
 
       {!compact && (
         <>
-          {/* Stat modifiers */}
+          {/* Stat modifiers with visual bars */}
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
+            <View style={styles.statImpactItem}>
               <Text style={styles.statBonus}>
                 +{deity.statBonus.value} {deity.statBonus.stat}
               </Text>
+              <View style={styles.statBarTrack}>
+                <View style={[styles.statBar, styles.statBarBonus,
+                  { width: Math.min(deity.statBonus.value * 4, 60) }]} />
+              </View>
             </View>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <View style={styles.statImpactItem}>
               <Text style={styles.statPenalty}>
                 -{deity.statPenalty.value} {deity.statPenalty.stat}
               </Text>
+              <View style={styles.statBarTrack}>
+                <View style={[styles.statBar, styles.statBarPenalty,
+                  { width: Math.min(deity.statPenalty.value * 4, 60) }]} />
+              </View>
             </View>
           </View>
 
@@ -225,13 +233,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  statItem: {
+  statImpactItem: {
     flex: 1,
     alignItems: 'center',
+    gap: 4,
+  },
+  statBarTrack: {
+    height: 3,
+    width: 60,
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: 2,
+  },
+  statBar: {
+    height: 3,
+    borderRadius: 2,
+  },
+  statBarBonus: {
+    backgroundColor: Colors.ui.success,
+  },
+  statBarPenalty: {
+    backgroundColor: Colors.ui.error,
   },
   statDivider: {
     width: 1,
-    height: 16,
+    height: 24,
     backgroundColor: Colors.border.primary,
   },
   statBonus: {

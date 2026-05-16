@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding } from '../../src/constants/Spacing';
-import { Button, CeremonialDivider } from '../../src/components/ui';
+import { Button, CeremonialDivider, TutorialProgress } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 
@@ -41,6 +41,7 @@ export default function TutorialStatsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TutorialProgress currentStep={3} totalSteps={6} />
       <View style={styles.header}>
         <Text style={styles.title}>Eight Pillars</Text>
         <Text style={styles.subtitle}>Every action trains something.</Text>

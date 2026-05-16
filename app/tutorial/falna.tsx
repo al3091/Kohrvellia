@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding } from '../../src/constants/Spacing';
-import { Button, CeremonialDivider } from '../../src/components/ui';
+import { Button, CeremonialDivider, TutorialProgress } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 
@@ -39,6 +39,7 @@ export default function TutorialFalnaScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TutorialProgress currentStep={4} totalSteps={6} />
       <View style={styles.header}>
         <Text style={styles.title}>The Falna</Text>
         <Text style={styles.subtitle}>Your actions write your growth.</Text>
@@ -48,6 +49,10 @@ export default function TutorialFalnaScreen() {
         <View style={styles.formula}>
           <Text style={styles.formulaText}>Effective Stat  =  (Level × 500)  +  Grade Points</Text>
         </View>
+
+        <Text style={styles.bridgeText}>
+          Each action you take builds <Text style={styles.bridgeEmphasis}>Excelia</Text> — hidden growth that becomes the Grade Points in the formula above. Your weapon determines which stat it trains.
+        </Text>
 
         <Text style={styles.sectionLabel}>ACTION → STAT TRAINED</Text>
 
@@ -93,8 +98,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Padding.screen.horizontal,
-    paddingTop: Spacing['2xl'],
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     gap: Spacing.xs,
   },
   title: {
@@ -124,6 +129,15 @@ const styles = StyleSheet.create({
     color: Colors.text.accent,
     letterSpacing: 0.5,
     fontVariant: ['tabular-nums'],
+  },
+  bridgeText: {
+    ...Typography.bodySmall,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  bridgeEmphasis: {
+    color: Colors.text.accent,
+    fontWeight: '600',
   },
   sectionLabel: {
     ...Typography.label,

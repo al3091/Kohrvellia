@@ -71,6 +71,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="tutorial" options={{ headerShown: false }} />
           <Stack.Screen name="character-creation" options={{ headerShown: false }} />
+          <Stack.Screen name="town" options={{ headerShown: false }} />
           <Stack.Screen name="dungeon" options={{ headerShown: false }} />
           <Stack.Screen name="codex" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />

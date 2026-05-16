@@ -23,3 +23,5 @@ export { GritOverlay } from './GritOverlay';
 
 export { GritPanel } from './GritPanel';
 export type { GritPanelVariant, GritPanelProps } from './GritPanel';
+
+export { TutorialProgress } from './TutorialProgress';

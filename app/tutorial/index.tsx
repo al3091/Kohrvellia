@@ -15,7 +15,7 @@ import { Spacing, Padding } from '../../src/constants/Spacing';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 
-const HOLD_DURATION = 1200;
+const HOLD_DURATION = 800;
 
 export default function TutorialStakesScreen() {
   const router = useRouter();
@@ -30,6 +30,7 @@ export default function TutorialStakesScreen() {
   const fillWidth = useRef(new Animated.Value(0)).current;
   const [isHolding, setIsHolding] = useState(false);
   const [committed, setCommitted] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
   // Screen fade-out on commit
   const screenOpacity = useRef(new Animated.Value(1)).current;
@@ -57,6 +58,14 @@ export default function TutorialStakesScreen() {
       titlePulse.current?.stop();
     };
   }, []);
+
+  // Fallback for mobile web where hold gesture may not fire reliably
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!committed) setShowFallback(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [committed]);
 
   const handlePressIn = () => {
     if (committed) return;
@@ -142,6 +151,20 @@ export default function TutorialStakesScreen() {
             </Text>
           </Pressable>
           <Text style={styles.holdHint}>Hold to enter.</Text>
+          {showFallback && (
+            <Pressable
+              onPress={() => {
+                if (!committed) {
+                  setCommitted(true);
+                  advanceTutorial();
+                  router.push('/tutorial/basics');
+                }
+              }}
+              style={styles.fallbackButton}
+            >
+              <Text style={styles.fallbackText}>Continue →</Text>
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
     </Animated.View>
@@ -239,9 +262,19 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   holdHint: {
-    ...Typography.caption,
-    color: Colors.text.muted,
+    ...Typography.body,
+    color: Colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  fallbackButton: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  fallbackText: {
+    ...Typography.body,
+    color: Colors.text.accent,
+    letterSpacing: 1,
   },
 });

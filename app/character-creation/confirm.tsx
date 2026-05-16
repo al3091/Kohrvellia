@@ -45,6 +45,12 @@ export default function ConfirmScreen() {
     return selectedDeityId ? getDeityById(selectedDeityId) : null;
   }, [selectedDeityId]);
 
+  const domainColor = useMemo(() => {
+    if (!deity?.domain) return Colors.text.accent;
+    const domainColors = Colors.domain as Record<string, string>;
+    return domainColors[deity.domain] ?? Colors.text.accent;
+  }, [deity]);
+
   const weapon = useMemo(() => {
     return selectedWeaponId ? ALL_BASE_WEAPONS.find(w => w.id === selectedWeaponId) : null;
   }, [selectedWeaponId]);
@@ -97,8 +103,14 @@ export default function ConfirmScreen() {
       <Header title="Seal Your Legend" showBack onBack={handleBack} />
 
       <View style={styles.body}>
-        {/* Legend Card — focal point */}
-        <View style={styles.legendCard}>
+        {/* Legend Card — focal point with domain seal */}
+        <View style={[styles.legendCard, { borderColor: domainColor + '80' }]}>
+          {deity?.domain && (
+            <Text style={[styles.domainWatermark, { color: domainColor + '20' }]}>
+              {deity.domain.toUpperCase()}
+            </Text>
+          )}
+          <Text style={[styles.sealMark, { color: domainColor }]}>✦</Text>
           <Text style={styles.legendName}>{name || '—'}</Text>
           <Text style={styles.legendEpithet}>the {epithet || '—'}</Text>
         </View>
@@ -156,11 +168,22 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
     backgroundColor: Colors.background.card,
-    borderWidth: BorderWidth.thin,
+    borderWidth: 2,
     borderColor: Colors.border.accent,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.text.accent,
     gap: Spacing.xs,
+    overflow: 'hidden',
+  },
+  domainWatermark: {
+    position: 'absolute',
+    fontSize: 64,
+    fontWeight: '900',
+    letterSpacing: 4,
+    textAlign: 'center',
+    opacity: 1,
+  },
+  sealMark: {
+    fontSize: 18,
+    marginBottom: Spacing.xs,
   },
   legendName: {
     ...Typography.h2,

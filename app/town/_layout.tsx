@@ -18,7 +18,7 @@ export default function TownLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: Colors.background.primary },
-        animation: 'fade',
+        animation: 'none',
       }}
     >
       <Stack.Screen name="index" />

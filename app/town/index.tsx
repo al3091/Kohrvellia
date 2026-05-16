@@ -63,6 +63,7 @@ export default function TownHubScreen() {
   const haptics = useHaptics();
   const { character, hasPendingExcelia, initializePendingExcelia, canLevelUp, getDerivedStatsWithBlessings } = useCharacterStore();
   const { startNewRun, currentRun } = useDungeonStore();
+  const { bgmEnabled, toggleBGM } = useSoundStore();
 
   useEffect(() => {
     useSoundStore.getState().playBGM('shop');
@@ -96,7 +97,7 @@ export default function TownHubScreen() {
     }
     // Initialize pending excelia for this run
     initializePendingExcelia();
-    router.push('/dungeon/floor');
+    router.replace('/dungeon/floor');
   };
 
   const handleDungeonEntrance = () => {
@@ -162,8 +163,13 @@ export default function TownHubScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.townName}>ORARIO</Text>
-          <Text style={styles.townSubtitle}>The Labyrinth City</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.townName}>ORARIO</Text>
+            <Text style={styles.townSubtitle}>The Labyrinth City</Text>
+          </View>
+          <Pressable style={styles.muteButton} onPress={toggleBGM}>
+            <Text style={styles.muteIcon}>{bgmEnabled ? '🔊' : '🔇'}</Text>
+          </Pressable>
         </View>
 
         {/* Character Summary - Tappable to view full stats */}
@@ -189,6 +195,16 @@ export default function TownHubScreen() {
             </View>
           </View>
           <Text style={styles.viewStatsHint}>View Stats &gt;</Text>
+        </Pressable>
+
+        {/* Primary CTA — Enter Dungeon */}
+        <Pressable style={styles.dungeonCTA} onPress={handleDungeonEntrance}>
+          <Text style={styles.dungeonCTAIcon}>⚔️</Text>
+          <View style={styles.dungeonCTAContent}>
+            <Text style={styles.dungeonCTATitle}>ENTER THE DUNGEON</Text>
+            <Text style={styles.dungeonCTADesc}>Descend into the labyrinth beneath the city</Text>
+          </View>
+          <Text style={styles.dungeonCTAArrow}>›</Text>
         </Pressable>
 
         {/* Pending Excelia Warning */}
@@ -249,13 +265,6 @@ export default function TownHubScreen() {
             onPress={handleFamiliaHome}
             highlight={pendingExcelia}
             badge={pendingExcelia ? 'NEW' : undefined}
-          />
-
-          <LocationCard
-            title="Dungeon Entrance"
-            description="Descend into the labyrinth beneath the city"
-            icon="⚔️"
-            onPress={handleDungeonEntrance}
           />
 
           <LocationCard
@@ -330,11 +339,16 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     borderBottomWidth: BorderWidth.thin,
     borderBottomColor: Colors.border.primary,
     marginBottom: Spacing.lg,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
   },
   townName: {
     ...Typography.h1,
@@ -346,6 +360,48 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     letterSpacing: 2,
     marginTop: Spacing.xs,
+  },
+  muteButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  muteIcon: {
+    fontSize: 20,
+  },
+  // Primary dungeon CTA
+  dungeonCTA: {
+    backgroundColor: Colors.domain.death,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.text.accent,
+  },
+  dungeonCTAIcon: {
+    fontSize: 32,
+  },
+  dungeonCTAContent: {
+    flex: 1,
+  },
+  dungeonCTATitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 2,
+  },
+  dungeonCTADesc: {
+    ...Typography.caption,
+    color: Colors.text.primary,
+    opacity: 0.8,
+    marginTop: 2,
+  },
+  dungeonCTAArrow: {
+    ...Typography.h2,
+    color: Colors.text.accent,
   },
 
   // Character Summary

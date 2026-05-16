@@ -27,6 +27,7 @@ export default function TitleScreen() {
   const { hasCompletedTutorial, runHistory } = useGameStore();
   const { character } = useCharacterStore();
   const { currentRun } = useDungeonStore();
+  const { bgmEnabled, toggleBGM } = useSoundStore();
 
   const hasExistingSave = !!character && !character.isDead;
 
@@ -136,6 +137,11 @@ export default function TitleScreen() {
 
   return (
     <View style={styles.container}>
+
+      {/* Mute toggle — top-right corner */}
+      <Pressable style={styles.muteButton} onPress={toggleBGM}>
+        <Text style={styles.muteIcon}>{bgmEnabled ? '🔊' : '🔇'}</Text>
+      </Pressable>
 
       {/* Title — gold inscription with death-domain halo, ember-breath pulse */}
       <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
@@ -359,5 +365,18 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     fontSize: 11,
     letterSpacing: 1,
+  },
+  muteButton: {
+    position: 'absolute',
+    top: 48,
+    right: 20,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  muteIcon: {
+    fontSize: 20,
   },
 });

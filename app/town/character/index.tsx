@@ -3,8 +3,8 @@
  * Displays all stats with grades, points, and progress
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../../src/constants/Colors';
@@ -76,11 +76,23 @@ const STAT_FARMING_TIPS: Record<StatName, string> = {
   LCK: 'Train by dodging enemy attacks and finding rare loot',
 };
 
+const STAT_GUIDE = [
+  { abbr: 'STR', name: 'Strength',   color: Colors.domain.war,       role: 'Melee damage, carry weight, knockback' },
+  { abbr: 'PER', name: 'Perception', color: Colors.domain.sky,       role: 'Trap detection, ranged accuracy, critical hits' },
+  { abbr: 'END', name: 'Endurance',  color: Colors.domain.nature,    role: 'Max HP, resistances, blocking' },
+  { abbr: 'CHA', name: 'Charisma',   color: Colors.domain.authority, role: 'NPC prices, intimidation, taunting' },
+  { abbr: 'INT', name: 'Intelligence', color: Colors.domain.magic,   role: 'Magic damage, item identification, exploit weakness' },
+  { abbr: 'AGI', name: 'Agility',    color: Colors.domain.trickery,  role: 'Dodge chance, flee success, speed' },
+  { abbr: 'WIS', name: 'Wisdom',     color: Colors.domain.wisdom,    role: 'Magic defense, divine blessings, observation' },
+  { abbr: 'LCK', name: 'Luck',       color: Colors.domain.fortune,   role: 'Critical hits, loot quality, fortune strikes' },
+];
+
 export default function CharacterStatsScreen() {
   const router = useRouter();
   const haptics = useHaptics();
   const { character, getDerivedStats, getPendingExcelia } = useCharacterStore();
   const currentJob = useJobStore((s) => s.getCurrentJob());
+  const [showGuide, setShowGuide] = useState(false);
 
   // Get pending excelia (stat gains waiting to be committed via Blessing Rite)
   const pendingExcelia = getPendingExcelia();
@@ -130,7 +142,9 @@ export default function CharacterStatsScreen() {
           <Text style={styles.backText}>{'<'} Back</Text>
         </Pressable>
         <Text style={styles.title}>Status</Text>
-        <View style={styles.spacer} />
+        <Pressable onPress={() => setShowGuide(true)} style={styles.guideButton}>
+          <Text style={styles.guideButtonText}>?</Text>
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -387,6 +401,42 @@ export default function CharacterStatsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Stats Guide Modal */}
+      <Modal
+        visible={showGuide}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowGuide(false)}
+      >
+        <View style={styles.guideOverlay}>
+          <Pressable style={styles.guideBackdrop} onPress={() => setShowGuide(false)} />
+          <View style={styles.guideSheet}>
+            <View style={styles.guideHeader}>
+              <Text style={styles.guideTitle}>Eight Pillars</Text>
+              <Pressable onPress={() => setShowGuide(false)} style={styles.guideClose}>
+                <Text style={styles.guideCloseText}>✕</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={styles.guideScroll} showsVerticalScrollIndicator={false}>
+              {STAT_GUIDE.map(stat => (
+                <View key={stat.abbr} style={styles.guideStatRow}>
+                  <View style={[styles.guideStatBadge, { backgroundColor: stat.color + '25', borderColor: stat.color + '60' }]}>
+                    <Text style={[styles.guideStatAbbr, { color: stat.color }]}>{stat.abbr}</Text>
+                  </View>
+                  <View style={styles.guideStatInfo}>
+                    <Text style={styles.guideStatName}>{stat.name}</Text>
+                    <Text style={styles.guideStatRole}>{stat.role}</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={styles.guideFootnote}>
+                Grades I → SSS. Stats grow through combat actions — your weapon determines which stat trains.
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -447,8 +497,106 @@ const styles = StyleSheet.create({
     ...Typography.h4,
     color: Colors.text.primary,
   },
-  spacer: {
-    width: 60,
+  guideButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideButtonText: {
+    ...Typography.h5,
+    color: Colors.text.accent,
+    lineHeight: 20,
+  },
+  // Stats Guide Modal
+  guideOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  guideBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  guideSheet: {
+    backgroundColor: Colors.background.secondary,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    borderTopWidth: BorderWidth.thin,
+    borderTopColor: Colors.border.accent,
+    maxHeight: '75%',
+    paddingBottom: Spacing['2xl'],
+  },
+  guideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: BorderWidth.thin,
+    borderBottomColor: Colors.border.primary,
+  },
+  guideTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 1,
+  },
+  guideClose: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideCloseText: {
+    ...Typography.h5,
+    color: Colors.text.muted,
+  },
+  guideScroll: {
+    paddingHorizontal: Spacing.xl,
+  },
+  guideStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.primary,
+  },
+  guideStatBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideStatAbbr: {
+    ...Typography.h5,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  guideStatInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  guideStatName: {
+    ...Typography.body,
+    color: Colors.text.primary,
+    fontWeight: '600',
+  },
+  guideStatRole: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+  },
+  guideFootnote: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: Spacing.lg,
   },
 
   // Character Card

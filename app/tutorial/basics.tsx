@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding } from '../../src/constants/Spacing';
-import { Button, CeremonialDivider } from '../../src/components/ui';
+import { Button, CeremonialDivider, TutorialProgress } from '../../src/components/ui';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useGameStore } from '../../src/stores/useGameStore';
 
@@ -45,6 +45,7 @@ export default function TutorialBasicsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TutorialProgress currentStep={1} totalSteps={6} />
       <View style={styles.header}>
         <Text style={styles.title}>Three Rules</Text>
         <Text style={styles.subtitle}>Every run. No exceptions.</Text>
@@ -82,8 +83,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Padding.screen.horizontal,
-    paddingTop: Spacing['2xl'],
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     gap: Spacing.xs,
   },
   title: {
@@ -106,12 +107,13 @@ const styles = StyleSheet.create({
   },
   ruleLabel: {
     ...Typography.label,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 2,
+    fontWeight: '700',
   },
   ruleBody: {
     ...Typography.body,
-    color: Colors.text.secondary,
+    color: Colors.text.primary,
     lineHeight: 24,
   },
   footer: {
