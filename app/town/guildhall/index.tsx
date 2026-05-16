@@ -190,7 +190,7 @@ function LevelUpPanel({
   onLevelUp,
 }: LevelUpPanelProps) {
   const conditions = [
-    { label: 'Primary stat at Grade A', met: primaryStatMet },
+    { label: '6 of 8 stats at Grade D', met: primaryStatMet },
     { label: 'Feat recorded', met: hasCompletedAchievement },
     { label: 'Deity approval granted', met: deityApproved },
   ];
@@ -273,12 +273,9 @@ export default function GuildHallScreen() {
   }, []);
   const isLevelUp = canLevelUp();
 
-  const GRADE_ORDER = ['I','H','G','F','E','D','C','B','A','S','SS','SSS'];
-  const highestGrade = Object.values(character.stats).reduce(
-    (best, s) => GRADE_ORDER.indexOf(s.grade) > GRADE_ORDER.indexOf(best) ? s.grade : best,
-    'I'
-  );
-  const primaryStatMet = ['A','S','SS','SSS'].includes(highestGrade);
+  // 6 of 8 stats at Grade D (500+ points) required
+  const statsAtGradeD = Object.values(character.stats).filter((s) => s.points >= 500).length;
+  const primaryStatMet = statsAtGradeD >= 6;
 
   const greeting = useMemo(
     () => getAdvisorGreeting(isLevelUp, deityApproved, completed.length),

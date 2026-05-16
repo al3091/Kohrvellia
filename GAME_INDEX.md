@@ -112,7 +112,7 @@ EffectiveStat = (Level x 500) + CurrentGradePoints
 ```
 
 ### Level Up Requirements
-1. All 8 stats at Grade D (500+ points)
+1. 6 of 8 stats at Grade D (500+ points) — allows 2 dump stats for specialist builds
 2. Complete a Great Achievement
 3. Deity Approval
 

@@ -401,11 +401,11 @@ export function canLevelUp(character: Character): boolean {
   if (character.level >= 10) return false; // Max level
   if (character.isDead) return false;
 
-  // DanMachi-authentic: at least ONE stat must reach Grade A (800+ points).
-  // Specialization is rewarded — a dedicated warrior can level without grinding every stat.
-  // The carry model guarantees that fresh Level N is always stronger than any Level N-1 character.
-  const primaryStatAtA = Object.values(character.stats).some((s) => s.points >= 800);
-  if (!primaryStatAtA) return false;
+  // 6 of 8 stats must reach Grade D (500+ points).
+  // Allows 2 dump stats — a specialist build (pure mage, pure warrior) can skip
+  // the stats that truly never apply to their playstyle, but must show broad growth.
+  const statsAtD = Object.values(character.stats).filter((s) => s.points >= 500).length;
+  if (statsAtD < 6) return false;
 
   // Must have at least one completed achievement
   const hasAchievement = character.levelProgress.achievementsCompleted.some(
@@ -418,7 +418,7 @@ export function canLevelUp(character: Character): boolean {
 
 export function getLeadingStats(character: Character): StatName[] {
   return (Object.entries(character.stats) as [StatName, StatValue][])
-    .filter(([, v]) => v.points >= 800)
+    .filter(([, v]) => v.points >= 500)
     .sort(([, a], [, b]) => b.points - a.points)
     .map(([k]) => k);
 }

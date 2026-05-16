@@ -18,8 +18,8 @@ import { useGameStore } from '../../src/stores/useGameStore';
 const REQUIREMENTS = [
   {
     step: '1',
-    title: 'All 8 stats at Grade D',
-    detail: 'Every pillar must stand. Neglect one, you stay.',
+    title: '6 of 8 Stats at Grade D',
+    detail: 'Broad growth is required. Two pillars may be sacrificed to your build.',
     color: Colors.domain.nature,
   },
   {
