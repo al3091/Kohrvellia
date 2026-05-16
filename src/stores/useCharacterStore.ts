@@ -547,6 +547,13 @@ export const useCharacterStore = create<CharacterState>()(
 
           const newGold = Math.max(0, state.character.gold + amount);
 
+          // Soul: gold tracking (only on gain)
+          if (amount > 0) {
+            const soul = useSoulStore.getState();
+            soul.incrementBehavement('resource_gold_1000', amount);
+            soul.incrementBehavement('resource_gold_10000', amount);
+          }
+
           return {
             character: {
               ...state.character,
@@ -661,6 +668,8 @@ export const useCharacterStore = create<CharacterState>()(
             },
           };
         });
+        // Soul: weapon equip (called after set to avoid side effects inside reducer)
+        useSoulStore.getState().incrementBehavement('resource_weapons_equip', 1);
       },
 
       equipArmor: (armor, slot) => {
@@ -786,6 +795,14 @@ export const useCharacterStore = create<CharacterState>()(
             },
           };
         });
+        // Soul: item pickup tracking
+        {
+          const soul = useSoulStore.getState();
+          soul.incrementBehavement('resource_items_50', 1);
+          if (item.weaponData?.quality?.tier === 'legendary') {
+            soul.setBehavementProgress('resource_legendary_find', 1);
+          }
+        }
         return true;
       },
 
@@ -1045,6 +1062,10 @@ export const useCharacterStore = create<CharacterState>()(
         const updatedCharacter = get().character;
         if (updatedCharacter) {
           useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level);
+          // Soul: level 10 (Paragon)
+          if (updatedCharacter.level === 10) {
+            useSoulStore.getState().incrementBehavement('glory_level_10', 10);
+          }
         }
       },
 

@@ -307,12 +307,13 @@ export default function FloorScreen() {
     enterFloor(newFloor);
     useAchievementStore.getState().updateProgress('floor_reach', newFloor);
 
-    // Soul: floor progression thresholds (reaching alive = no deaths this run by definition of permadeath)
+    // Soul: floor progression thresholds — pass actual floor number so completion is accurate
     const soul = useSoulStore.getState();
-    if (newFloor >= 10) soul.setBehavementProgress('explore_floors_10', 1);
-    if (newFloor >= 25) soul.setBehavementProgress('explore_floors_25', 1);
-    if (newFloor >= 5) soul.setBehavementProgress('glory_no_death_floor5', 1);
-    if (newFloor >= 10) soul.setBehavementProgress('glory_no_death_floor10', 1);
+    soul.setBehavementProgress('explore_floors_10', newFloor);
+    soul.setBehavementProgress('explore_floors_25', newFloor);
+    // Deathless descent — permadeath means surviving to this floor = no deaths by definition
+    if (newFloor >= 5) soul.setBehavementProgress('glory_no_death_floor5', newFloor);
+    if (newFloor >= 10) soul.setBehavementProgress('glory_no_death_floor10', newFloor);
 
     // Decrement challenge floor countdown — auto-fails if time runs out
     useDeityStore.getState().checkChallengeExpiry(newFloor);
@@ -399,6 +400,13 @@ export default function FloorScreen() {
       useDungeonStore.getState().setBossSnapshot(snapshot);
       router.push('/dungeon/boss-encounter');
       return;
+    }
+
+    // Soul: room entered
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('explore_rooms_100', 1);
+      soul.incrementBehavement('explore_rooms_500', 1);
     }
 
     // Default: navigate to room interaction

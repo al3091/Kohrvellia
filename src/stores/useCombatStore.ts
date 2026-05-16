@@ -53,6 +53,7 @@ import {
 } from '../types/StatusEffect';
 import { Combat as CombatConfig, Loot as LootConfig } from '../constants/GameConstants';
 import { useCharacterStore } from './useCharacterStore';
+import { useSoulStore } from './useSoulStore';
 
 export type ActionTag = 'STRIKE' | 'WARD' | 'READ' | 'SURGE';
 export type CombatAction = 'attack' | 'defend' | 'flee' | 'skill' | 'item' | 'observe' | 'taunt'
@@ -524,6 +525,24 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     }
     rawDamage *= triangleMultiplier;
 
+    // ── 5c. Soul: track hit behavements ──
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('phys_attacks_100', 1);
+      soul.incrementBehavement('phys_attacks_500', 1);
+      if (isCrit) {
+        soul.incrementBehavement('phys_crits_25', 1);
+        soul.incrementBehavement('phys_crits_100', 1);
+      }
+      if (equippedWeaponCategory === 'INT' || equippedWeaponCategory === 'WIS') {
+        soul.incrementBehavement('magic_attacks_100', 1);
+        soul.incrementBehavement('magic_attacks_500', 1);
+      }
+      if (maxHP > 0 && currentHP / maxHP < 0.30) {
+        soul.incrementBehavement('risk_low_hp_attacks', 1);
+      }
+    }
+
     // ── 6. Situational bonuses ──
     const hpFraction = maxHP > 0 ? currentHP / maxHP : 1;
     if (hpFraction >= 0.5) rawDamage += derived.cleaveDamage; // STR cleave when healthy
@@ -685,6 +704,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     set({ playerDefending: true });
     const narration = getDefendNarration(monster?.displayName || 'enemy');
     get().addLogEntry(narration, 'player_action');
+    const soul = useSoulStore.getState();
+    soul.incrementBehavement('tank_blocks_50', 1);
+    soul.incrementBehavement('tank_blocks_200', 1);
   },
 
   playerFlee: (playerSpeed, currentFloor) => {
@@ -724,6 +746,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     set({ monsterObserved: true });
     useGameStore.getState().addMonsterObservation(monster.base.id);
+    // Soul: observe behavements
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('caution_observes', 1);
+      soul.incrementBehavement('caution_observes_200', 1);
+    }
 
     // Generate info about the monster
     const weaknessText = monster.base.weaknesses.length > 0
@@ -758,6 +786,12 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       get().updateCombatDynamic({ moraleRemainingTurns: combatDynamic.moraleRemainingTurns + 2 });
     } else {
       get().addLogEntry(`The ${monster.displayName} ignores your taunt.`, 'player_action');
+    }
+    // Soul: taunt tracking (fire regardless of success — you attempted it)
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('social_taunts', 1);
+      soul.incrementBehavement('social_taunts_100', 1);
     }
     get().updateCombatDynamic({ lastActionTag: 'READ' });
     return { success };
@@ -852,6 +886,15 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     // Remove item from inventory
     onRemoveItem(itemId);
+
+    // Soul: consumable use + heal tracking
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('caution_consumable_use', 1);
+      if (effect.type === 'heal_hp' || effect.type === 'heal_percent_hp') {
+        soul.incrementBehavement('tank_heal_received', effect.value);
+      }
+    }
 
     return { success: true, effect };
   },
@@ -1099,6 +1142,13 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     if (Math.random() * 100 < derived.dodgeChance) {
       const missNarration = getMonsterAttackNarration(false, false, false, monster.displayName);
       get().addLogEntry(`${missNarration} — Dodged!`, 'miss');
+      // Soul: dodge behavements
+      {
+        const soul = useSoulStore.getState();
+        soul.incrementBehavement('evade_dodges_50', 1);
+        soul.incrementBehavement('evade_dodges_200', 1);
+        soul.checkConsecutiveBehavement('evade_consecutive_dodges', true);
+      }
       // AGI post-dodge crit on next attack
       get().updateCombatDynamic({ postDodgeCritActive: true });
       // PER counter-attack
@@ -1205,6 +1255,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       }
     }
 
+    // Soul: damage taken + reset consecutive dodge streak
+    {
+      const soul = useSoulStore.getState();
+      soul.incrementBehavement('tank_damage_taken_1000', damage);
+      soul.incrementBehavement('tank_damage_taken_5000', damage);
+      soul.checkConsecutiveBehavement('evade_consecutive_dodges', false);
+    }
+
     set({ playerDefending: false });
     return { damage, hit: true, statusApplied };
   },
@@ -1308,6 +1366,52 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   calculateRewards: () => {
     const { monster } = get();
     if (!monster) return;
+
+    // ── Soul: kill behavements ──
+    {
+      const soul = useSoulStore.getState();
+      const charStore = useCharacterStore.getState();
+      const weaponCat = charStore.character?.equipment.weapon?.base?.category;
+
+      if (weaponCat && ['STR', 'AGI', 'PER', 'END'].includes(weaponCat)) {
+        soul.incrementBehavement('phys_kills_50', 1);
+        soul.incrementBehavement('phys_kills_200', 1);
+      }
+      if (weaponCat === 'STR') soul.incrementBehavement('phys_str_weapon_kills', 1);
+      if (weaponCat === 'AGI') soul.incrementBehavement('evade_dagger_kills', 1);
+      if (weaponCat === 'PER') soul.incrementBehavement('explore_per_weapon_kills', 1);
+      if (weaponCat === 'END') soul.incrementBehavement('tank_shield_kills', 1);
+      if (weaponCat === 'INT') {
+        soul.incrementBehavement('magic_kills_50', 1);
+        soul.incrementBehavement('magic_kills_200', 1);
+        soul.incrementBehavement('magic_int_weapon_kills', 1);
+      }
+      if (weaponCat === 'WIS') {
+        soul.incrementBehavement('magic_kills_50', 1);
+        soul.incrementBehavement('magic_kills_200', 1);
+        soul.incrementBehavement('magic_wis_weapon_kills', 1);
+      }
+      if (weaponCat === 'CHA') soul.incrementBehavement('social_cha_weapon_kills', 1);
+      if (weaponCat === 'LCK') soul.incrementBehavement('risk_lck_weapon_use', 1);
+
+      // HP at time of kill
+      const char = charStore.character;
+      if (char) {
+        const derived = charStore.getDerivedStats();
+        const hpPct = derived.maxHP > 0 ? char.currentHP / derived.maxHP : 1;
+        if (hpPct < 0.20) soul.incrementBehavement('tank_survive_low_hp', 1);
+        if (hpPct < 0.10) soul.incrementBehavement('risk_near_death_wins', 1);
+      }
+
+      // Elite/boss kills
+      const prefixTier = monster.prefix?.tier;
+      if (prefixTier === 'high' || prefixTier === 'legendary')
+        soul.incrementBehavement('risk_elite_fights', 1);
+      if (monster.isBoss) {
+        soul.incrementBehavement('glory_boss_streak_3', 1);
+        soul.incrementBehavement('glory_boss_streak_5', 1);
+      }
+    }
 
     // Get monster category for loot pool
     const category = (monster.base.category || 'beast') as MonsterCategory;
