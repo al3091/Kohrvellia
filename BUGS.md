@@ -18,9 +18,9 @@
 
 | ID | Screen | Issue | Reported | Status |
 |----|--------|-------|----------|--------|
-| BUG-003 | `town/inventory/index.tsx` | When swapping weapons via `equipWeapon()`, the old weapon is moved to inventory. If inventory is at BAG_CAPACITY (16 slots), the old weapon is silently destroyed with no warning. Player loses equipped item without feedback. | 2026-05-06 | OPEN |
-| BUG-004 | `dungeon/level-up.tsx` | Level-up ceremony can potentially be dismissed (back gesture or navigation) before all phases complete. `performLevelUp()` may not be called, leaving character with `achievementsCompleted` populated but level unchanged. State is partially committed. | 2026-05-06 | OPEN |
-| BUG-005 | `dungeon/combat.tsx` | `useCombatStore.endCombat()` resets `monster` to null and `rewards` to null. If this is called before the victory screen reads `rewards`, loot is lost. Screen timing dependency needs to be audited. | 2026-05-06 | OPEN |
+| BUG-003 | `dungeon/combat.tsx` | When swapping weapons with full bag (16 items), old weapon was silently destroyed. | 2026-05-06 | RESOLVED — confirmation modal at combat.tsx:1337 was already implemented |
+| BUG-004 | `dungeon/level-up.tsx` | Level-up ceremony could be dismissed on iOS via swipe-back before `performLevelUp()` is called. `BackHandler` only blocks Android hardware back. | 2026-05-06 | RESOLVED — 2026-05-15 |
+| BUG-005 | `dungeon/combat.tsx` | `useCombatStore.endCombat()` resets `monster` to null and `rewards` to null. If this is called before the victory screen reads `rewards`, loot is lost. Screen timing dependency needs to be audited. | 2026-05-06 | OPEN — safe today but fragile; snapshot `rewards` at top of handleVictory() as future-proofing |
 | BUG-006 | `dungeon/job-select.tsx` | Job selection at Level 2 — if player backs out of `job-select.tsx` without selecting a job, `useJobStore.hasSelectedJob` remains false. On next session, the job select screen may re-trigger or the player skips it entirely depending on navigation logic. | 2026-05-06 | RESOLVED |
 
 ---
@@ -31,7 +31,7 @@
 |----|--------|-------|----------|--------|
 | BUG-022 | `app/dungeon/boss-encounter.tsx` | Boss dialogue outcome achievements (`walked_past_death`, `vanya_the_understood`, etc.) are referenced in `BossOutcome.achievement` fields and TODO comments, but no matching achievement definitions exist in any level achievement file. Achievement unlocks will silently not fire until data is added. | 2026-05-15 | OPEN — needs achievement data in `src/data/achievements/` |
 | BUG-023 | `app/dungeon/boss-cleared.tsx` | Screen exists and is complete but is currently unreachable — no routing points to it. With per-run boss fights, the screen only makes sense as an intro to the fight (showing that guild history exists) but it's not integrated. | 2026-05-15 | OPEN — needs routing decision |
-| BUG-024 | `useGameStore` + `useDungeonStore` | `useGameStore.milestoneChestsOpened` (account-level) is now shadowed by `DungeonRun.milestoneChestsOpenedThisRun` (run-level). The old field still exists in the store and in saved data but is no longer used. Confusing naming and stale field. | 2026-05-15 | NEEDS REVIEW — remove `milestoneChestsOpened` from `useGameStore` |
+| BUG-024 | `useGameStore` + `useDungeonStore` | `useGameStore.milestoneChestsOpened` (account-level) is now shadowed by `DungeonRun.milestoneChestsOpenedThisRun` (run-level). The old field still exists in the store and in saved data but is no longer used. Confusing naming and stale field. | 2026-05-15 | RESOLVED — 2026-05-15 |
 | BUG-025 | `src/data/events/dungeonEvents.ts` | `runFlags` system for multi-step events has no documentation of flag names, semantics, or valid values. Flag names like `'gamblers_coin'` are string literals scattered across the codebase with no registry. | 2026-05-15 | OPEN — needs design doc entry |
 
 ---
@@ -48,7 +48,22 @@
 | BUG-012 | `useCharacterStore.performLevelUp()` | After `performLevelUp()`, the function calls `useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level + 1)`. This passes `level + 1` after incrementing, so it always reveals achievements for the level ABOVE the new level. May be intentional (showing next milestone) or an off-by-one error. | 2026-05-06 | NEEDS REVIEW |
 | BUG-013 | `useDungeonStore` | No store reset is called when entering the dungeon from a fresh character (after character creation → tutorial → town → dungeon). If any dungeon state persists from a previous session that wasn't properly cleared, floor generation may use stale data. | 2026-05-06 | OPEN |
 | BUG-014 | `useDeityStore` | Deity store is persisted but there is no explicit reset in the `clearAllStores()` function called during New Game. A new character retains the previous character's patron deity selection. The deity selection screen in character creation should overwrite this, but if the player skips or backs out, the old deity persists. | 2026-05-06 | RESOLVED |
-| BUG-015 | `useMarketStore` | `useMarketStore.onFloorDescend()` is never called anywhere in the dungeon flow. Market events will never spawn, tick, or expire during a run — the entire living economy system is wired internally but has no external trigger. Needs to be called from `useDungeonStore` on floor transition. | 2026-05-14 | OPEN |
+| BUG-015 | `useMarketStore` | `useMarketStore.onFloorDescend()` is never called anywhere in the dungeon flow. Market events will never spawn, tick, or expire during a run — the entire living economy system is wired internally but has no external trigger. | 2026-05-14 | RESOLVED — already called at `useDungeonStore.ts:473` on floor descent |
+
+---
+
+## Major (Degrades Experience) — New 2026-05-15 (Swarm Audit)
+
+| ID | Screen | Issue | Reported | Status |
+|----|--------|-------|----------|--------|
+| BUG-026 | `src/types/PlayerSnapshot.ts` | `useSoulStore` is persisted globally across all character runs. Boss dialogue uses `dominantVector` from cumulative behavements — a returning player's run 5 behavements pollute their current character's boss interaction flavor. `approachStyle` is correctly run-scoped (uses DungeonRun stats) but `dominantVector` is cross-run. | 2026-05-15 | OPEN — design decision: (A) reset soul at run start, (B) snapshot at run-start and use deltas, (C) accept cumulative soul as character identity. Needs Eris. |
+| BUG-027 | `app/dungeon/level-up.tsx` | Level-up ceremony shows "+X GLORY" from `tierRewards.gloryPoints` but these points are never forwarded to `useSoulStore`. The GLORY vector is tracked separately via behavements (boss streaks, deathless floors). UI implies soul points are accumulated; they are not. | 2026-05-15 | OPEN — decision: (A) wire to soul store, (B) rename to "GLORY BONUS", (C) remove display. Needs Valdris. |
+| BUG-028 | `app/dungeon/floor.tsx` | `glory_no_death_floor5/10` behavements fire on floor descent with no death-check guard. Currently correct for permadeath (can't descend if dead), but fragile for future revival mechanics (Hades deity ability). `runStats` has no deaths counter. | 2026-05-15 | OPEN — low priority until revival mechanics exist |
+| BUG-029 | `src/stores/useDeityStore.ts` | `social_deity_favor_high` behavement never increments — no soul call when deity favor reaches 80+. | 2026-05-15 | RESOLVED — 2026-05-15 |
+| BUG-030 | `app/town/guildhall/index.tsx` | `resource_sell_items` soul behavement never increments — guild hall sell handlers had no soul tracking call. | 2026-05-15 | RESOLVED — 2026-05-15 |
+| BUG-031 | `app/dungeon/inventory.tsx` | Armor equip/unequip UI is dead for 5 of 7 equipment slots — `handleSlotPress` gates all interaction with `if (slot === 'weapon')`. Other slots do nothing on tap. | 2026-05-15 | OPEN — no armor data exists yet; decision from Korben: implement or hide armor slots until Phase 3. |
+| BUG-032 | `src/stores/useCombatStore.ts` | Weapon Triangle not implemented — `weaknesses` and `resistances` arrays on `MonsterBase` only feed the inspection text string. No damage type math exists in `playerAttack()`. Tutorial implies type advantages exist. | 2026-05-15 | OPEN — design decision from Thane: Phase 2 or Phase 3? |
+| BUG-033 | `useDeityStore` + `app/dungeon/combat.tsx` | Deity challenge progress completely unrouted — `updateChallengeProgress()` was called only on monster kills. All non-kill challenges (`gold_collected`, `heal_self`, `dodge_attacks`, `survive_low_hp`, etc.) were stuck at 0. Freya's "2000 gold by Floor 8" never progressed. | 2026-05-15 | RESOLVED — 2026-05-15 |
 
 ---
 
@@ -79,6 +94,13 @@
 | BUG-019 | Shop stale data: stock persisted from old code with only 4 items; `shouldRefreshStock()` never triggered refresh because floor/run counters were unchanged | 2026-05-15 | Added `if (state.equipmentStock.length < 12) return true` to `shouldRefreshStock()`; guarantees regeneration on stale saves |
 | BUG-020 | Shop guaranteed 1-per-stat weapon used `generateRandomWeapon` (4-weapon base pool) — LCK/WIS players always saw same Level 1 weapons regardless of character level | 2026-05-15 | Switched to `generateLeveledWeaponDrop(floor, characterLevel, [stat])` — shop now stocks tier-appropriate weapons |
 | BUG-021 | Flee/sneak success left player trapped in room.tsx — `handleBack()` fired "No Retreat" alert with only one button, no exit | 2026-05-15 | Flee and sneak now call `markNodeAvoided(nodeId)`; room.tsx checks `!node.isAvoided` before blocking back navigation |
+| BUG-024 | `useGameStore.milestoneChestsOpened` shadowed by run-scoped version — stale field, never called | 2026-05-15 | Removed field, initial state, and `claimMilestoneChest` action from `useGameStore.ts` |
+| BUG-029 | `social_deity_favor_high` soul behavement never fired when deity favor reached 80+ | 2026-05-15 | Added soul call in `useDeityStore.adjustFavor()` after `set()` when `newFavor >= 80` |
+| BUG-030 | `resource_sell_items` soul behavement never fired on Guild Hall material sales | 2026-05-15 | Added `useSoulStore.getState().incrementBehavement('resource_sell_items')` in `handleSellAll` and `handleSellOne` |
+| BUG-033 | Deity challenge progress unrouted — gold, heal, dodge, survive challenges stuck at 0 permanently | 2026-05-15 | Added `recordChallengeEvent(type, amount)` to `useDeityStore`; wired gold at 3 sites in combat.tsx and room.tsx; extended kill type routing (melee, giants, beasts); added heal tracking in item use |
+| BUG-003 | Silent weapon discard with full bag | 2026-05-15 | Already implemented — `confirmDestroyWeapon` modal at `combat.tsx:1337`. Closing the bug. |
+| BUG-004 | iOS swipe-back bypassed level-up ceremony | 2026-05-15 | Added `navigation.addListener('beforeRemove', e => e.preventDefault())` in `level-up.tsx` when phase !== 'complete' |
+| BUG-015 | `useMarketStore.onFloorDescend()` never called | 2026-05-15 | Already wired at `useDungeonStore.ts:473` — false alarm, closing. |
 
 ---
 

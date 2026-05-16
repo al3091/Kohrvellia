@@ -105,9 +105,6 @@ interface GameState {
   // First combat protection
   hasHadFirstCombat: boolean;
 
-  // Milestone boss chest (5-floor intervals, first-clear only)
-  milestoneChestsOpened: number[];
-
   // Permanently defeated milestone bosses (meta-progression — survives character deletion)
   defeatedBosses: string[];
 
@@ -135,9 +132,6 @@ interface GameState {
 
   // Actions - First combat
   setHasHadFirstCombat: () => void;
-
-  // Actions - Milestone chest
-  claimMilestoneChest: (floor: number) => void;
 
   // Actions - Boss defeats (permanent, cross-character meta-progression)
   defeatBoss: (bossId: string) => void;
@@ -180,7 +174,6 @@ export const useGameStore = create<GameState>()(
       hasSkippedTutorial: false,
       tutorialStep: 0,
       hasHadFirstCombat: false,
-      milestoneChestsOpened: [],
       defeatedBosses: [],
 
       // Phase
@@ -307,13 +300,6 @@ export const useGameStore = create<GameState>()(
       // First combat
       setHasHadFirstCombat: () => {
         set({ hasHadFirstCombat: true });
-      },
-
-      // Milestone chest
-      claimMilestoneChest: (floor) => {
-        set((state) => ({
-          milestoneChestsOpened: [...state.milestoneChestsOpened, floor],
-        }));
       },
 
       defeatBoss: (bossId) => {

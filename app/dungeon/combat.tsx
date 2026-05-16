@@ -377,6 +377,7 @@ export default function CombatScreen() {
       useSoundStore.getState().playSFX('heal');
       useSoulStore.getState().incrementBehavement('tank_heal_received', healAmount);
       useDungeonStore.getState().setFloorFlag('usedHealing');
+      useDeityStore.getState().recordChallengeEvent('heal_self', healAmount);
     };
 
     const onHealSP = (amount: number) => {
@@ -982,6 +983,9 @@ export default function CombatScreen() {
       ? Math.floor(rewards.gold * character.paragonTitle!.buffs.nounPassive.effect.value)
       : 0;
     modifyGold(rewards.gold + goldBonus);
+    if (rewards.gold + goldBonus > 0) {
+      useDeityStore.getState().recordChallengeEvent('gold_collected', rewards.gold + goldBonus);
+    }
 
     // Add material drops to inventory
     for (const drop of rewards.materialDrops) {
@@ -1076,7 +1080,7 @@ export default function CombatScreen() {
       if (rewards.weaponDrop?.rarity === 'legendary') soul.setBehavementProgress('resource_legendary_find', 1);
     }
 
-    // God Challenge progress — update kill-type challenges
+    // God Challenge progress — route kill events to matching challenge types
     {
       const deityStore = useDeityStore.getState();
       const activeCh = deityStore.relationship?.currentChallenge;
@@ -1085,10 +1089,28 @@ export default function CombatScreen() {
         const challengeDef = deity?.challenges.find((c) => c.id === activeCh.challengeId);
         if (challengeDef) {
           const reqType = challengeDef.requirement.type;
-          const isKillChallenge = reqType === 'kill' || reqType === 'kill_monsters';
-          const isBossChallenge = (reqType === 'kill_bosses') && monster.isBoss;
-          const isEliteChallenge = (reqType === 'kill_elites') && monster.isElite;
-          if (isKillChallenge || isBossChallenge || isEliteChallenge) {
+          // Generic kill challenges
+          if (reqType === 'kill' || reqType === 'kill_monsters') {
+            deityStore.updateChallengeProgress(1);
+          }
+          // Boss kill challenge
+          if (reqType === 'kill_bosses' && monster.isBoss) {
+            deityStore.updateChallengeProgress(1);
+          }
+          // Elite kill challenge
+          if (reqType === 'kill_elites' && (monster as { isElite?: boolean }).isElite) {
+            deityStore.updateChallengeProgress(1);
+          }
+          // Melee / physical kill challenges (approximate — all kills counted)
+          if (reqType === 'melee_kills' || reqType === 'glorious_kills') {
+            deityStore.updateChallengeProgress(1);
+          }
+          // Monster-type specific kills — route via category tag when available
+          const monsterCategory = (monster as { base?: { category?: string } }).base?.category ?? '';
+          if (reqType === 'kill_giants' && monsterCategory === 'giant') {
+            deityStore.updateChallengeProgress(1);
+          }
+          if (reqType === 'kill_beasts' && monsterCategory === 'beast') {
             deityStore.updateChallengeProgress(1);
           }
         }

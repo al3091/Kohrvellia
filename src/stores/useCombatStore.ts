@@ -1317,7 +1317,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
         const character = useCharacterStore.getState().character;
         const alreadyOwned =
           character?.equipment.weapon?.base.id === weaponDrop.base.id ||
-          character?.inventory.some(i => i.weaponData?.base.id === weaponDrop.base.id);
+          character?.inventory.some(i => i.weaponData?.base.id === weaponDrop?.base.id);
         if (alreadyOwned) {
           weaponDrop = generateRandomWeapon(monster.base.minFloor, validCategories);
         }

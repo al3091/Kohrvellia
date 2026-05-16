@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
-import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
+import { Spacing, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useCombatStore } from '../../src/stores/useCombatStore';
@@ -228,6 +228,7 @@ export default function RoomScreen() {
 
     // Apply rewards
     modifyGold(totalGold);
+    if (totalGold > 0) useDeityStore.getState().recordChallengeEvent('gold_collected', totalGold);
 
     // 10% chance to find a journal, discovering one hidden journal-source achievement
     let journalFound = false;
@@ -603,7 +604,10 @@ export default function RoomScreen() {
     // Apply outcome effects
     switch (outcome.type) {
       case 'gold':
-        if (outcome.value) modifyGold(outcome.value);
+        if (outcome.value) {
+          modifyGold(outcome.value);
+          if (outcome.value > 0) useDeityStore.getState().recordChallengeEvent('gold_collected', outcome.value);
+        }
         break;
       case 'heal_hp':
         if (outcome.value) modifyHP(outcome.value);
@@ -1608,7 +1612,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: Padding.screen.horizontal,
+    padding: Spacing.lg,
     paddingVertical: Spacing.xl,
   },
   description: {
@@ -1932,7 +1936,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footer: {
-    padding: Padding.screen.horizontal,
+    padding: Spacing.lg,
     paddingVertical: Spacing.lg,
     gap: Spacing.sm,
     borderTopWidth: BorderWidth.thin,
@@ -1991,7 +1995,7 @@ const styles = StyleSheet.create({
   },
   weaponRewardContainer: {
     marginTop: Spacing.lg,
-    padding: Padding.md,
+    padding: Spacing.md,
     backgroundColor: Colors.background.primary,
     borderWidth: BorderWidth.thin,
     borderColor: Colors.resource.gold,
@@ -2016,7 +2020,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.ui.success,
     borderRadius: BorderRadius.sm,
-    padding: Padding.sm,
+    padding: Spacing.sm,
     alignItems: 'center',
   },
   weaponTakeButtonText: {
@@ -2029,7 +2033,7 @@ const styles = StyleSheet.create({
     borderWidth: BorderWidth.thin,
     borderColor: Colors.border.primary,
     borderRadius: BorderRadius.sm,
-    padding: Padding.sm,
+    padding: Spacing.sm,
     alignItems: 'center',
   },
   weaponLeaveButtonText: {

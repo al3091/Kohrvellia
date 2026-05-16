@@ -18,12 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
-import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
+import { Spacing, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useCombatStore } from '../../src/stores/useCombatStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
-import { useSoundStore } from '../../src/stores/useSoundStore';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
 import {
   getMilestoneBoss,
@@ -36,7 +35,7 @@ type ConvPhase = 'exchange1' | 'exchange2' | 'exchange3' | 'outcome_select' | 'o
 export default function BossEncounterScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { character, addToInventory, modifyGold } = useCharacterStore();
+  const { character, modifyGold } = useCharacterStore();
   const { bossSnapshot, getCurrentMap, completeNode, getCurrentNode, setRunFlag } = useDungeonStore();
   const { monster, startCombatWithMonster } = useCombatStore();
   const map = getCurrentMap();
@@ -54,10 +53,6 @@ export default function BossEncounterScreen() {
     router.replace('/dungeon/room');
     return null;
   }
-
-  const tags1 = choice1?.tags ?? [];
-  const tags2 = choice2?.tags ?? [];
-  const allTags = [...tags1, ...tags2];
 
   // ── Exchange 1 ──
 
@@ -358,19 +353,19 @@ export default function BossEncounterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.primary },
-  scrollContent: { padding: Padding.lg, paddingBottom: 80 },
+  scrollContent: { padding: Spacing.lg, paddingBottom: 80 },
   bossHeader: { alignItems: 'center', marginBottom: Spacing.xl, paddingTop: Spacing.lg },
   bossEmoji: { fontSize: 64, marginBottom: Spacing.sm },
   bossName: { ...Typography.h2, color: '#8B0000', letterSpacing: 4, textAlign: 'center' },
   bossEpithet: { ...Typography.body, color: Colors.text.muted, fontStyle: 'italic', textAlign: 'center', marginTop: 4 },
   bossPantheon: { ...Typography.caption, color: Colors.text.muted, textAlign: 'center', marginTop: 2, opacity: 0.6 },
   appearanceText: { ...Typography.body, color: Colors.text.secondary, fontStyle: 'italic', textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 22 },
-  mechanicBox: { backgroundColor: Colors.background.tertiary, borderWidth: BorderWidth.thin, borderColor: '#8B0000', borderRadius: BorderRadius.sm, padding: Padding.md, marginBottom: Spacing.xl },
+  mechanicBox: { backgroundColor: Colors.background.tertiary, borderWidth: BorderWidth.thin, borderColor: '#8B0000', borderRadius: BorderRadius.sm, padding: Spacing.md, marginBottom: Spacing.xl },
   mechanicName: { ...Typography.label, color: '#8B0000', letterSpacing: 2, marginBottom: 4 },
   mechanicHint: { ...Typography.caption, color: Colors.text.muted, lineHeight: 18 },
-  speechBubble: { backgroundColor: Colors.background.secondary, borderWidth: BorderWidth.thin, borderColor: Colors.border.primary, borderRadius: BorderRadius.md, padding: Padding.md, marginBottom: Spacing.md },
+  speechBubble: { backgroundColor: Colors.background.secondary, borderWidth: BorderWidth.thin, borderColor: Colors.border.primary, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md },
   finalSpeech: { borderColor: '#8B0000' },
-  closingBubble: { borderColor: '#8B0000', borderWidth: BorderWidth.medium },
+  closingBubble: { borderColor: '#8B0000', borderWidth: BorderWidth.normal },
   bossLabel: { ...Typography.label, color: '#8B0000', letterSpacing: 2, marginBottom: Spacing.sm },
   speechText: { ...Typography.body, color: Colors.text.primary, lineHeight: 24, fontStyle: 'italic' },
   closingText: { ...Typography.body, color: Colors.text.primary, lineHeight: 24, fontStyle: 'italic', fontWeight: 'bold' },
@@ -379,15 +374,15 @@ const styles = StyleSheet.create({
   playerText: { ...Typography.body, color: Colors.text.secondary, fontStyle: 'italic', flex: 1 },
   choicesContainer: { marginBottom: Spacing.lg },
   choicesLabel: { ...Typography.label, color: Colors.text.muted, letterSpacing: 2, marginBottom: Spacing.md },
-  choiceBtn: { backgroundColor: Colors.background.secondary, borderWidth: BorderWidth.thin, borderColor: Colors.border.primary, borderRadius: BorderRadius.sm, padding: Padding.md, marginBottom: Spacing.sm },
+  choiceBtn: { backgroundColor: Colors.background.secondary, borderWidth: BorderWidth.thin, borderColor: Colors.border.primary, borderRadius: BorderRadius.sm, padding: Spacing.md, marginBottom: Spacing.sm },
   secretOutcomeBtn: { borderColor: Colors.resource.gold },
   choiceLabel: { ...Typography.body, color: Colors.text.primary, fontWeight: 'bold', marginBottom: 4 },
   choiceDesc: { ...Typography.caption, color: Colors.text.muted },
   choiceReq: { ...Typography.caption, color: Colors.ui.warning, marginTop: 4 },
   outcomeEffect: { ...Typography.caption, color: Colors.resource.gold, marginTop: 4 },
   achievementHint: { ...Typography.caption, color: '#9A6898', marginTop: 4 },
-  fightButton: { backgroundColor: '#8B0000', borderRadius: BorderRadius.md, padding: Padding.lg, alignItems: 'center', marginTop: Spacing.lg },
+  fightButton: { backgroundColor: '#8B0000', borderRadius: BorderRadius.md, padding: Spacing.lg, alignItems: 'center', marginTop: Spacing.lg },
   fightButtonText: { ...Typography.button, color: Colors.text.inverse, letterSpacing: 3, fontSize: 13 },
-  bypassButton: { backgroundColor: Colors.background.tertiary, borderWidth: BorderWidth.medium, borderColor: Colors.resource.gold, borderRadius: BorderRadius.md, padding: Padding.lg, alignItems: 'center', marginTop: Spacing.lg },
+  bypassButton: { backgroundColor: Colors.background.tertiary, borderWidth: BorderWidth.normal, borderColor: Colors.resource.gold, borderRadius: BorderRadius.md, padding: Spacing.lg, alignItems: 'center', marginTop: Spacing.lg },
   bypassButtonText: { ...Typography.button, color: Colors.resource.gold, letterSpacing: 3, fontSize: 13 },
 });

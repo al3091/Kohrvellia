@@ -82,7 +82,7 @@ export interface PlayerSnapshot {
 }
 
 type SoulStoreRef = {
-  getBehavementProgress: (id: string) => { currentValue: number } | null;
+  getBehavementProgress: (id: string) => { current: number } | null;
   getDominantVector: () => BehaviorVector | null;
 };
 
@@ -110,10 +110,10 @@ export function createPlayerSnapshot(
   const adventurerArchetype = ARCHETYPE_MAP[weaponCategory] ?? 'Berserker';
 
   // Behavement tracking — THIS RUN ONLY
-  const fleeCount = soul.getBehavementProgress('evade_flees_10')?.currentValue ?? 0;
-  const lowHpAttacks = soul.getBehavementProgress('risk_low_hp_attacks')?.currentValue ?? 0;
-  const consumablesUsed = soul.getBehavementProgress('caution_consumable_use')?.currentValue ?? 0;
-  const tauntsUsed = soul.getBehavementProgress('social_taunts')?.currentValue ?? 0;
+  const fleeCount = soul.getBehavementProgress('evade_flees_10')?.current ?? 0;
+  const lowHpAttacks = soul.getBehavementProgress('risk_low_hp_attacks')?.current ?? 0;
+  const consumablesUsed = soul.getBehavementProgress('caution_consumable_use')?.current ?? 0;
+  const tauntsUsed = soul.getBehavementProgress('social_taunts')?.current ?? 0;
   const monstersKilled = character.runStats.monstersKilled;
 
   const isAggressor = monstersKilled > fleeCount * 3;

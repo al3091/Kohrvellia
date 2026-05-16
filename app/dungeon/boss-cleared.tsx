@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
-import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
+import { Spacing, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
@@ -71,7 +71,7 @@ export default function BossClearedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.primary },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Padding.xl },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
   emoji: { fontSize: 48, opacity: 0.5, marginBottom: Spacing.lg },
   floorLabel: { ...Typography.caption, color: Colors.text.muted, letterSpacing: 3, textAlign: 'center' },
   bossName: { ...Typography.h3, color: Colors.text.muted, letterSpacing: 2, textAlign: 'center', marginBottom: 4 },
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     borderWidth: BorderWidth.thin,
     borderColor: Colors.border.primary,
     borderRadius: BorderRadius.md,
-    padding: Padding.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.xl,
   },
   tabletText: { ...Typography.body, color: Colors.text.secondary, lineHeight: 24, fontStyle: 'italic', textAlign: 'center' },
@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
     borderWidth: BorderWidth.thin,
     borderColor: Colors.border.primary,
     borderRadius: BorderRadius.md,
-    paddingVertical: Padding.md,
-    paddingHorizontal: Padding.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
   },
   passButtonText: { ...Typography.button, color: Colors.text.muted, letterSpacing: 3 },
 });

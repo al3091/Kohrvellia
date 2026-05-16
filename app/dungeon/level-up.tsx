@@ -15,7 +15,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
@@ -83,6 +83,7 @@ const TIER_ICONS: Record<AchievementTier, string> = {
 
 export default function LevelUpScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const haptics = useHaptics();
   const { playSFX } = useSoundStore();
 
@@ -119,7 +120,7 @@ export default function LevelUpScreen() {
     }
   }, [isInCeremony, character, startLevelUpCeremony]);
 
-  // Block back navigation during ceremony — level-up must be completed (BUG-004)
+  // Block Android hardware back during ceremony (BUG-004)
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (phase !== 'complete') return true; // Block until ceremony is fully done
@@ -127,6 +128,15 @@ export default function LevelUpScreen() {
     });
     return () => subscription.remove();
   }, [phase]);
+
+  // Block iOS swipe-back and programmatic navigation during ceremony (BUG-004)
+  useEffect(() => {
+    if (phase === 'complete') return;
+    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void }) => {
+      e.preventDefault();
+    });
+    return unsubscribe;
+  }, [navigation, phase]);
 
   // Intro animation sequence
   useEffect(() => {

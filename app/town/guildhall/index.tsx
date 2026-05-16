@@ -27,6 +27,7 @@ import { getAchievementById, getAchievementsForLevel } from '../../../src/data/a
 import { AchievementTracker } from '../../../src/components/achievement/AchievementTracker';
 import { getMaterialById, MATERIAL_TIER_COLORS } from '../../../src/data/materials';
 import { useMarketStore } from '../../../src/stores/useMarketStore';
+import { useSoulStore } from '../../../src/stores/useSoulStore';
 
 // ─── Advisor NPC ──────────────────────────────────────────────────────────────
 
@@ -439,6 +440,7 @@ export default function GuildHallScreen() {
                     for (const item of materials) {
                       removeFromInventory(item.id, item.quantity);
                     }
+                    useSoulStore.getState().incrementBehavement('resource_sell_items');
                     haptics.success();
                   },
                 },
@@ -467,6 +469,7 @@ export default function GuildHallScreen() {
                     recordSale(mat.category as 'metal' | 'monster' | 'gem' | 'essence', item.quantity);
                     modifyGold(value);
                     removeFromInventory(itemId, item.quantity);
+                    useSoulStore.getState().incrementBehavement('resource_sell_items');
                     haptics.success();
                   },
                 },

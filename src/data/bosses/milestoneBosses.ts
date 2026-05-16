@@ -206,7 +206,7 @@ const VANYA: MilestoneBoss = {
         }
         return `An honest ${s.adventurerArchetype}. I have seen many. The Tower chews through honesty as easily as deception. But it has its own respect for those who do not hide. Choose.`;
       },
-      getOutcomes: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+      getOutcomes: (choice1Id: string, choice2Id: string, _s: PlayerSnapshot) => {
         const tags = [choice1Id, choice2Id];
         const outcomes: BossOutcome[] = [ALWAYS_FIGHT];
 
@@ -288,7 +288,7 @@ const SORATH: MilestoneBoss = {
   conversation: {
     exchange1: {
       bossOpening: 'Oh. Another one. You all have the same look — determined, slightly afraid, completely unaware that the real danger was never down here. Tell me: what do you think you\'re fighting for?',
-      getChoices: (s: PlayerSnapshot) => [
+      getChoices: (_s: PlayerSnapshot) => [
         {
           id: 'mission',
           label: 'To get through. Nothing more.',
@@ -436,7 +436,7 @@ const KUTCHER: MilestoneBoss = {
   conversation: {
     exchange1: {
       bossOpening: "What a lovely name you carry. I've been collecting names for centuries — each one a different note. Yours has a particular resonance. Before I add it to my choir... introduce yourself. Tell me something the name doesn't.",
-      getChoices: (s: PlayerSnapshot) => [
+      getChoices: (_s: PlayerSnapshot) => [
         {
           id: 'sing',
           label: 'Sing something.',
@@ -667,7 +667,7 @@ const KALINDI: MilestoneBoss = {
       },
     },
     exchange3: {
-      getBossText: (choice1Id: string, choice2Id: string, s: PlayerSnapshot) => {
+      getBossText: (choice1Id: string, choice2Id: string, _s: PlayerSnapshot) => {
         const tags = [choice1Id, choice2Id];
         if (tags.includes('patient') && tags.includes('WIS_path')) return '"Patience and purpose together. These are not qualities water fights against. What would you ask of me, then, if asking is possible before combat?"';
         if (tags.includes('question_asked')) return `"Whether luck is earned or given. The current doesn\'t judge it — luck is simply where the current takes you. But I can tell you this: the currents here favor those who know when to stop fighting the water and simply... float. What do you choose?"`;
@@ -777,7 +777,7 @@ const MALIK: MilestoneBoss = {
         if (choice1Id === 'choice') return '"What you choose to treat as real. I have heard this answer from scholars, prophets, and gamblers alike. Tell me — what do you choose to treat as real about ME?"';
         return '"Nothing is real. Yes. And the gambler — the one who plays in the void — sometimes wins exactly because they refuse to believe in the rules. Tell me what winning looks like to someone who believes in nothing."';
       },
-      getChoices: (choice1Id: string, s: PlayerSnapshot) => {
+      getChoices: (choice1Id: string, _s: PlayerSnapshot) => {
         if (choice1Id === 'exist') return [
           {
             id: 'threat_real',

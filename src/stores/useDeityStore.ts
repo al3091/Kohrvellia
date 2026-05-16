@@ -18,6 +18,7 @@ import {
 } from '../types/Deity';
 import { getDeityById } from '../data/pantheons';
 import { useCharacterStore } from './useCharacterStore';
+import { useSoulStore } from './useSoulStore';
 
 // Favor status thresholds
 export const FAVOR_STATUS = {
@@ -75,6 +76,8 @@ interface DeityState {
   isAbilityUnlocked: () => boolean;
   getAvailableChallenges: () => GodChallenge[];
   hasActiveChallenge: () => boolean;
+  /** Route a game event to challenge progress if the active challenge matches the event type */
+  recordChallengeEvent: (eventType: string, amount?: number) => void;
 }
 
 export const useDeityStore = create<DeityState>()(
@@ -111,6 +114,12 @@ export const useDeityStore = create<DeityState>()(
             },
           };
         });
+
+        // Track high-favor milestone in soul system
+        const newFavor = get().relationship?.favor;
+        if (newFavor !== undefined && newFavor >= 80) {
+          useSoulStore.getState().setBehavementProgress('social_deity_favor_high', 1);
+        }
       },
 
       performDomainAction: (domain) => {
@@ -332,6 +341,19 @@ export const useDeityStore = create<DeityState>()(
             },
           };
         });
+      },
+
+      recordChallengeEvent: (eventType, amount = 1) => {
+        const { relationship } = get();
+        if (!relationship?.currentChallenge) return;
+
+        const deity = getDeityById(relationship.deityId);
+        const challenge = deity?.challenges.find((c) => c.id === relationship.currentChallenge!.challengeId);
+        if (!challenge) return;
+
+        if (challenge.requirement.type === eventType) {
+          get().updateChallengeProgress(amount);
+        }
       },
 
       // Hints
