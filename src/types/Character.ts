@@ -9,6 +9,7 @@ import type { Equipment, Armor, Accessory } from './Armor';
 import type { AchievementProgress } from './Achievement';
 import type { Weapon } from './Weapon';
 import type { GeneratedTitle } from './Behavement';
+import type { CombatSkill } from './Skill';
 
 // Pending excelia from dungeon runs - NOT applied until Blessing Rite
 export interface PendingExcelia {
@@ -128,19 +129,15 @@ export interface StatusEffect {
   description: string;
 }
 
-// Skill definition
-export interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  spCost: number;
-  cooldown: number; // Turns
+// Skill stored on the character — extends the full CombatSkill so effects are always present
+export interface Skill extends CombatSkill {
   currentCooldown: number;
-  level: number; // Proficiency level 1-50
-  observed: boolean; // Have we seen this skill used?
-  learned: boolean; // Have we acquired this skill?
-  category: 'physical' | 'magic' | 'support' | 'passive';
-  scalingStat: StatName;
+  proficiency: number;
+  timesUsed: number;
+  // Character-tracking fields
+  level: number;
+  observed: boolean;
+  learned: boolean;
 }
 
 // Job/Class system

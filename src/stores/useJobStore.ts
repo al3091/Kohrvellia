@@ -12,6 +12,7 @@ import type { Job } from '../types/Job';
 import type { StatName } from '../types/Stats';
 import { getJobsForStats, getJobById } from '../data/jobs';
 import { useCharacterStore } from './useCharacterStore';
+import type { Skill } from '../types/Character';
 
 interface JobState {
   currentJobId: string | null;
@@ -49,7 +50,7 @@ export const useJobStore = create<JobState>()(
         // Grant the starter skill to the character immediately
         const charStore = useCharacterStore.getState();
         const { learnSkill } = charStore;
-        const starterSkill = {
+        const starterSkill: Skill = {
           ...job.starterSkill,
           currentCooldown: 0,
           proficiency: 0,
@@ -58,8 +59,7 @@ export const useJobStore = create<JobState>()(
           observed: true,
           learned: true,
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        learnSkill(starterSkill as any);
+        learnSkill(starterSkill);
 
         // Apply the job's permanent stat bonus to character stats
         charStore.applyJobStatBonus(job.statBonus.stat, job.statBonus.value);

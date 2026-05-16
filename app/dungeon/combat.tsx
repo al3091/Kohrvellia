@@ -33,6 +33,7 @@ import type { StagedAction, CombatAction } from '../../src/stores/useCombatStore
 import { formatConsumableEffect, RARITY_COLORS as CONSUMABLE_RARITY_COLORS } from '../../src/types/Consumable';
 import type { LearnedSkill } from '../../src/types/Skill';
 import { canUseSkill, formatSkillDescription, SKILL_CATEGORY_COLORS } from '../../src/types/Skill';
+import type { Skill } from '../../src/types/Character';
 import { MATERIAL_TIER_COLORS } from '../../src/data/materials';
 
 // Rarity colors for weapon drops
@@ -406,7 +407,7 @@ export default function CombatScreen() {
     }
   };
 
-  const runUseSkill = (skill: LearnedSkill, statValue: number, derived: DerivedStats): void => {
+  const runUseSkill = (skill: Skill, statValue: number, derived: DerivedStats): void => {
     if (!character) return;
     const check = canUseSkill(skill, character.currentSP);
     if (!check.canUse) return;
@@ -703,7 +704,7 @@ export default function CombatScreen() {
   };
 
   // Skill selected in modal → stage as primary action
-  const handleUseSkill = (skill: LearnedSkill) => {
+  const handleUseSkill = (skill: Skill) => {
     if (!character || isActionDisabled) return;
     const check = canUseSkill(skill, character.currentSP);
     if (!check.canUse) return;
@@ -1753,11 +1754,11 @@ export default function CombatScreen() {
               </View>
             ) : (
               <FlatList
-                data={character.skills as unknown as LearnedSkill[]}
+                data={character.skills}
                 keyExtractor={(skill) => skill.id}
                 contentContainerStyle={styles.itemModalList}
                 renderItem={({ item: skill }) => {
-                  const check = canUseSkill(skill as LearnedSkill, character.currentSP);
+                  const check = canUseSkill(skill, character.currentSP);
                   const statValue = character.stats[skill.scalingStat].points;
 
                   return (
@@ -1766,7 +1767,7 @@ export default function CombatScreen() {
                         styles.skillCard,
                         !check.canUse && styles.skillCardDisabled,
                       ]}
-                      onPress={() => check.canUse && handleUseSkill(skill as LearnedSkill)}
+                      onPress={() => check.canUse && handleUseSkill(skill)}
                       disabled={!check.canUse}
                     >
                       <View style={styles.skillCardHeader}>
