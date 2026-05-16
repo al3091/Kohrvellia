@@ -134,10 +134,10 @@
   - [x] Item - Use consumables (healing, buffs, cures, throwables)
 - [x] **Damage Calculation** - Weapon stat-based attack, END-based defense, accuracy rolls
 - [x] **Status Effects** - Poison, burn, freeze, stun, blind, bleed, weaken, slow, curse, regen
-- [x] **Combat Log** - Action history display (last 8 entries)
+- [x] **Combat Log** - Action history display (last 20 entries)
 - [x] **Victory Screen** - Gold + stat proficiency rewards
 - [x] **Death Screen** - Defeat message, return to title
-- [x] **Monster Data** - 16 base monsters with prefix/suffix modifiers
+- [x] **Monster Data** - 36+ base monsters with prefix/suffix modifiers
 - [x] **Combat Store** - Full combat state management (useCombatStore)
 
 ### 1.6 Stat Growth (Action-Based)
@@ -206,7 +206,7 @@
 - [x] **Prefix System** - Weak, Young, Fierce, Armored, Elite, Ancient, Mythic
 - [x] **Suffix System** - of Flame, of Frost, of Venom, the Swift, the Undying
 - [x] **Loot Tables by CR** - Weapon drop chance (15% base + 5% per CR, bosses always drop)
-- [x] **Category-Based Loot Pools** - Monster type determines valid drops (beasts don't drop weapons)
+- [x] **Category-Based Loot Pools** - Monster type determines valid drops; INT/CHA on humanoids, WIS on undead, LCK on demons
 
 ### 1.10 Weapon System
 - [x] **Base Weapons** (32 types, 4 per stat):
@@ -262,42 +262,45 @@
 - [ ] **Bosses 6-20** (floors 30-100): Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr, Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
 - [ ] **Boss Dialogue Achievements** - `walked_past_death`, `fortune_s_pet`, `boss_weakness_*` — need data in achievement files
 
+### 1.X.4 Build Hardening (2026-05-15)
+- [x] **Deity challenge routing** — `recordChallengeEvent(type, amount)` added to `useDeityStore`; gold/heal/kill challenges now progress correctly; Freya's "2000 gold by Floor 8" and similar no longer stuck at 0 (BUG-033)
+- [x] **Soul wiring additions** — `social_deity_favor_high` fires when favor reaches 80+ (BUG-029); `resource_sell_items` fires on Guild Hall material sales (BUG-030)
+- [x] **useGameStore cleanup** — Stale `milestoneChestsOpened` field and `claimMilestoneChest` action removed; per-run version in `useDungeonStore` is the authority (BUG-024)
+- [x] **iOS level-up guard** — `navigation.addListener('beforeRemove')` in `level-up.tsx` blocks swipe-back dismissal of ceremony before `performLevelUp()` completes (BUG-004)
+- [x] **TypeScript zero-error build** — Fixed 15 pre-existing errors: Spacing constant names (Padding.xl → Spacing.xl), unused imports, `SoulStoreRef.getBehavementProgress` return type (`currentValue` → `current`), unused parameters in `milestoneBosses.ts`
+- [x] **Market Events confirmed live** — BUG-015 was a false alarm; `onFloorDescend()` IS called at `useDungeonStore.ts:473` on each floor descent
+
 ---
 
 ## Phase 2: Extended Content
 
 ### 2.1 Job System
-- [ ] **Base Jobs** (8 starter jobs):
-  - [ ] Warrior, Mage, Rogue, Priest, Ranger, Paladin, Monk, Bard
-- [ ] **Job Unlocking** - Stat requirement checks
-- [ ] **Job Milestones**:
-  - [ ] Level 2: Basic Job Skills
-  - [ ] Level 5: Advanced Job Skills
-  - [ ] Level 8: Specialization Unlock
-  - [ ] Level 10: Mastery Skills
-- [ ] **Advanced Jobs** (16+ specializations):
-  - [ ] Warrior → Knight, Berserker
-  - [ ] Mage → Wizard, Sorcerer
-  - [ ] Rogue → Assassin, Trickster
-  - [ ] etc.
-- [ ] **Job Skill Trees** - Passive and active skills
+- [x] **useJobStore** - Persisted store: `selectJob()`, `learnSkill()`, `hasSelectedJob`, `getJobBonus()`
+- [x] **Job definitions** (`src/data/jobs/jobDefinitions.ts`) - 8 base jobs with stat requirements, starter skills, scaling stat
+- [x] **job-select.tsx** - UI screen with BackHandler, top-stat filter, confirmation flow; routes from level-up at Level 2
+- [x] **Job stat bonus** - Applied to character stats at selection via `applyJobStatBonus()`; recalculates grades + maxHP/SP
+- [ ] **Job benefits in combat** - Starter skill appears in combat skill modal; SP cost and damage use job's scaling stat (type cast issue at `useJobStore.ts:62`)
+- [ ] **Level 5 job specialization** - Branch into Path A/B (e.g. Warrior → Knight or Berserker)
+- [ ] **Level 8 advanced class** - Final specialization unlock
+- [ ] **Level 10 mastery skills** - Paragon-tier job abilities
 
 ### 2.2 Denatus Soul System
-- [ ] **Behavioral Vector Tracking**:
-  - [ ] PHYS (Physical Combat) - 10 behavements
-  - [ ] MAGIC (Magical Combat) - 10 behavements
-  - [ ] TANK (Defensive) - 10 behavements
-  - [ ] STEALTH (Evasive) - 10 behavements
-  - [ ] SOCIAL (Diplomatic) - 10 behavements
-  - [ ] CRAFT (Creative) - 10 behavements
-  - [ ] EXPLORE (Discovery) - 10 behavements
-  - [ ] FORTUNE (Luck-based) - 10 behavements
-  - [ ] CHAOS (Unpredictable) - 10 behavements
-  - [ ] GLORY (Hard-path) - 10 behavements
-- [ ] **Behavement Unlock Conditions** - Threshold tracking
-- [ ] **Denatus Ceremony** - Soul naming event
-- [ ] **Title Generation** - `[CR Adj] + [Stat Adj] + [Skill Noun]`
-- [ ] **Paragon Skills** - Passive abilities from behavements
+- [x] **useSoulStore** - Persisted store; 85 behavements across 10 vectors; `incrementBehavement()`, `setBehavementProgress()`, `getDominantVector()`
+- [x] **Behavement Vector Tracking** (~30% wired, ~70% pending):
+  - [x] COMBAT_PHYSICAL (10 behavements) - Fully wired in `useCombatStore`
+  - [x] COMBAT_MAGIC (10 behavements) - Fully wired in `useCombatStore`
+  - [x] DEFENSE_TANK (10 behavements) - Fully wired
+  - [x] DEFENSE_EVASION (10 behavements) - Fully wired
+  - [~] RISK_TAKING (8 behavements) - 6/8 wired; `risk_boss_rush` and `risk_no_observe` missing
+  - [x] CAUTION (8 behavements) - Fully wired
+  - [~] SOCIAL (8 behavements) - 7/8 wired; `resource_sell_items` ✅ now wired (BUG-030)
+  - [~] EXPLORATION (8 behavements) - 6/8 wired; `explore_secret_rooms` pending
+  - [~] RESOURCE (8 behavements) - 7/8 wired; town inventory equip has no soul call
+  - [~] GLORY (10 behavements) - 8/10 wired; `glory_challenge_complete` pending God Challenges phase
+- [x] **Denatus screen** (`app/dungeon/denatus.tsx`) - Exists, reads from `useSoulStore`
+- [x] **PlayerSnapshot** (`src/types/PlayerSnapshot.ts`) - Archetype + approach style; used for boss dialogue
+- [ ] **Title Generation end-to-end** - `[CR Adj] + [Stat Adj] + [Skill Noun]` formula at Level 10 needs testing
+- [ ] **Paragon Skills** - Passive abilities from dominant behavement vector (design: BUG design question open)
 
 ### 2.3 Discovery System
 - [ ] **Rumor System** - NPC hints about achievements
@@ -369,13 +372,8 @@
   - [ ] Achievement hints
 
 ### 2.7 Extended Pantheons
-- [ ] **Additional Pantheons**:
-  - [ ] Hindu pantheon (Shiva, Vishnu, Lakshmi)
-  - [ ] Chinese pantheon (Jade Emperor, Guan Yu)
-  - [ ] Slavic pantheon (Perun, Veles, Mokosh)
-  - [ ] African pantheons (Yoruba, Egyptian expansion)
-  - [ ] Mesoamerican (Aztec, Maya)
-  - [ ] Polynesian (Maui, Pele)
+- [x] **12 pantheons active** (~168 total deities): Greek, Norse, Egyptian, Japanese, Celtic, Mesopotamian, Hindu, Chinese, Slavic, Aztec, Ars Goetia, Fallen Angels
+- [ ] **7 additional pantheons planned** (queued for Phase 3): Inca, Maya, Persian, Polynesian, Shinto, Vodou, Yoruba
 - [ ] **200+ Total Deities** - Full roster
 
 ### 2.8 Extended Monsters
@@ -476,14 +474,32 @@
 - [ ] `polynesian.json` - 10+ deities
 
 ### Monster Data (`/src/data/monsters/`)
-- [ ] `goblins.json` - Goblin variants
-- [ ] `undead.json` - Skeletons, zombies, ghosts
-- [ ] `beasts.json` - Wolves, bears, boars
-- [ ] `dragons.json` - Dragon types and variants
-- [ ] `demons.json` - Demon hierarchy
-- [ ] `elementals.json` - Fire, water, earth, air
-- [ ] `giants.json` - Giant types
-- [ ] `mythic.json` - Legendary creatures
+- [x] Core monsters live in `src/data/monsters/` as TypeScript modules (36+ base types)
+- [ ] Extend to 150+ base types (Phase 3 target)
+- [ ] Biome-specific regional variants
+
+### Note on Data Files
+All data files are TypeScript (`.ts`), not JSON. The `.json` references in this section were from early design and are outdated.
+
+---
+
+## Cool Ideas Backlog
+
+> Design concepts fully documented but not yet coded. Recovered from design doc audit 2026-05-15.
+> Each links to its design document. Scope: S=Small, M=Medium, L=Large.
+
+| # | Idea | Design Doc | Scope | Why It's Cool |
+|---|------|-----------|-------|---------------|
+| 1 | **Deity Favor Full Mechanics** — Eviction at favor 0-10, Favoured Child death saves at 91-100. Favor changes stats but no eviction event fires. | `DESIGN_PROGRESSION.md` | M | Makes the patron relationship feel alive — your god can actually abandon you |
+| 2 | **God Challenges** — Time-limited deity quests triggered by shrine visits, low favor, or approaching milestones without discovered achievements. Infrastructure (`issueChallenge`, `checkChallengeExpiry`) exists; triggers and most event types don't. | `DESIGN_PROGRESSION.md` | L | Transforms deity rejection into narrative: you failed, now earn back favor |
+| 3 | **Discovery System** — Achievement visibility gated by NPC reputation tiers. `DiscoveryState` (`hidden`/`rumored`/`known`/`completed`) exists in code, never fed to UI or NPCs. | `DESIGN_PROGRESSION.md` | L | Organic "I don't know what I'm capable of" arc → secrets unlocked through play |
+| 4 | **GLORY Stacking Multiplier** — 3+ hard-path achievements before leveling grants 1.5x stat reward multiplier. GLORY vector tracked; reward formula never applies the multiplier. | `SOUL_BEHAVEMENTS.md` | S | High-risk players get richer rewards — creates build-defining decisions each level |
+| 5 | **Library Research / NPC Reputation Tiers** — Gold sink mechanic: pay to unlock HEROIC/MYTHIC achievement hints. Complements Discovery System. | `DESIGN_PROGRESSION.md` | M | Gold has a purpose beyond gear; knowledge becomes a resource |
+| 6 | **Deity Hint Delivery (Soul Mentor)** — Deity gives cryptic, personality-matched hints as behavement vectors develop ("The shadows recognize you…" for DEFENSE_EVASION). `personality[]` array on Deity exists; hint delivery unbuilt. | `SOUL_TITLES.md` | M | The deity feels like an active teacher watching your combat style evolve |
+| 7 | **Advanced Job Specializations** — Level 5 job branch (Path A/B), Level 8 advanced class. Framework in `useJobStore`; UI gating and skill trees not coded. | `DESIGN_PROGRESSION.md` | L | Two Berserkers diverge: one becomes Whirlwind Spinner, one becomes Fortress |
+| 8 | **Crafting System** — Material combination → weapons/upgrades. Blacksmith UI exists; no recipes, no upgrade path, enchantments are pre-generated. | `DESIGN_EQUIPMENT.md` | L | "Hunt monster X to forge weapon Y" — closes the loot loop into crafting |
+| 9 | **Full 85-Behavement Wiring** — Only ~30% of behavements fire. ~60 unwired: trap detection, NPC interactions, skill learning, dungeon shops. | `SOUL_BEHAVEMENTS.md` | L | The soul engine is the most ambitious system in the game — it deserves to actually run |
+| 10 | **Biome-Pantheon Monster Associations** — 9 biomes (Ruins, Frozen, Abyss, etc.) each tied to a pantheon. Floor generation ignores biome; Norse giants and Greek titans never spawn. | `DESIGN_DUNGEON.md` | M | Floor 20 in the Frozen biome should feel like descending into Norse myth |
 
 ### Equipment Data (`/src/data/equipment/`)
 - [ ] `weapons.json` - All weapon definitions

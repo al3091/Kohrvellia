@@ -32,8 +32,32 @@ War | Magic | Trickery | Death | Fortune | Nature | Wisdom | Craft | Authority |
 ### Achievement Tiers
 STANDARD (1x) | CHALLENGING (1.5x) | HEROIC (2x) | LEGENDARY (3x) | MYTHIC (5x)
 
-### Pantheons (12 implemented)
+### Pantheons (12 active, ~168 deities)
 Greek | Norse | Egyptian | Japanese | Celtic | Mesopotamian | Hindu | Chinese | Slavic | Aztec | Ars Goetia | Fallen Angels
+
+### Milestone Bosses (5 implemented, 15 planned)
+Vanya (Floor 5) | Sorath (Floor 10) | Kutcher (Floor 15) | Kalindi (Floor 20) | Malik (Floor 25)
+Floors 30-100: Sekhmet → Hades → Brahman → Valdris (15 bosses designed, not coded)
+
+---
+
+## State Stores (Zustand)
+
+| Store | Persisted | Purpose |
+|-------|-----------|---------|
+| `useCharacterStore` | YES | Stats, equipment, inventory, skills, Falna |
+| `useDungeonStore` | YES | Active run: floor map, rooms, run flags, boss snapshot |
+| `useCombatStore` | NO | Ephemeral per-encounter combat state |
+| `useAchievementStore` | YES | Progress, discovery states, ceremony |
+| `useDeityStore` | YES | Patron deity, favor, challenges, hints |
+| `useSoulStore` | YES | 85 behavements across 10 vectors, Denatus state |
+| `useInventoryStore` | YES | Town stash, gold |
+| `useJobStore` | YES | Current job, selection state, starter skill |
+| `useShopStore` | YES | Shop reputation, stock state |
+| `useBlacksmithStore` | YES | Upgrade/repair state |
+| `useMarketStore` | YES | 35 market events, supply pressure, material pricing |
+| `useGameStore` | YES | Meta: settings, run history, defeated bosses, tutorial state |
+| `useSoundStore` | NO | Audio playback (files pending) |
 
 ---
 
@@ -58,12 +82,25 @@ Greek | Norse | Egyptian | Japanese | Celtic | Mesopotamian | Hindu | Chinese | 
 | [SOUL_TITLES.md](docs/SOUL_TITLES.md) | Paragon titles, CR/stat adjectives, skill nouns, buff generation |
 | [SOUL_BEHAVEMENTS.md](docs/SOUL_BEHAVEMENTS.md) | 9 vectors, 85+ behavements, tracking implementation |
 
+### Boss System (in `src/data/bosses/`)
+
+| File | Contents |
+|------|----------|
+| [milestoneBosses.ts](src/data/bosses/milestoneBosses.ts) | 5 sentient bosses (floors 5-25), `MilestoneBoss` interface, 3-exchange conversation system, `getMilestoneBoss()` |
+
+Boss design rules:
+- Each boss senses **archetypes** from collective memory, not individual player history
+- 3-exchange conversation → secret stat-gated outcomes (CHA bypass, LCK cache, WIS weakness reveal)
+- Bosses fight every run for gear progression; `defeatedBosses[]` in `useGameStore` is flavor-only
+
 ### Meta Documents (root)
 
 | File | Purpose |
 |------|---------|
 | [MINDSET.md](MINDSET.md) | Style guide for writing content |
-| [PROGRESS.md](PROGRESS.md) | Implementation checklist |
+| [PROGRESS.md](PROGRESS.md) | Implementation checklist + Cool Ideas Backlog |
+| [BUGS.md](BUGS.md) | Living bug tracker (Pike's list) |
+| [CURRENT_SPRINT.md](CURRENT_SPRINT.md) | Active tasks, blocked decisions, next up |
 
 ---
 
@@ -88,22 +125,25 @@ chance = 15% x 0.85^floor
 
 ## Implementation Status
 
-See [PROGRESS.md](PROGRESS.md) for full checklist.
+See [PROGRESS.md](PROGRESS.md) for full checklist. See [PROGRESS.md Cool Ideas Backlog](PROGRESS.md#cool-ideas-backlog) for 10 recovered design concepts queued for future sprints.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | ~90% | Core types, stores, constants done |
-| Phase 1: MVP | ~85% | Character creation, deity, tutorial, combat, dungeon all working |
-| Phase 2: Extended | ~5% | Job system, Denatus planned |
-| Phase 3: Polish | Not started | UI polish, balancing |
+| Phase 0: Foundation | COMPLETE | Core types, stores, constants, folder structure |
+| Phase 1: MVP | ~95% | All core systems working; GLORY tracking + item destroy remain |
+| Phase 1.X: Build Hardening | COMPLETE | Combat scaling, shop, loot pools, boss system, challenge routing, TypeScript |
+| Phase 2: Extended | ~20% | Job store ✅, Denatus store ✅, Market Events ✅, boss conversations ✅; Denatus wiring + job combat + God Challenges pending |
+| Phase 3: Polish | Not started | UI polish, audio, balancing, localization |
 
-### Recent Completions
-- **Tutorial Flow** - 6-screen interactive tutorial (Welcome → Basics → Combat → Stats → Falna → Leveling → Death)
-- **Enhanced Deity System** - Search, filters, comparison tool, domain blessing display
-- **Combat System** - Full turn-based combat with 10 status effects, action-based stat growth
-- **Dungeon Generation** - Procedural branching dungeons with 9 room types
-- **Weapon System** - 32 base weapons, 6 quality tiers, 7 materials, 7 enchantments
-- **Monster System** - 16 base monsters with prefix/suffix modifiers
+### Recent Completions (2026-05-15 sprint)
+- **Milestone Boss System** — 5 sentient bosses (floors 5-25), 3-exchange conversations, archetype dialogue, stat-gated secret outcomes
+- **Multi-Step Dungeon Events** — 5 Buriedbornes-style events with run flags and weapon rewards
+- **Deity Challenge Routing** — All non-kill challenge types (gold, heal, etc.) now track correctly
+- **Market Events System** — 35 narrative events, live economy, guild hall market board
+- **Shop Overhaul** — Level-gated weapon pool, stale stock fix, 12-item minimum guarantee
+- **All-Build Weapon Progression** — LCK/WIS/INT/CHA weapons now drop from appropriate monster categories
+- **Soul System Partial Wiring** — PHYS/MAGIC/TANK/EVADE vectors fully wired; social/resource/GLORY partially wired
+- **Job System UI** — job-select screen, job store, stat bonus applied at selection
 
 ---
 

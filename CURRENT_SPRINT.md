@@ -1,102 +1,105 @@
 # KOHRVELLIA — Current Sprint
 
 > Last updated: 2026-05-15
-> Status: Phase 2.1/2.2 complete + Milestone Boss System + Multi-Step Events + Combat Scaling Fixes
+> Status: Build Hardening complete + Deity Challenges live + Soul tracking partially wired
 
 ---
 
 ## THIS WEEK'S FOCUS
 
-Complete the Job System end-to-end flow (Level 2 → job selection → job benefits active in combat), then wire the remaining Denatus behavement tracking so soul data accumulates faithfully during dungeon runs. These two systems are the connective tissue between Phase 1 (MVP) and Phase 2 (Extended Content) — everything else in Phase 2 depends on them being solid.
+Complete the Job System combat integration (starter skills working in combat skill menu),
+wire the remaining ~60 Denatus behavements, and implement Bosses 6-20 to fill out the
+milestone boss system through floor 100. These three tasks take the game from "well-architected
+skeleton" to "fully playable arc" — every character build can now reach a boss that talks back.
 
 ---
 
 ## Active Tasks
 
-- [x] **Job System: Wire Level 2 → job-select flow** (persona: Sylas + Thane)
-  - `job-select.tsx` exists, uses `useJobStore.selectJob()`, `BackHandler` prevents premature exit
-  - Selected job persists via `useJobStore` and starter skill is granted via `learnSkill()`
-  - Screen routes correctly from level-up flow
+- [ ] **Job System: Combat integration audit** (persona: Thane + Sylas)
+  - Verify starter skill appears in the combat skill modal for job-holding characters
+  - Confirm SP cost and damage formula uses the job's declared scaling stat
+  - Test all 8 base job starter skills in combat — any type mismatch between `Skill` and `LearnedSkill` interfaces?
+  - Fix `learnSkill(starterSkill as any)` cast in `useJobStore.ts:62` with proper typing
 
-- [ ] **Job System: Job benefits in combat** (persona: Thane)
-  - Verify starter skill appears in combat skill menu
-  - Confirm SP cost and skill damage are calculated correctly using job's scaling stat
-  - Test all 8 base job starter skills in combat
+- [ ] **Denatus: Complete 85-behavement wiring** (persona: Eris + Sylas)
+  - ~30% of behavements currently fire; ~60 hook points are unwired
+  - Priority targets: `explore_secret_rooms`, `risk_boss_rush`, `risk_no_observe`, `social_deity_favor_high` ✅ done
+  - Wire behavements at: trap detection (`room.tsx`), NPC interactions, skill learning (job selection), dungeon shop visits
+  - Reference `docs/SOUL_BEHAVEMENTS.md` for full list
 
-- [ ] **Denatus: Complete behavement tracking wiring** (persona: Eris + Sylas)
-  - Audit which of the 85 behavements in `SOUL_BEHAVEMENTS.md` are currently tracked in `useCombatStore` and `useDungeonStore`
-  - Wire the missing ones — especially PHYS, MAGIC, TANK, EVADE vectors which should fire on combat actions
-  - Confirm `useSoulStore.recordBehavement()` is being called at the right moments
+- [ ] **Denatus: Test title generation end-to-end** (persona: Eris + Zenna)
+  - `app/dungeon/denatus.tsx` exists and reads from `useSoulStore`
+  - Test the full path: reach Level 10 → Denatus screen → title formula `[CR Adj] + [Stat Adj] + [Skill Noun]`
+  - Confirm title is stored on the character and displayed in epitaph/stats screens
 
-- [ ] **Denatus: Ceremony screen completion** (persona: Eris + Zenna)
-  - `app/dungeon/denatus.tsx` exists — verify it reads from `useSoulStore` correctly
-  - Confirm title generation formula (`[CR Adj] + [Stat Adj] + [Skill Noun]`) produces valid titles
-  - Test the full ceremony flow: reach Paragon → Denatus screen → title assigned
+- [ ] **Bosses 6-20: Implement floors 30-100** (persona: Orla + Thane)
+  - 15 remaining bosses designed (from doc): Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr, Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
+  - Each needs: full `MilestoneBoss` definition, 3-exchange conversation, 3+ outcomes, `bossDefeatedEcho`
+  - Add to `MILESTONE_BOSSES[]` in `src/data/bosses/milestoneBosses.ts`
+
+- [ ] **Boss dialogue achievements: Add data** (persona: Orla + Eris)
+  - `BUG-022`: Boss outcomes reference achievements (`walked_past_death`, `fortune_s_pet`, `vanya_the_understood`, etc.) but no matching definitions exist in `src/data/achievements/`
+  - Add achievement data entries; update `RequirementType` if needed
 
 - [ ] **Item Drop/Destroy** (persona: Sylas + Pike)
-  - Add full item removal from inventory (destroy without equipping)
-  - Add drop confirmation dialog ("This item will be lost. Descend without it?")
-  - Ensure bag capacity enforcement works correctly after destroy
-
-- [ ] **GLORY tracking** (persona: Eris)
-  - Implement the GLORY vector in soul tracking (10 behavements for hard-path choices)
-  - GLORY should increment when player completes HEROIC, LEGENDARY, or MYTHIC achievements
-  - Wire into achievement ceremony completion callback
+  - Add permanent item removal from inventory (destroy without equipping)
+  - Confirmation dialog: "This item will be lost permanently. Destroy it?"
+  - Enforce BAG_CAPACITY correctly on destroy (not just equip)
 
 ---
 
 ## Blocked / Needs Decision
 
-- **Issue:** `.ts.tmp` files in `/src/data/pantheons/` — RESOLVED. Files deleted 2026-05-14. Pantheons (inca, maya, persian, polynesian, shinto, vodou, yoruba) are queued for Phase 3 content expansion.
+- **BUG-026:** `useSoulStore` is persisted globally. Boss `dominantVector` reflects cumulative
+  soul data across all of a player's characters — boss dialogue flavor may be wrong for
+  returning players. Soul data IS correct for the current run's approach style signals
+  (those use `DungeonRun` stats). Only `dominantVector` is cross-run.
+  - Decision from **Eris**: (A) reset soul at run start, (B) snapshot at run-start + use deltas
+    in `createPlayerSnapshot`, (C) accept cumulative soul as character identity (intentional depth).
 
-- **Issue:** `useMarketStore.onFloorDescend(playerLevel)` is never called anywhere in the dungeon flow. Market events will never spawn, tick, or expire. The entire Market Events system is wired internally but has no external trigger.
-  - Decision needed from: **Sylas** — Hook this call into `useDungeonStore.enterFloor()` or the `descend` action to activate the living economy. See BUG-015.
+- **BUG-027:** Level-up ceremony shows "+X GLORY" from `tierRewards.gloryPoints` but these
+  points are never forwarded to `useSoulStore`. The GLORY vector tracks separately via
+  specific behavements (boss streaks, deathless floors). UI implies soul points accumulate;
+  they don't.
+  - Decision from **Valdris**: (A) wire gloryPoints to soul GLORY accumulator, (B) rename UI
+    label to "GLORY BONUS" with tooltip, (C) remove the display entirely.
 
-- **Issue:** Weapon Triangle damage type modifiers (Slash/Pierce/Blunt vs Flesh/Leather/Bone/Armor) are documented in `DESIGN_COMBAT.md` but not implemented in `useCombatStore.playerAttack()`.
-  - Decision needed from: **Thane** — Is this a Phase 2 or Phase 3 feature? Implementing it changes existing combat balance.
-  - Risk: Retroactively changes difficulty of existing encounters.
+- **Weapon Triangle** — Damage type modifiers (Slash/Pierce/Blunt vs Flesh/Leather/Bone/Armor)
+  documented in `DESIGN_COMBAT.md` but absent from `useCombatStore.playerAttack()`.
+  Monster `weaknesses`/`resistances` arrays only feed inspection text — no damage math.
+  - Decision from **Thane**: Phase 2 or Phase 3? Retroactively changes encounter balance.
 
-- **Issue:** Music audio files are absent. `useSoundStore` infrastructure is complete with all BGM/SFX types defined, but no `.mp3`/`.ogg` files exist in `assets/`.
-  - Decision needed from: **Valdris** — Source or commission audio, or ship with silence and add later?
+- **Audio files** — `useSoundStore` infrastructure complete (all BGM/SFX types defined), but
+  no `.mp3`/`.ogg` files exist in `assets/`. All sound calls are silent no-ops.
+  - Decision from **Valdris**: Source/commission audio, ship with silence, or use free CC assets?
 
 ---
 
-## Done This Sprint (move to PROGRESS.md when complete)
+## Done This Sprint
 
-- [x] Job store (`useJobStore`) — persisted, handles job selection and starter skill granting
-- [x] Job definitions (`src/data/jobs/jobDefinitions.ts`) — base jobs defined with stat requirements
-- [x] Soul store (`useSoulStore`) — initialized, behavement vector structure in place
-- [x] Denatus screen (`app/dungeon/denatus.tsx`) — screen exists, reads from soul store
-- [x] Job select screen (`app/dungeon/job-select.tsx`) — complete with BackHandler, top-stat filter, confirmation flow
-- [x] Market Events system (`useMarketStore`) — 35 narrative events, weighted random selection, ephemeral/brief/seasonal/extended durations, supply pressure tracking per material category
-- [x] Market Events data (`src/data/marketEvents.ts`) — 35 templates with icons, flavor, category effects, minLevel gating
-- [x] Guildhall Market Board UI — live event display, supply pressure warnings, price indicators (▲/▼)
-- [x] Guildhall Material Registry — sell-one/sell-all with dynamic pricing via `getMultiplier()`, market-adjusted price display
-- [x] `clearAllStores()` expanded — now resets `useJobStore`, `useSoulStore`, and `useDeityStore` on new game (fixes BUG-002, BUG-006, BUG-014)
-- [x] Removed 7 dead `.ts.tmp` pantheon files from `src/data/pantheons/` (BUG-007)
-- [x] **Combat scaling fixes** — `weapon.finalCritChance` now feeds derived stats (was dead data); `luckAttack` coefficient raised for visible LCK rank progression; `computeMaxResources` routes weapon damage by category (BUG-016, BUG-017, BUG-018)
-- [x] **Shop stale data fix** — `shouldRefreshStock()` force-regenerates when `equipmentStock.length < 12`; shop uses `generateLeveledWeaponDrop` for level-appropriate per-stat weapons (BUG-019, BUG-020)
-- [x] **Loot pool expansion** — INT/CHA added to humanoid drops, WIS to undead, LCK to demon; anti-duplicate reroll on weapon combat drops
-- [x] **Flee/sneak fix** — Successful flee and sneak-past now set `isAvoided` on the node; `room.tsx` "No Retreat" gate unblocked; floor map shows ⚠️ for avoided rooms (BUG-021)
-- [x] **Milestone Boss Chest** — Every 5 floors, boss defeat offers 3 level-appropriate weapon choices based on top 3 stats; resets each run; stored in `DungeonRun.milestoneChestsOpenedThisRun`
-- [x] **Multi-step dungeon events** — 5 new events (Gambler's Coin 2-step, Fallen Cleric's Cache, Sorcerer's Laboratory, Devil's Deal); `set_flag`/`weapon_reward` outcome types; run-scoped `runFlags` system
-- [x] **PlayerSnapshot system** — Archetype-based boss personalization; reads soul behavements (THIS run only), weapon, deity domain, approach style; no cross-character personal history
-- [x] **5 Milestone Bosses (floors 5-25)** — Vanya, Sorath, Kutcher, Kalindi, Malik; each with full 3-exchange conversation tree, archetype-driven dialogue, stat-gated secret outcomes (CHA bypass, LCK cache, WIS/INT weakness reveal)
-- [x] **Boss defeat tracking** — Per-run (`DungeonRun.clearedBossIds`) resets each character; account-level (`useGameStore.defeatedBosses`) kept for dialogue flavor only; bosses fight every run for gear progression
+- [x] `recordChallengeEvent()` routing in `useDeityStore` — gold/heal/kill challenges now track correctly; Freya's "2000 gold by Floor 8" and similar challenges now progress (BUG-033)
+- [x] `social_deity_favor_high` soul behavement wired in `useDeityStore.adjustFavor()` (BUG-029)
+- [x] `resource_sell_items` soul behavement wired in guildhall `handleSellAll`/`handleSellOne` (BUG-030)
+- [x] Stale `milestoneChestsOpened` + `claimMilestoneChest` removed from `useGameStore` (BUG-024)
+- [x] iOS swipe-back guard in `level-up.tsx` — `navigation.addListener('beforeRemove')` blocks ceremony dismissal before phase is 'complete' (BUG-004)
+- [x] TypeScript zero-error build — 15 pre-existing errors fixed: Padding/Spacing constants, unused imports (Padding, useSoundStore, addToInventory, tags1/tags2), unused `s` params in milestoneBosses, `SoulStoreRef.getBehavementProgress` return type corrected from `currentValue` to `current`
 
 ---
 
 ## Next Up (not started)
 
-- **Discovery System** (Phase 2.3) — Rumor system, achievement visibility states (Hidden → Rumored → Known → Completed), NPC reputation-based discovery. Depends on: NPC reputation tracking in `useCharacterStore` or a new `useNPCStore`.
+- **Discovery System** (Phase 2.3) — Achievement visibility states (Hidden → Rumored → Known → Completed), NPC reputation-based discovery. `DiscoveryState` type exists in code but never fed to UI.
 
-- **God Challenges** (Phase 2.4) — Deity-assigned time-limited challenges. Trigger conditions: low favor, shrine visit, approaching milestone without discovered achievements. Requires: favor tracking to be fully wired in `useDeityStore`.
+- **God Challenges** (Phase 2.4) — `useDeityStore.issueChallenge()` and `checkChallengeExpiry()` are implemented. What's missing: trigger conditions (shrine visit, low favor, approaching milestone), and many challenge event types still need routing via `recordChallengeEvent()`.
 
-- **Shop/Economy Completion** (Phase 2.6) — Shop screens exist but buy/sell pricing, haggling (CHA bonus to prices), and town shop stock generation need to be fully implemented.
+- **Advanced Job Specializations** — Jobs branch at Level 5 (Path A/B) and become Advanced Class at Level 8. Design exists in `DESIGN_PROGRESSION.md`. Framework stored in `useJobStore`; Level 5 gating not coded.
 
-- **Extended Pantheons** — 7 `.ts.tmp` files need decision (see Blocked above). If green-lit: complete each pantheon to ~14 deities each.
+- **Shop/Economy Completion** (Phase 2.6) — Guild Hall sell exists ✅. Buy flow, haggling (CHA bonus to prices), town shop stock generation still need full wiring.
 
-- **150+ Monster Bestiary** — Currently ~36 base monsters. Design doc targets 150+. Low priority until Phase 3.
+- **Biome-Pantheon Monster Associations** — 9 biomes each tied to a pantheon in `DESIGN_DUNGEON.md`. Floor generation currently uses global monster pool regardless of depth/biome. Norse creatures (Frost Giant, Storm Giant) should dominate Frozen biome floors, etc.
+
+- **150+ Monster Bestiary** — Currently 36+ base monsters. Design doc targets 150+. Low priority until Phase 3.
 
 - **Sound Assets** — Audio files needed for all defined BGM/SFX types.
 
@@ -106,25 +109,30 @@ Complete the Job System end-to-end flow (Level 2 → job selection → job benef
 
 | ID | Severity | Screen | Issue |
 |----|----------|--------|-------|
-| BUG-001 | Major | `dungeon/combat.tsx` | If app is force-closed during combat, `useCombatStore` (non-persisted) clears but `useDungeonStore` retains the room as unvisited — player re-enters the same room without combat state. Needs resume-from-interrupted-combat handling. |
-| BUG-002 | Major | `app/index.tsx` (New Game flow) | `clearAllStores()` clears character, dungeon, achievements, and weapon registry — but does NOT reset `useJobStore`, `useSoulStore`, or `useDeityStore`. A new character could inherit a previous run's job or soul state. |
-| BUG-003 | Minor | Inventory | When swapping a weapon via `equipWeapon()`, the old weapon is moved to inventory. If inventory is full (16 slots), the old weapon is LOST with no warning to the player. |
-| BUG-004 | Minor | `dungeon/level-up.tsx` | Level-up ceremony can be dismissed before deity approval step completes. State remains in a partially-committed limbo until next load. |
-| BUG-005 | Minor | Data | 7 `.ts.tmp` files in `src/data/pantheons/` are not imported by the pantheon index — they're dead weight but not harmful. |
+| BUG-001 | Major | `dungeon/combat.tsx` | App force-closed during combat leaves `useDungeonStore` with the room marked unvisited, but `useCombatStore` (non-persisted) is cleared. Player re-enters same room without combat state — may double-spawn encounter. |
+| BUG-005 | Minor | `dungeon/combat.tsx` | `endCombat()` nulls `rewards` and `monster`. Currently safe (all reads precede the call), but any refactor moving `endCombat()` earlier will produce silent null-reference crashes. Snapshot `rewards` at top of `handleVictory()` as future-proofing. |
+| BUG-008 | Minor | `dungeon/combat.tsx` | Weapon Triangle not implemented — `weaknesses`/`resistances` arrays only used for inspection text, no damage formula effect. Tutorial implies type advantages exist. |
+| BUG-022 | Major | `boss-encounter.tsx` | Boss outcome achievements (`walked_past_death`, `fortune_s_pet`, etc.) are referenced in TODO comments but no matching achievement definitions exist. Achievement unlocks silently fail. |
+| BUG-023 | Minor | `boss-cleared.tsx` | Screen exists and is complete but unreachable — no route points to it. Routing decision pending. |
+| BUG-026 | Medium | `PlayerSnapshot.ts` | Boss `dominantVector` uses cumulative cross-run soul data. Approach style is correctly run-scoped; this is the only affected field. |
+| BUG-027 | Medium | `level-up.tsx` | "+X GLORY" display in ceremony is visual only — never feeds `useSoulStore` GLORY vector. |
+| BUG-031 | Major | `dungeon/inventory.tsx` | Armor equip/unequip UI dead for 5 of 7 slots — `handleSlotPress` gates all interaction with `if (slot === 'weapon')`. |
+| BUG-032 | Major | `useCombatStore.ts` | Weapon Triangle not in damage math. Slash/Pierce/Blunt vs monster type has zero effect on combat numbers. |
+| BUG-033 | RESOLVED | `useDeityStore` | Deity challenge routing complete. Gold/heal/kill types now route to active challenge. |
 
 ---
 
 ## Design Questions Open
 
-1. **Paragon (Level 10) unique abilities** — What does reaching Paragon actually unlock mechanically beyond the Denatus title? Permanent passive buffs? A unique Paragon skill? The design doc says "focus shifts to optimization" but this needs concrete mechanics.
+1. **Paragon (Level 10) mechanics** — Denatus title formula is designed. What does Paragon unlock *mechanically* beyond the title? Passive stat bonuses from soul title adjectives? A unique Paragon skill? Meta-progression unlock that carries to future runs? Needs Valdris + Thane.
 
-2. **Deity Eviction** — At favor 0-10, a deity abandons the adventurer. What is the UX flow? Does the player continue with no patron, or are they forced to select a new deity in town? Is there a narrative "breakup" scene?
+2. **Deity Eviction UX** — At favor 0-10, deity abandons adventurer. Current behavior: favor drops, blessings weaken, nothing else happens. Options: (A) disable domain blessing only, (B) forced shrine visit to repair, (C) full eviction — player picks new deity. Needs Valdris.
 
-3. **Flee cost** — Currently fleeing has no HP/resource cost, only an AGI check and floor penalty. Thane should decide: should failed flee attempts cost HP or SP, or is the lost stat proficiency from not fighting sufficient?
+3. **Flee cost** — Fleeing has no HP/SP cost, only AGI check and floor penalty. Thane: should failed flee attempts cost HP or SP, or is the lost proficiency and floor penalty sufficient?
 
-4. **Run stat tracking for title screen epitaph** — The epitaph system on the title screen uses `runHistory.causeOfDeath` which is a string. Who sets this string, and is it always set correctly on death? The death flow in `app/dungeon/epitaph.tsx` should be audited.
+4. **GLORY + gloryPoints** — See BUG-027. The "+X GLORY" UI implies soul tracking; it doesn't. Pick one: wire it, rename it, or drop it.
 
-5. **Consumables in dungeons** — The general shop exists (`app/town/shops/general/index.tsx`) and sell screen exists, but the dungeon shop room type is still a placeholder. When does a dungeon shop spawn, what's its stock, and how do prices compare to town?
+5. **Consumables in dungeons** — Dungeon shop room type exists in floor generation but renders no merchant stock. When should dungeon shops spawn, what's their stock, and how do prices compare to town?
 
 ---
 
