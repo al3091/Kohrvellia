@@ -222,7 +222,7 @@ export default function AscensionScreen() {
           {/* PHASE: SUMMONS */}
           {phase === 'summons' && (
             <View style={styles.phaseBlock}>
-              <Animated.View style={[styles.speechBubble, { opacity: glowAnim.interpolate ? undefined : undefined }]}>
+              <Animated.View style={[styles.speechBubble, { opacity: glowAnim }]}>
                 <Text style={styles.speechText}>{getSummonsLine()}</Text>
               </Animated.View>
               <Text style={styles.phaseCaption}>
@@ -262,7 +262,7 @@ export default function AscensionScreen() {
           {/* PHASE: BLESSING */}
           {phase === 'blessing' && (
             <View style={styles.phaseBlock}>
-              {showConfetti && <ConfettiBurst />}
+              {showConfetti && <ConfettiBurst active={showConfetti} />}
               <Text style={styles.blessingTitle}>LEVEL 2</Text>
               <Animated.View style={styles.speechBubble}>
                 <Text style={styles.speechText}>

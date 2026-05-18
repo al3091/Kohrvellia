@@ -330,7 +330,6 @@ export default function RoomScreen() {
     (item) => item.id === 'ration' && item.quantity > 0
   ) ?? false;
 
-  const rationCount = character?.inventory.find(i => i.id === 'ration')?.quantity ?? 0;
   // Satiation drives rest quality — the single source of truth for hunger
   const satiation = character?.satiation ?? 60;
   const hungerState = satiation >= 60 ? 'adequate' : satiation >= 30 ? 'hungry' : 'starving';

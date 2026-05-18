@@ -413,7 +413,7 @@ export default function CombatScreen() {
     }
   };
 
-  const runUseSkill = (skill: Skill, statValue: number, derived: DerivedStats): void => {
+  const runUseSkill = (skill: LearnedSkill, statValue: number, derived: DerivedStats): void => {
     if (!character) return;
     const check = canUseSkill(skill, character.currentSP);
     if (!check.canUse) return;

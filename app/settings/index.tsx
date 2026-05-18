@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   creditsSection: {
     paddingHorizontal: Padding.screen.horizontal,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxl ?? Spacing.xl * 2,
+    paddingBottom: Spacing['2xl'],
     alignItems: 'center',
     gap: Spacing.sm,
     borderTopWidth: 1,
