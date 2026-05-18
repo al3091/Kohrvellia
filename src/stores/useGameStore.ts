@@ -353,7 +353,14 @@ export const useGameStore = create<GameState>()(
       },
 
       resetTutorial: () => {
-        set({ hasCompletedTutorial: false, tutorialStep: 0 });
+        set({
+          hasCompletedTutorial: false,
+          tutorialStep: 0,
+          hasSeenCombatHint: false,
+          hasSeenStatsHint: false,
+          hasSeenFalnaHint: false,
+          hasSeenLevelingHint: false,
+        });
       },
 
       // Computed
