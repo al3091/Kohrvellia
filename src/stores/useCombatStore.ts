@@ -325,7 +325,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       monster.maxHP = Math.floor(monster.maxHP * 1.5);
       monster.currentHP = monster.maxHP;
     } else if (effectiveElite) {
-      // Elite monsters get a smaller HP boost
+      monster.isElite = true;
       monster.maxHP = Math.floor(monster.maxHP * 1.25);
       monster.currentHP = monster.maxHP;
     }

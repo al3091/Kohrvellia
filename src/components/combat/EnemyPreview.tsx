@@ -75,6 +75,11 @@ export function EnemyPreview({
             <Text style={styles.bossText}>BOSS</Text>
           </View>
         )}
+        {monster.isElite && !monster.isBoss && (
+          <View style={styles.markedIndicator}>
+            <Text style={styles.markedText}>MARKED</Text>
+          </View>
+        )}
       </View>
 
       {/* Monster Name */}
@@ -193,6 +198,21 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontSize: 10,
     color: Colors.text.inverse,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  markedIndicator: {
+    position: 'absolute',
+    bottom: -8,
+    backgroundColor: Colors.domain.fire,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  markedText: {
+    ...Typography.caption,
+    fontSize: 10,
+    color: Colors.background.primary,
     fontWeight: '700',
     letterSpacing: 1,
   },

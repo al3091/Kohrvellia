@@ -150,6 +150,11 @@ export function MonsterDisplay({
               <Text style={styles.bossText}>BOSS</Text>
             </View>
           )}
+          {monster.isElite && !monster.isBoss && (
+            <View style={styles.markedIndicator}>
+              <Text style={styles.markedText}>MARKED</Text>
+            </View>
+          )}
         </View>
         {/* Intent Tell — visible during player planning */}
         {intentVisible && behaviorPattern && (() => {
@@ -288,6 +293,20 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   bossText: {
+    ...Typography.caption,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: Colors.background.primary,
+  },
+  markedIndicator: {
+    position: 'absolute',
+    bottom: -8,
+    backgroundColor: Colors.domain.fire,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  markedText: {
     ...Typography.caption,
     fontSize: 10,
     fontWeight: 'bold',

@@ -39,15 +39,15 @@ import { registerWeapon } from '../../src/data/weaponRegistry';
 // Node descriptions
 const NODE_DESCRIPTIONS: Record<NodeType, string> = {
   start: 'The entrance to this floor. A safe haven from the dangers below.',
-  combat: 'Hostile creatures lurk in the shadows, ready to strike.',
-  elite: 'A powerful enemy guards this passage. Only the strong survive.',
+  combat: 'Something moves in the dark ahead.',
+  elite: 'A marked enemy has been sighted. The Guild has flagged this creature as especially dangerous.',
   treasure: 'A treasure chest sits before you, waiting to be opened.',
   event: 'Something unusual catches your attention...',
   rest: 'A campfire flickers in the darkness. A moment of respite.',
   shop: 'A wandering merchant has set up shop in this unlikely place.',
   shrine: 'Divine energy fills the air. A shrine to the gods stands before you.',
   mystery: 'The unknown beckons...',
-  boss: 'A powerful presence dominates this chamber. This is no ordinary foe.',
+  boss: 'The guardian stirs. This floor will not yield without a price.',
 };
 
 const STAT_COLORS: Record<string, string> = {
@@ -874,8 +874,8 @@ export default function RoomScreen() {
         {node.type === 'combat' && !node.isAvoided && (
           <DramaticReveal delay={800} duration={500}>
             <View style={styles.nodeContent}>
-              <Text style={styles.warningText}>Enemies detected!</Text>
-              <Text style={styles.hintText}>Prepare yourself for battle.</Text>
+              <Text style={styles.warningText}>Something stirs ahead.</Text>
+              <Text style={styles.hintText}>Stay sharp.</Text>
             </View>
           </DramaticReveal>
         )}
@@ -894,8 +894,8 @@ export default function RoomScreen() {
         {node.type === 'elite' && (
           <DramaticReveal delay={800} duration={500}>
             <View style={styles.nodeContent}>
-              <Text style={styles.eliteText}>An elite enemy blocks your path!</Text>
-              <Text style={styles.hintText}>This foe is stronger but drops better rewards.</Text>
+              <Text style={styles.eliteText}>A marked enemy has been sighted.</Text>
+              <Text style={styles.hintText}>Flagged by the Guild. Approach with caution — the rewards justify the risk.</Text>
             </View>
           </DramaticReveal>
         )}
@@ -1357,13 +1357,13 @@ export default function RoomScreen() {
       <View style={styles.footer}>
         {node.type === 'combat' && (
           <Pressable style={[styles.actionButton, styles.combatButton]} onPress={() => handleCombat(false, false)}>
-            <Text style={styles.actionButtonText}>Fight!</Text>
+            <Text style={styles.actionButtonText}>Enter</Text>
           </Pressable>
         )}
 
         {node.type === 'elite' && (
           <Pressable style={[styles.actionButton, styles.eliteButton]} onPress={() => handleCombat(false, true)}>
-            <Text style={styles.actionButtonText}>Challenge Elite!</Text>
+            <Text style={styles.actionButtonText}>Engage</Text>
           </Pressable>
         )}
 
@@ -1472,13 +1472,13 @@ export default function RoomScreen() {
         {/* Mystery node - post-reveal actions */}
         {node.type === 'mystery' && mysteryRevealed && mysteryRevealedType === 'combat' && (
           <Pressable style={[styles.actionButton, styles.combatButton]} onPress={handleMysteryProceed}>
-            <Text style={styles.actionButtonText}>Fight!</Text>
+            <Text style={styles.actionButtonText}>Enter</Text>
           </Pressable>
         )}
 
         {node.type === 'mystery' && mysteryRevealed && mysteryRevealedType === 'elite' && (
           <Pressable style={[styles.actionButton, styles.eliteButton]} onPress={handleMysteryProceed}>
-            <Text style={styles.actionButtonText}>Challenge Elite!</Text>
+            <Text style={styles.actionButtonText}>Engage</Text>
           </Pressable>
         )}
 

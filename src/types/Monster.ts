@@ -444,18 +444,17 @@ export function getAffixRulesForFloor(floor: number) {
 }
 
 /**
- * Check if monster is elite (has high+ prefix)
+ * Check if monster is elite (set by room type, not adjective count)
  */
 export function isEliteMonster(monster: Monster): boolean {
-  if (!monster.prefix) return false;
-  return monster.prefix.tier === 'high' || monster.prefix.tier === 'legendary';
+  return monster.isElite;
 }
 
 /**
- * Check if monster is boss (has both prefix and suffix)
+ * Check if monster is a boss (set by room type, not adjective count)
  */
 export function isBossMonster(monster: Monster): boolean {
-  return monster.prefix !== undefined && monster.suffix !== undefined;
+  return monster.isBoss;
 }
 
 /**
@@ -526,8 +525,8 @@ export function createMonsterInstance(
   };
 
   monster.displayName = generateMonsterDisplayName(monster);
-  monster.isElite = isEliteMonster(monster);
-  monster.isBoss = isBossMonster(monster);
+  // isBoss and isElite are set explicitly by prepareEncounter() based on room type.
+  // Adjective count (prefix/suffix) has no bearing on encounter tier.
 
   return monster;
 }
