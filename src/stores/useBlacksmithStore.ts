@@ -15,7 +15,7 @@ import {
   getNextQuality,
 } from '../types/Blacksmith';
 import { getMaterialById } from '../data/materials';
-import { getWeaponById, updateWeapon } from '../data/weaponRegistry';
+import { getWeaponById, updateWeapon, registerWeapon } from '../data/weaponRegistry';
 import { useCharacterStore } from './useCharacterStore';
 import { useInventoryStore } from './useInventoryStore';
 import { QUALITY_TIERS, generateWeaponDisplayName, calculateWeaponDamage } from '../types/Weapon';
@@ -327,7 +327,11 @@ export const useBlacksmithStore = create<BlacksmithState>()(
 
         return character.inventory
           .filter((i) => i.type === 'weapon')
-          .map((i) => ({ id: i.id, weapon: getWeaponById(i.id) }))
+          .map((i) => {
+            let weapon = getWeaponById(i.id);
+            if (!weapon && i.weaponData) { registerWeapon(i.weaponData); weapon = i.weaponData; }
+            return { id: i.id, weapon };
+          })
           .filter((item): item is { id: string; weapon: Weapon } =>
             item.weapon !== undefined && !item.weapon.identified
           );
@@ -339,7 +343,11 @@ export const useBlacksmithStore = create<BlacksmithState>()(
 
         return character.inventory
           .filter((i) => i.type === 'weapon')
-          .map((i) => ({ id: i.id, weapon: getWeaponById(i.id) }))
+          .map((i) => {
+            let weapon = getWeaponById(i.id);
+            if (!weapon && i.weaponData) { registerWeapon(i.weaponData); weapon = i.weaponData; }
+            return { id: i.id, weapon };
+          })
           .filter((item): item is { id: string; weapon: Weapon } =>
             item.weapon !== undefined &&
             item.weapon.identified &&

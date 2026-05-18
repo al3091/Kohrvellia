@@ -15,7 +15,7 @@ import { useBlacksmithStore } from '../../../src/stores/useBlacksmithStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
 import { BLACKSMITH_NPC, getNextQuality } from '../../../src/types/Blacksmith';
 import { getMaterialById } from '../../../src/data/materials';
-import { getWeaponById } from '../../../src/data/weaponRegistry';
+import { getWeaponById, registerWeapon } from '../../../src/data/weaponRegistry';
 import type { Weapon } from '../../../src/types/Weapon';
 
 // Quality tier colors
@@ -124,11 +124,12 @@ export default function UpgradeScreen() {
     );
   }
 
-  // Get upgradeable weapons from inventory using weapon registry
+  // Get upgradeable weapons — fall back to inventoryItem.weaponData for pre-registry saves
   const upgradeableItems = character.inventory
     .filter((item) => item.type === 'weapon')
     .map((item) => {
-      const weapon = getWeaponById(item.id);
+      let weapon = getWeaponById(item.id);
+      if (!weapon && item.weaponData) { registerWeapon(item.weaponData); weapon = item.weaponData; }
       return weapon ? { id: item.id, weapon } : null;
     })
     .filter((item): item is { id: string; weapon: Weapon } =>
