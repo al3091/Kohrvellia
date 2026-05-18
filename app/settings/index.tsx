@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useGameStore } from '../../src/stores/useGameStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { clearAllStores } from '../../src/lib/clearAllStores';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
@@ -275,9 +276,35 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      {/* Version */}
-      <View style={styles.footer}>
-        <Text style={styles.versionText}>Kohrvellia v0.1.0</Text>
+      {/* Credits */}
+      <View style={styles.creditsSection}>
+        <Text style={styles.creditsTitle}>KOHRVELLIA</Text>
+        <Text style={styles.creditsVersion}>Version 1.0.0 — Phase 1 Complete</Text>
+
+        <View style={styles.creditsDivider} />
+
+        <View style={styles.creditsRow}>
+          <Text style={styles.creditsLabel}>RELEASED</Text>
+          <Text style={styles.creditsValue}>May 2026</Text>
+        </View>
+        <View style={styles.creditsRow}>
+          <Text style={styles.creditsLabel}>IN DEVELOPMENT</Text>
+          <Text style={styles.creditsValue}>January – May 2026  (~5 months)</Text>
+        </View>
+        <View style={styles.creditsRow}>
+          <Text style={styles.creditsLabel}>PHASE</Text>
+          <Text style={styles.creditsValue}>1 of 3  ·  Core Loop Complete</Text>
+        </View>
+        <View style={styles.creditsRow}>
+          <Text style={styles.creditsLabel}>BUILT WITH</Text>
+          <Text style={styles.creditsValue}>React Native · Expo · TypeScript</Text>
+        </View>
+
+        <View style={styles.creditsDivider} />
+
+        <Text style={styles.creditsMotto}>
+          The Tower Awaits.
+        </Text>
       </View>
       </ScrollView>
     </SafeAreaView>
@@ -392,16 +419,61 @@ const styles = StyleSheet.create({
   dangerText: {
     color: Colors.ui.error,
   },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-  },
   scrollContent: {
     paddingBottom: Spacing.xl,
   },
-  versionText: {
-    ...Typography.caption,
+  creditsSection: {
+    paddingHorizontal: Padding.screen.horizontal,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xxl ?? Spacing.xl * 2,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.primary,
+  },
+  creditsTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 4,
+  },
+  creditsVersion: {
+    ...Typography.bodySmall,
+    color: Colors.text.secondary,
+    letterSpacing: 1,
+  },
+  creditsDivider: {
+    width: 60,
+    height: 1,
+    backgroundColor: Colors.border.accent ?? Colors.text.accent,
+    opacity: 0.3,
+    marginVertical: Spacing.sm,
+  },
+  creditsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: Spacing.md,
+  },
+  creditsLabel: {
+    ...Typography.label,
     color: Colors.text.muted,
+    fontSize: 10,
+    letterSpacing: 2,
+  },
+  creditsValue: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  creditsMotto: {
+    ...Typography.body,
+    color: Colors.text.accent,
+    fontStyle: 'italic',
+    letterSpacing: 1,
+    marginTop: Spacing.sm,
+    opacity: 0.7,
   },
   devSection: {
     paddingHorizontal: Padding.screen.horizontal,
