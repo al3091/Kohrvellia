@@ -24,6 +24,7 @@ import { BACKSTORIES } from '../../src/types/Character';
 import { getDeityById } from '../../src/data/pantheons';
 import type { StatName } from '../../src/types/Stats';
 import { ALL_BASE_WEAPONS, MATERIALS, QUALITIES, createWeaponInstance } from '../../src/data/weapons/baseWeapons';
+import { registerWeapon } from '../../src/data/weaponRegistry';
 
 const STAT_ORDER: StatName[] = ['STR', 'PER', 'END', 'CHA', 'INT', 'AGI', 'WIS', 'LCK'];
 
@@ -83,6 +84,7 @@ export default function ConfirmScreen() {
       const material = MATERIALS.find(m => m.tier === 'common') ?? MATERIALS[1];
       const quality = QUALITIES.find(q => q.tier === 'standard') ?? QUALITIES[1];
       const starterWeapon = createWeaponInstance(baseWeapon, material, quality, undefined, 0);
+      registerWeapon(starterWeapon);
       equipWeapon(starterWeapon);
     }
 
