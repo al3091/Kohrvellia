@@ -190,6 +190,54 @@ export const LEVEL_1_ACHIEVEMENTS: Achievement[] = [
     titleModifier: 'the Untouchable',
   },
 
+  // ===== BOSS DIALOGUE ACHIEVEMENTS =====
+  {
+    id: 'walked_past_death',
+    name: 'Walked Past Death',
+    description: 'Convince a boss to let you pass without fighting.',
+    tier: 'heroic',
+    targetLevel: 2,
+    requirements: [
+      { type: 'custom', value: 1, description: 'Bypass a boss through dialogue' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: 'Some battles are won before the first blow.',
+    bonusStatPoints: 3,
+    gloryPoints: 8,
+    titleModifier: 'the Unblooded',
+  },
+  {
+    id: 'fortune_s_pet',
+    name: "Fortune's Pet",
+    description: 'Coax a boss into revealing hidden loot before the fight.',
+    tier: 'challenging',
+    targetLevel: 2,
+    requirements: [
+      { type: 'custom', value: 1, description: 'Secure loot cache via boss dialogue' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: 'Luck favors the well-spoken.',
+    bonusStatPoints: 2,
+    gloryPoints: 4,
+  },
+  {
+    id: 'boss_weakness_revealed',
+    name: 'The Cracked Mask',
+    description: 'Expose a boss\'s weakness through conversation before combat.',
+    tier: 'challenging',
+    targetLevel: 2,
+    requirements: [
+      { type: 'custom', value: 1, description: 'Reveal boss weakness via dialogue' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: 'Every monster has a crack in their armor. Find it before the fight.',
+    bonusStatPoints: 2,
+    gloryPoints: 4,
+  },
+
   // ===== MYTHIC TIER (Near impossible) =====
   {
     id: 'l1_impossible_novice',

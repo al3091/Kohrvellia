@@ -24,7 +24,11 @@ export default function DungeonLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="floor" />
       <Stack.Screen name="room" />
+      <Stack.Screen name="encounter" />
       <Stack.Screen name="combat" />
+      <Stack.Screen name="boss-encounter" />
+      <Stack.Screen name="boss-cleared" />
+      <Stack.Screen name="travel" />
       <Stack.Screen name="inventory" />
       <Stack.Screen name="level-up" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="denatus" options={{ presentation: 'fullScreenModal' }} />

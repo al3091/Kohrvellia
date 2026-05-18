@@ -511,7 +511,7 @@ export default function RoomScreen() {
 
     const flavorMap: Record<ShrineTier, Record<'blood' | 'free', string>> = {
       aligned: {
-        blood: 'Your blood sanctifies the offering. The deity's warmth fills you.',
+        blood: "Your blood sanctifies the offering. The deity's warmth fills you.",
         free: 'Your patron acknowledges your reverence.',
       },
       neutral: {
