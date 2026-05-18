@@ -401,9 +401,6 @@ export default function RoomScreen() {
     favorGain: number;
     hpHealed: number;
     spHealed: number;
-    statBoosted: string;
-    exceliGained: number;
-    permaBuff: boolean;
     cursed: boolean;
     flavorText: string;
   } | null>(null);
@@ -427,12 +424,14 @@ export default function RoomScreen() {
         if (deity.domain === domain.toLowerCase()) {
           affinity = 'aligned';
         } else {
-          // Opposing domains (simplified: death vs life, war vs wisdom, etc.)
+          // Opposing domains — all 12 shrine domains covered
           const opposites: Record<string, string> = {
-            Death: 'Life', Life: 'Death',
-            War: 'Wisdom', Wisdom: 'War',
-            Trickery: 'Authority', Authority: 'Trickery',
-            Chaos: 'Order', Order: 'Chaos',
+            Death: 'Life',     Life: 'Death',
+            War: 'Nature',     Nature: 'War',
+            Trickery: 'Wisdom', Wisdom: 'Trickery',
+            Fortune: 'Death',  Magic: 'Craft',
+            Craft: 'Magic',    Sky: 'Death',
+            Fire: 'Knowledge', Knowledge: 'Fire',
           };
           if (opposites[domain] === deity.domain || opposites[deity.domain as string] === domain) {
             affinity = 'opposed';
@@ -443,13 +442,6 @@ export default function RoomScreen() {
 
     setShrineAffinity(affinity);
     setShrineApproached(true);
-  };
-
-  // Domain → primary stat mapping for shrine perma buff
-  const DOMAIN_STAT_MAP: Record<string, 'STR' | 'PER' | 'END' | 'CHA' | 'INT' | 'AGI' | 'WIS' | 'LCK'> = {
-    War: 'STR', Magic: 'INT', Fortune: 'LCK', Nature: 'END',
-    Wisdom: 'WIS', Trickery: 'AGI', Death: 'END', Life: 'END',
-    Craft: 'STR', Sky: 'PER', Fire: 'STR', Knowledge: 'INT',
   };
 
   const handleShrine = (offering: 'blood' | 'free') => {
@@ -499,6 +491,7 @@ export default function RoomScreen() {
     if (spHealed > 0) { modifySP(spHealed); }
     if (hpDmg > 0) { modifyHP(-hpDmg); }
     modifyDeityFavor(favorDelta);
+    useDeityStore.getState().adjustFavor(favorDelta, 'shrine');
 
     if (curseTurns > 0) {
       addStatusEffect({
@@ -528,14 +521,15 @@ export default function RoomScreen() {
       },
     };
 
+    const resultTier: 'A' | 'B' | 'C' | 'D' = affinity === 'aligned'
+      ? (offering === 'blood' ? 'A' : 'B')
+      : affinity === 'neutral' ? 'C' : 'D';
+
     setShrineResult({
-      tier: affinity === 'aligned' ? (offering === 'blood' ? 'A' : 'B') : affinity === 'neutral' ? 'C' : 'D',
+      tier: resultTier,
       favorGain: favorDelta,
       hpHealed: hpHealed - hpDmg,
       spHealed,
-      statBoosted: '',
-      exceliGained: 0,
-      permaBuff: false,
       cursed: curseTurns > 0,
       flavorText: flavorMap[affinity][offering],
     });
@@ -545,7 +539,7 @@ export default function RoomScreen() {
     }
 
     // Discovery: the shrine whispers about one random hidden shrine-source achievement
-    if (tier !== 'D' && tier !== 'D+' && map) {
+    if (resultTier !== 'D' && map) {
       const store = useAchievementStore.getState();
       const hiddenShrineAchievements = ALL_ACHIEVEMENTS.filter(a => {
         if (a.discoverySource !== 'shrine') return false;
@@ -1021,19 +1015,6 @@ export default function RoomScreen() {
                   </View>
                   <Text style={styles.shrineResultFlavor}>{shrineResult.flavorText}</Text>
                 </>
-              ) : shrineResult.permaBuff ? (
-                <>
-                  <Text style={[styles.shrineResultTitle, { color: '#C89030' }]}>✦ FALNA MARK PENDING</Text>
-                  <View style={styles.shrineResultList}>
-                    <Text style={[styles.shrineResultItem, { color: '#C89030' }]}>
-                      +{shrineResult.exceliGained} {shrineResult.statBoosted} (confirm at Blessing Rite)
-                    </Text>
-                    <Text style={[styles.shrineResultItem, { color: '#487850' }]}>
-                      +{shrineResult.favorGain} Deity Favor
-                    </Text>
-                  </View>
-                  <Text style={styles.shrineResultFlavor}>{shrineResult.flavorText}</Text>
-                </>
               ) : shrineResult.favorGain > 0 || shrineResult.hpHealed > 0 ? (
                 <>
                   <Text style={[styles.shrineResultTitle, { color: '#487850' }]}>✓ BLESSING RECEIVED</Text>
@@ -1041,11 +1022,6 @@ export default function RoomScreen() {
                     {shrineResult.hpHealed > 0 && (
                       <Text style={[styles.shrineResultItem, { color: '#487850' }]}>
                         +{shrineResult.hpHealed} HP{shrineResult.spHealed > 0 ? ` | +${shrineResult.spHealed} SP` : ''}
-                      </Text>
-                    )}
-                    {shrineResult.exceliGained > 0 && (
-                      <Text style={[styles.shrineResultItem, { color: '#7B5BBF' }]}>
-                        +{shrineResult.exceliGained} {shrineResult.statBoosted} Excelia
                       </Text>
                     )}
                     {shrineResult.favorGain > 0 && (
@@ -1229,9 +1205,9 @@ export default function RoomScreen() {
           <View style={styles.nodeContent}>
             <View style={styles.shrineHint}>
               <Text style={styles.shrineHintText}>Praying at shrines grants:</Text>
-              <Text style={styles.shrineHintItem}>+10 Deity Favor (blessing power)</Text>
-              <Text style={styles.shrineHintItem}>+15% HP / +10% SP restored</Text>
-              <Text style={styles.shrineHintItem}>+15 Excelia to a random stat</Text>
+              <Text style={styles.shrineHintItem}>Deity Favor (aligned = +8, neutral = +3)</Text>
+              <Text style={styles.shrineHintItem}>HP / SP restored (aligned only)</Text>
+              <Text style={styles.shrineHintItem}>Curses afflict opposed / abandoned patrons</Text>
             </View>
           </View>
         )}
@@ -1240,21 +1216,20 @@ export default function RoomScreen() {
         {node.type === 'mystery' && mysteryRevealed && mysteryRevealedType === 'shrine' && shrineUsed && shrineResult && (
           <DramaticReveal delay={200} duration={400} direction="scale" haptic>
             <View style={styles.nodeContent}>
-              <Text style={styles.shrineResultTitle}>Divine Blessing Received!</Text>
+              <Text style={styles.shrineResultTitle}>{shrineResult.cursed ? '✗ SHRINE CURSE' : '✓ Divine Blessing Received!'}</Text>
               <View style={styles.shrineResultList}>
-                <Text style={styles.shrineResultItem}>
-                  +{shrineResult.favorGain} Deity Favor
-                </Text>
-                <Text style={styles.shrineResultItem}>
-                  +{shrineResult.hpHealed} HP | +{shrineResult.spHealed} SP
-                </Text>
-                <Text style={styles.shrineResultItem}>
-                  +{shrineResult.exceliGained} {shrineResult.statBoosted} Excelia
-                </Text>
+                {shrineResult.hpHealed !== 0 && (
+                  <Text style={styles.shrineResultItem}>
+                    {shrineResult.hpHealed > 0 ? '+' : ''}{shrineResult.hpHealed} HP{shrineResult.spHealed > 0 ? ` | +${shrineResult.spHealed} SP` : ''}
+                  </Text>
+                )}
+                {shrineResult.favorGain !== 0 && (
+                  <Text style={styles.shrineResultItem}>
+                    {shrineResult.favorGain > 0 ? '+' : ''}{shrineResult.favorGain} Deity Favor
+                  </Text>
+                )}
               </View>
-              <Text style={styles.shrineResultFlavor}>
-                The gods smile upon you.
-              </Text>
+              <Text style={styles.shrineResultFlavor}>{shrineResult.flavorText}</Text>
             </View>
           </DramaticReveal>
         )}

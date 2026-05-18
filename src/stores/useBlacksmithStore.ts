@@ -221,12 +221,6 @@ export const useBlacksmithStore = create<BlacksmithState>()(
           };
         }
 
-        // Check quest requirement
-        if (requirement.questRequired) {
-          // TODO: Check quest completion when quest system is implemented
-          return { canUpgrade: false, reason: 'Requires special quest completion' };
-        }
-
         // Check gold
         if (character.gold < requirement.goldCost) {
           return { canUpgrade: false, reason: `Need ${requirement.goldCost}G` };

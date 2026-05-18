@@ -35,6 +35,7 @@ import type { LearnedSkill } from '../../src/types/Skill';
 import { canUseSkill, formatSkillDescription, SKILL_CATEGORY_COLORS } from '../../src/types/Skill';
 import type { Skill } from '../../src/types/Character';
 import { MATERIAL_TIER_COLORS } from '../../src/data/materials';
+import { registerWeapon } from '../../src/data/weaponRegistry';
 
 // Rarity colors for weapon drops
 const RARITY_COLORS: Record<string, string> = {
@@ -953,6 +954,7 @@ export default function CombatScreen() {
       return;
     }
     haptics.success();
+    registerWeapon(rewards.weaponDrop);
     equipWeapon(rewards.weaponDrop);
     setWeaponEquipped(true);
     useSoulStore.getState().incrementBehavement('resource_weapons_equip');
@@ -962,6 +964,7 @@ export default function CombatScreen() {
     if (!rewards?.weaponDrop) return;
     setConfirmDestroyWeapon(false);
     haptics.success();
+    registerWeapon(rewards.weaponDrop);
     equipWeapon(rewards.weaponDrop);
     setWeaponEquipped(true);
     useSoulStore.getState().incrementBehavement('resource_weapons_equip');
@@ -971,6 +974,7 @@ export default function CombatScreen() {
   const handleAddToBag = () => {
     if (!rewards?.weaponDrop || isBagFull()) return;
     haptics.success();
+    registerWeapon(rewards.weaponDrop);
     addToInventory({
       id: rewards.weaponDrop.id || `weapon_${Date.now()}`,
       type: 'weapon',

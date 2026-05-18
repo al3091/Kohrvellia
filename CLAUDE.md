@@ -310,7 +310,7 @@ interface Character {
   levelHistory: Array<{ level: number; stats: Record<StatName, number> }>; // carry for Falna
   pendingExcelia: PendingExcelia | null;  // Stat gains HIDDEN until Blessing Rite
   equipment: Equipment;    // weapon, head, chest, hands, legs, accessory1, accessory2
-  inventory: InventoryItem[];  // capped at BAG_CAPACITY (16)
+  inventory: InventoryItem[];  // capped at BAG_CAPACITY (20)
   skills: Skill[];
   patronDeityId: string | null;
   deityFavor: number;      // 0-100 (affects blessing multiplier)

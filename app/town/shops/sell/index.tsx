@@ -123,8 +123,11 @@ export default function SellScreen() {
       });
     }
 
-    // Add materials - lookup actual material data for proper pricing
-    const materials = getMaterials();
+    // Add non-gem materials — gems belong exclusively at the Guild Hall
+    const materials = getMaterials().filter(i => {
+      const mat = getMaterialById(i.id);
+      return mat?.category !== 'gem';
+    });
     for (const invItem of materials) {
       const materialData = getMaterialById(invItem.id);
       if (materialData) {
@@ -133,10 +136,9 @@ export default function SellScreen() {
           name: materialData.name,
           sellPrice: materialData.sellPrice,
           icon: materialData.icon,
-          rarity: materialData.tier, // tier maps to rarity colors
+          rarity: materialData.tier,
         });
       } else {
-        // Fallback for unknown materials
         items.push({
           item: invItem,
           name: invItem.name || invItem.id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),

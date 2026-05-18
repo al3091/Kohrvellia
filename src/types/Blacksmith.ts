@@ -66,13 +66,13 @@ export const UPGRADE_REQUIREMENTS: UpgradeRequirement[] = [
   {
     fromQuality: 'masterwork',
     toQuality: 'legendary',
-    goldCost: 25000,
+    goldCost: 50000,
     materials: [
       { materialId: 'adamantine_ingot', quantity: 5 },
       { materialId: 'dragon_heart', quantity: 1 },
+      { materialId: 'mithril_ingot', quantity: 5 },
     ],
     requiredReputation: 16,
-    questRequired: 'legendary_smith_quest', // Must complete special quest
   },
 ];
 

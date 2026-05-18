@@ -406,9 +406,13 @@ export default function GuildHallScreen() {
           );
         })()}
 
-        {/* Material Registry — sell dungeon drops at dynamic Guild prices */}
+        {/* Gem Exchange — sell magic stones and gems at dynamic Guild prices */}
         {(() => {
-          const materials = character.inventory.filter(i => i.type === 'material');
+          const materials = character.inventory.filter(i => {
+            if (i.type !== 'material') return false;
+            const mat = getMaterialById(i.id);
+            return mat?.category === 'gem';
+          });
           const totalValue = materials.reduce((sum, item) => {
             const mat = getMaterialById(item.id);
             if (!mat) return sum;
@@ -476,17 +480,17 @@ export default function GuildHallScreen() {
           return (
             <View style={styles.section}>
               <View style={styles.materialHeader}>
-                <Text style={styles.sectionTitle}>Material Registry</Text>
+                <Text style={styles.sectionTitle}>Gem Exchange</Text>
                 <Text style={styles.materialGoldLabel}>{character.gold ?? 0}G</Text>
               </View>
               <Text style={styles.materialSubtitle}>
-                The Guild maintains regulated prices for all dungeon materials.
+                The Guild pays top rates for magic stones and gems recovered from the Tower.
               </Text>
 
               {materials.length === 0 ? (
                 <View style={styles.materialEmpty}>
-                  <Text style={styles.materialEmptyText}>No materials to record.</Text>
-                  <Text style={styles.materialEmptyHint}>Venture deeper into the Tower.</Text>
+                  <Text style={styles.materialEmptyText}>No gems to exchange.</Text>
+                  <Text style={styles.materialEmptyHint}>Slay monsters to collect magic stones.</Text>
                 </View>
               ) : (
                 <>
