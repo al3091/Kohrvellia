@@ -412,44 +412,43 @@ When designing UI or writing UI text:
 
 ### Phase Completion Status
 
+*Last updated: 2026-05-18*
+
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 0: Foundation | COMPLETE | Types, stores, constants, folder structure |
 | Phase 1.1: Character Creation | COMPLETE | Name, backstory (8), stat allocation (30 pts) |
 | Phase 1.2: Deity Selection | COMPLETE | 12+ pantheons, ~170+ deities, search/filter/compare |
-| Phase 1.3: Tutorial Flow | COMPLETE | 6-screen tutorial covering all core mechanics |
-| Phase 1.4: Dungeon Core | COMPLETE | Branching generation, 9 room types, 2D map |
-| Phase 1.5: Combat System | COMPLETE | Kairos Protocol, 10 status effects, full action menu |
+| Phase 1.3: Tutorial Flow | COMPLETE | Trimmed to 3 screens (Stakes/Rules/Ledger); in-context hint overlays replace removed screens |
+| Phase 1.4: Dungeon Core | COMPLETE | Branching generation, 9 room types, 2D map; weights reworked (combat:61%) |
+| Phase 1.5: Combat System | COMPLETE | Kairos Protocol, 10 status effects, full action menu, skill cooldowns |
 | Phase 1.6: Stat Growth | COMPLETE | Action-based growth, weapon-based training, grades |
-| Phase 1.7: Level Progression | COMPLETE | 96 achievements (L1→L10), ceremony UI, deity approval |
+| Phase 1.7: Level Progression | COMPLETE | 96 achievements (L1→L10), ascension ceremony, GLORY tracking wired |
 | Phase 1.8: Inventory | PARTIAL | Equipment slots done; Drop/Destroy item system pending |
 | Phase 1.9: Monster System | COMPLETE | 36+ monsters, prefix/suffix, CR scaling, loot tables |
 | Phase 1.10: Weapon System | COMPLETE | 32 weapons, 6 qualities, 7 materials, 7 enchantments |
-| Phase 2.1: Job System | PARTIAL | Store + data exists (useJobStore, jobDefinitions); UI screens exist but integration incomplete |
-| Phase 2.2: Denatus Soul | PARTIAL | Store exists (useSoulStore); UI screen (denatus.tsx) exists; behavement tracking partially wired |
+| Phase 1.X: Systems | COMPLETE | Multi-step events, milestone bosses, dungeon balance, anti-farming, shrine rework |
+| Phase 2.1: Job System | COMPLETE | selectJob() → starter skill + stat bonus + starter weapon; wired in combat |
+| Phase 2.2: Denatus Soul | NEAR-COMPLETE | ~90% wired (82/85 behavements); `glory_challenge_complete` deferred to God Challenges |
 | Phase 2.3: Discovery System | NOT STARTED | Rumor system, achievement visibility states |
 | Phase 2.4: God Challenges | NOT STARTED | Deity-assigned challenges |
-| Phase 2.5: Town Hub | COMPLETE | Hub, Familia Home, Blessing Rite, pending excelia system |
+| Phase 2.5: Town Hub | COMPLETE | Hub, Familia Home, Blessing Rite, Ascension Ceremony, satiation on home rest |
 | Phase 2.6: Shop/Economy | PARTIAL | Shop screens exist; buy/sell UI exists; pricing/haggling not complete |
 | Phase 3: Polish/Launch | NOT STARTED | |
 
 ### Known Gaps and Issues
 
-1. **GLORY tracking** — Checkbox unchecked in PROGRESS.md (Phase 1.7). Hard-path choice recording for achievement stacking multiplier not implemented.
+1. **Drop/Destroy items** — Players cannot permanently remove items from inventory — only equip/unequip. Weapon slot is the only active equipment slot; armor shows a "Phase 3" locked placeholder.
 
-2. **Drop/Destroy items** — Checkbox unchecked in PROGRESS.md (Phase 1.8). Players cannot permanently remove items from inventory — only equip/unequip.
+2. **Weapon Triangle** — Damage type modifiers (Slash vs Flesh, Blunt vs Bone) are documented in `DESIGN_COMBAT.md` but not implemented in combat damage calculations.
 
-3. **Job system integration** — `useJobStore` exists and `job-select.tsx` screen exists, but the flow from Level 2 achievement → job selection → job benefits in combat is not fully wired.
+3. **Music audio files** — `useSoundStore` infrastructure exists with all BGM/SFX types defined. Audio file assets pending (Phase 3).
 
-4. **Denatus ceremony completion** — `useSoulStore` and `denatus.tsx` screen exist, but the full 85-behavement tracking in combat is partially wired. Some behavements fire; many do not.
+4. **`.tmp` pantheon files** — `src/data/pantheons/` contains `.ts.tmp` files (inca, maya, persian, polynesian, shinto, vodou, yoruba). These are unreachable — either complete them or delete them.
 
-5. **Weapon Triangle** — Damage type modifiers (Slash vs Flesh, Blunt vs Bone) are documented but not implemented in combat calculations.
+5. **GLORY stacking multiplier** — GLORY vector tracked and HEROIC+ selections fire behavements. The 1.5× stat reward multiplier formula for 3+ hard-path achievements is documented but not yet applied in `performLevelUp()`.
 
-6. **Music audio files** — `useSoundStore` infrastructure exists with all BGM/SFX types defined. Audio file assets pending.
-
-7. **AsyncStorage keys** — Character: `kohrvellia-character`, Game: `kohrvellia-game`. Other stores have their own keys. No collision risk identified, but should be audited before additional stores are added.
-
-8. **`.tmp` pantheon files** — `src/data/pantheons/` contains `.ts.tmp` files (inca, maya, persian, polynesian, shinto, vodou, yoruba). These are unreachable — either complete them or delete them.
+6. **Bosses 6-20** — Only 5 bosses implemented (floors 5-25). Floors 30-100 have no milestone bosses yet.
 
 ---
 

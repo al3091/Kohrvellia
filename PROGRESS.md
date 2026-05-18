@@ -183,7 +183,7 @@
   - [x] Level 7→8: 12 achievements (Floors 20-25, mastery requirements)
   - [x] Level 8→9: 12 achievements (Floors 25-30, near-endgame)
   - [x] Level 9→10: 12 achievements (Floors 30+, Paragon path)
-- [ ] **GLORY Tracking** - Hard-path choice recording
+- [x] **GLORY Tracking** - HEROIC+ achievement selections wire to `glory_legendary_achievement` / `glory_mythic_achievement` behavements in `level-up.tsx`
 
 ### 1.8 Basic Inventory
 - [x] **Equipment Slots** - Weapon, Head, Chest, Legs, Boots, Accessory x2
@@ -260,9 +260,43 @@
   - [x] Kalindi (Floor 20, Hindu) — Purification; Spreading Contagion
   - [x] Malik (Floor 25, Primordial) — Unreality; Echo Chains
 - [ ] **Bosses 6-20** (floors 30-100): Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr, Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
-- [ ] **Boss Dialogue Achievements** - `walked_past_death`, `fortune_s_pet`, `boss_weakness_*` — need data in achievement files
+- [x] **Boss Dialogue Achievements** - `walked_past_death` (heroic), `fortune_s_pet` (challenging), `boss_weakness_revealed` (challenging) — added to `level1Achievements.ts` and wired in `boss-encounter.tsx`
 
-### 1.X.4 Build Hardening (2026-05-15)
+### 1.X.4 Dungeon Balance Rework (2026-05-18)
+- [x] **Room Weight Redistribution** — `NODE_TYPE_WEIGHTS`: combat:61, elite:8, treasure:4, event:12, rest:2, shop:0, shrine:3, mystery:10; shop removed from valid types
+- [x] **Structural Elite Guarantee** — Post-generation: one combat node on penultimate row forced to elite if no elite naturally placed; rest gets no row bonus (weight 2 = genuine rarity)
+- [x] **Floor Weight Profile** — `getFloorWeightProfile()`: early(1-5) friendlier events; mid(6-15) elite ramp; deep(16+) survival mode with reduced rest
+- [x] **Mystery Room Rework** — `selectMysteryRevealType()` now returns event(60%)/shrine(20%)/treasure(20%) only; never combat
+- [x] **Shrine Rework** — Perma-excelia removed; 2×4 affinity matrix (aligned/neutral/opposed/abandoned × prayer/blood); outcomes based on deity favor and relation
+- [x] **Rest Room Balance** — Healing now driven by satiation tier (fed≥60: 25%HP+SP; hungry≥30: 15%HP/10%SP; starving<30: 5%HP/0SP)
+- [x] **Event Stat Check Rework** — `performStatCheck`: `d20 + min(statPoints/20, 49) >= DC`; no DC variance; Grade D gives +25 bonus (70% pass on DC 35)
+- [x] **Event Weapon Anti-Farming** — `lastEventWeaponFloor` tracked in DungeonRun; must wait 4 floors between event weapon grants; gold fallback when cooldown active
+- [x] **Treasure Loot Tables T0-T5** — Per floor tier (1-4, 5-9, 10-14, 15-25, 26-40, 41+) with scaled gold/consumables/weapons/magic stones
+- [x] **Familia Home Satiation** — `handleRest()` calls `modifySatiation(100)`; full satiation after home rest
+
+### 1.X.5 Ascension Ceremony (2026-05-18)
+- [x] **New screen** `app/town/familia/ascension.tsx` — Deity-centered level-up ceremony with phases: summons → examination → blessing → calling → gift → complete
+- [x] **Deity dialogue** — Personality + favor-tier based lines per phase; high/mid/low favor variants
+- [x] **Stat examination** — Falna pulse animation; stats revealed post-`performLevelUp()`
+- [x] **Job selection inline** — Rendered in `calling` phase, not a separate screen; `resolveTopThreeStats()` runs after `performLevelUp()` fires (not at mount)
+- [x] **Deity weapon gift** — If `deityFavor >= 60`, deity offers a domain-matched weapon; `DOMAIN_WEAPON_CATEGORY` mapping for 14 domains
+- [x] **Guild Hall change** — ASCEND button removed; replaced with "Visit Familia" link when ready; level-up ceremony is a deity event, not bureaucratic
+- [x] **Starter weapon grants** — `starterWeaponCategory` added to `Job` type and ~11 combat/magic jobs in `jobDefinitions.ts`
+
+### 1.X.6 Tutorial Trim (2026-05-18)
+- [x] **Reduced to 3 screens** — index, basics, death (removed combat/stats/falna/leveling separate screens)
+- [x] **In-context hint overlays** — First-encounter overlays replace removed tutorial screens:
+  - [x] Kairos Protocol overlay (first combat — combat.tsx)
+  - [x] Eight Pillars overlay (first Character screen visit)
+  - [x] Falna overlay (first Blessing Rite)
+  - [x] Leveling overlay (first Guild Hall visit)
+- [x] **Hint flags** — 4 `hasSeenXHint` booleans in `useGameStore`; `markHintSeen()` action; persist across restarts
+
+### 1.X.7 Dev Tools (2026-05-18)
+- [x] **Interactive dev panel** in Settings — Stat grid (+100 per stat), deity approval toggle, seed achievement button
+- [x] **Clear All Data** — Settings calls `clearAllStores()` (includes `useMarketStore.reset()` and `useBlacksmithStore.reset()`)
+
+### 1.X.8 Build Hardening (2026-05-15)
 - [x] **Deity challenge routing** — `recordChallengeEvent(type, amount)` added to `useDeityStore`; gold/heal/kill challenges now progress correctly; Freya's "2000 gold by Floor 8" and similar no longer stuck at 0 (BUG-033)
 - [x] **Soul wiring additions** — `social_deity_favor_high` fires when favor reaches 80+ (BUG-029); `resource_sell_items` fires on Guild Hall material sales (BUG-030)
 - [x] **useGameStore cleanup** — Stale `milestoneChestsOpened` field and `claimMilestoneChest` action removed; per-run version in `useDungeonStore` is the authority (BUG-024)
@@ -279,24 +313,24 @@
 - [x] **Job definitions** (`src/data/jobs/jobDefinitions.ts`) - 8 base jobs with stat requirements, starter skills, scaling stat
 - [x] **job-select.tsx** - UI screen with BackHandler, top-stat filter, confirmation flow; routes from level-up at Level 2
 - [x] **Job stat bonus** - Applied to character stats at selection via `applyJobStatBonus()`; recalculates grades + maxHP/SP
-- [ ] **Job benefits in combat** - Starter skill appears in combat skill modal; SP cost and damage use job's scaling stat (type cast issue at `useJobStore.ts:62`)
+- [x] **Job benefits in combat** - Starter skill granted on job select, appears in combat skill modal, SP cost and cooldown tracked in character store; `tickSkillCooldowns()` called on player turn start; `gold_steal` effect type wired in `useCombatStore`
 - [ ] **Level 5 job specialization** - Branch into Path A/B (e.g. Warrior → Knight or Berserker)
 - [ ] **Level 8 advanced class** - Final specialization unlock
 - [ ] **Level 10 mastery skills** - Paragon-tier job abilities
 
 ### 2.2 Denatus Soul System
 - [x] **useSoulStore** - Persisted store; 85 behavements across 10 vectors; `incrementBehavement()`, `setBehavementProgress()`, `getDominantVector()`
-- [x] **Behavement Vector Tracking** (~30% wired, ~70% pending):
+- [x] **Behavement Vector Tracking** (~90% wired — all 82 confirmed fire; 3 intentionally deferred to future phases):
   - [x] COMBAT_PHYSICAL (10 behavements) - Fully wired in `useCombatStore`
   - [x] COMBAT_MAGIC (10 behavements) - Fully wired in `useCombatStore`
   - [x] DEFENSE_TANK (10 behavements) - Fully wired
   - [x] DEFENSE_EVASION (10 behavements) - Fully wired
-  - [~] RISK_TAKING (8 behavements) - 6/8 wired; `risk_boss_rush` and `risk_no_observe` missing
+  - [x] RISK_TAKING (8 behavements) - Fully wired
   - [x] CAUTION (8 behavements) - Fully wired
-  - [~] SOCIAL (8 behavements) - 7/8 wired; `resource_sell_items` ✅ now wired (BUG-030)
-  - [~] EXPLORATION (8 behavements) - 6/8 wired; `explore_secret_rooms` pending
-  - [~] RESOURCE (8 behavements) - 7/8 wired; town inventory equip has no soul call
-  - [~] GLORY (10 behavements) - 8/10 wired; `glory_challenge_complete` pending God Challenges phase
+  - [x] SOCIAL (8 behavements) - Fully wired (incl. `social_deity_favor_high` BUG-029)
+  - [x] EXPLORATION (8 behavements) - Fully wired
+  - [x] RESOURCE (8 behavements) - Fully wired (incl. `resource_sell_items` BUG-030)
+  - [~] GLORY (10 behavements) - 8/10 wired; `glory_challenge_complete` deferred to God Challenges phase
 - [x] **Denatus screen** (`app/dungeon/denatus.tsx`) - Exists, reads from `useSoulStore`
 - [x] **PlayerSnapshot** (`src/types/PlayerSnapshot.ts`) - Archetype + approach style; used for boss dialogue
 - [ ] **Title Generation end-to-end** - `[CR Adj] + [Stat Adj] + [Skill Noun]` formula at Level 10 needs testing
