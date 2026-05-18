@@ -1,138 +1,151 @@
 # KOHRVELLIA — Current Sprint
 
-> Last updated: 2026-05-15
-> Status: Build Hardening complete + Deity Challenges live + Soul tracking partially wired
+> Last updated: 2026-05-18
+> Status: Phase 1 COMPLETE. Starting Phase 2.
 
 ---
 
-## THIS WEEK'S FOCUS
+## THIS SPRINT'S FOCUS
 
-Complete the Job System combat integration (starter skills working in combat skill menu),
-wire the remaining ~60 Denatus behavements, and implement Bosses 6-20 to fill out the
-milestone boss system through floor 100. These three tasks take the game from "well-architected
-skeleton" to "fully playable arc" — every character build can now reach a boss that talks back.
+Phase 2 deepens the relationship between the player, their deity, and the world. The core loop is
+solid — combat, stats, ascension, soul tracking are all wired. Now we add the **discovery arc**
+(achievements go from hidden → rumored → known as you engage with NPCs), **God Challenges**
+(deity assigns tasks that create run-defining stakes), and the full **economy loop** (buy/sell/
+haggle in town and guild hall).
 
----
-
-## Active Tasks
-
-- [ ] **Job System: Combat integration audit** (persona: Thane + Sylas)
-  - Verify starter skill appears in the combat skill modal for job-holding characters
-  - Confirm SP cost and damage formula uses the job's declared scaling stat
-  - Test all 8 base job starter skills in combat — any type mismatch between `Skill` and `LearnedSkill` interfaces?
-  - Fix `learnSkill(starterSkill as any)` cast in `useJobStore.ts:62` with proper typing
-
-- [ ] **Denatus: Complete 85-behavement wiring** (persona: Eris + Sylas)
-  - ~30% of behavements currently fire; ~60 hook points are unwired
-  - Priority targets: `explore_secret_rooms`, `risk_boss_rush`, `risk_no_observe`, `social_deity_favor_high` ✅ done
-  - Wire behavements at: trap detection (`room.tsx`), NPC interactions, skill learning (job selection), dungeon shop visits
-  - Reference `docs/SOUL_BEHAVEMENTS.md` for full list
-
-- [ ] **Denatus: Test title generation end-to-end** (persona: Eris + Zenna)
-  - `app/dungeon/denatus.tsx` exists and reads from `useSoulStore`
-  - Test the full path: reach Level 10 → Denatus screen → title formula `[CR Adj] + [Stat Adj] + [Skill Noun]`
-  - Confirm title is stored on the character and displayed in epitaph/stats screens
-
-- [ ] **Bosses 6-20: Implement floors 30-100** (persona: Orla + Thane)
-  - 15 remaining bosses designed (from doc): Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr, Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
-  - Each needs: full `MilestoneBoss` definition, 3-exchange conversation, 3+ outcomes, `bossDefeatedEcho`
-  - Add to `MILESTONE_BOSSES[]` in `src/data/bosses/milestoneBosses.ts`
-
-- [ ] **Boss dialogue achievements: Add data** (persona: Orla + Eris)
-  - `BUG-022`: Boss outcomes reference achievements (`walked_past_death`, `fortune_s_pet`, `vanya_the_understood`, etc.) but no matching definitions exist in `src/data/achievements/`
-  - Add achievement data entries; update `RequirementType` if needed
-
-- [ ] **Item Drop/Destroy** (persona: Sylas + Pike)
-  - Add permanent item removal from inventory (destroy without equipping)
-  - Confirmation dialog: "This item will be lost permanently. Destroy it?"
-  - Enforce BAG_CAPACITY correctly on destroy (not just equip)
+The player should feel like they're inside a living world, not just a dungeon simulator.
 
 ---
 
-## Blocked / Needs Decision
+## IMPORTANT CONTEXT FROM PHASE 1 (read before starting)
 
-- **BUG-026:** `useSoulStore` is persisted globally. Boss `dominantVector` reflects cumulative
-  soul data across all of a player's characters — boss dialogue flavor may be wrong for
-  returning players. Soul data IS correct for the current run's approach style signals
-  (those use `DungeonRun` stats). Only `dominantVector` is cross-run.
-  - Decision from **Eris**: (A) reset soul at run start, (B) snapshot at run-start + use deltas
-    in `createPlayerSnapshot`, (C) accept cumulative soul as character identity (intentional depth).
+### What's already built (confirmed working 2026-05-18)
 
-- **BUG-027:** Level-up ceremony shows "+X GLORY" from `tierRewards.gloryPoints` but these
-  points are never forwarded to `useSoulStore`. The GLORY vector tracks separately via
-  specific behavements (boss streaks, deathless floors). UI implies soul points accumulate;
-  they don't.
-  - Decision from **Valdris**: (A) wire gloryPoints to soul GLORY accumulator, (B) rename UI
-    label to "GLORY BONUS" with tooltip, (C) remove the display entirely.
+- **All imports clean** — no broken paths, no missing stores
+- **Discovery System UI already built** — `app/town/guildhall/index.tsx` renders all 4 `DiscoveryState` values (hidden/rumored/known/completed). Only the feed triggers are missing. This is closer than it looks.
+- **God Challenges scaffold exists** — `useDeityStore.issueChallenge()` and `checkChallengeExpiry()` implemented. Challenge issued at favor ≥ 30 in `familia/index.tsx`. `checkChallengeExpiry()` called on floor descent. **Missing**: `recordChallengeEvent()` not called from combat/events; no in-run progress UI.
+- **Guild Hall sell works** — `useMarketStore` fully wired for sell. Buy flow lives in `app/town/shops/` (separate hub, not guild hall).
+- **Dungeon shop disabled** — `room.tsx` has shop node type but it's gated out ("shops only in town"). No stock generation for dungeon shops yet.
+- **Soul system ~90% wired** — 82/85 behavements fire. `glory_challenge_complete` deferred to God Challenges phase.
 
-- **Weapon Triangle** — Damage type modifiers (Slash/Pierce/Blunt vs Flesh/Leather/Bone/Armor)
-  documented in `DESIGN_COMBAT.md` but absent from `useCombatStore.playerAttack()`.
-  Monster `weaknesses`/`resistances` arrays only feed inspection text — no damage math.
-  - Decision from **Thane**: Phase 2 or Phase 3? Retroactively changes encounter balance.
+### Known deferred bugs (non-blocking, don't start these without deciding design first)
 
-- **Audio files** — `useSoundStore` infrastructure complete (all BGM/SFX types defined), but
-  no `.mp3`/`.ogg` files exist in `assets/`. All sound calls are silent no-ops.
-  - Decision from **Valdris**: Source/commission audio, ship with silence, or use free CC assets?
+| ID | Issue | Decision Needed From |
+|----|-------|---------------------|
+| BUG-034 | Per-boss achievement IDs in `milestoneBosses.ts` unreachable (`vanya_the_understood` etc.) — `executeOutcome()` uses hardcoded generic IDs | Orla: Add per-boss achievement data to level files L1-L5 |
+| BUG-023 | `boss-cleared.tsx` registered in layout but no caller exists | Valdris: Route here before `boss-encounter` if boss previously defeated? |
+| BUG-001 | App force-close mid-combat leaves stale dungeon state | Pike: Low priority until late Phase 2 |
+| BUG-025 | RunFlags string literals have no registry/docs | Sylas: Add `DUNGEON_FLAGS` const registry in `src/constants/` |
 
 ---
 
-## Done This Sprint
+## Active Tasks (Phase 2 Kickoff)
 
-- [x] `recordChallengeEvent()` routing in `useDeityStore` — gold/heal/kill challenges now track correctly; Freya's "2000 gold by Floor 8" and similar challenges now progress (BUG-033)
-- [x] `social_deity_favor_high` soul behavement wired in `useDeityStore.adjustFavor()` (BUG-029)
-- [x] `resource_sell_items` soul behavement wired in guildhall `handleSellAll`/`handleSellOne` (BUG-030)
-- [x] Stale `milestoneChestsOpened` + `claimMilestoneChest` removed from `useGameStore` (BUG-024)
-- [x] iOS swipe-back guard in `level-up.tsx` — `navigation.addListener('beforeRemove')` blocks ceremony dismissal before phase is 'complete' (BUG-004)
-- [x] TypeScript zero-error build — 15 pre-existing errors fixed: Padding/Spacing constants, unused imports (Padding, useSoundStore, addToInventory, tags1/tags2), unused `s` params in milestoneBosses, `SoulStoreRef.getBehavementProgress` return type corrected from `currentValue` to `current`
+### Task 1 — Discovery System: Feed the existing UI (persona: Sylas + Orla)
+**Why first**: UI is already built. This is lower effort than it appears.
 
----
+What exists:
+- `DiscoveryState`: `hidden | rumored | known | completed` on `AchievementProgress`
+- Guild Hall renders all 4 states with correct visual treatment
+- `discoverAchievement(achievementId, source)` in `useAchievementStore` sets state to `'known'`
 
-## Next Up (not started)
+What's missing:
+- **NPC reputation-based unlocking**: guild/academy/librarian NPCs should upgrade `hidden → rumored` at reputation thresholds. The `discoveryRepRequired` field exists on `Achievement` — it's just never read.
+- **First-run hinting**: specific achievements go from `hidden → rumored` on first floor reach (e.g. `walked_past_death` should be `rumored` once player reaches a boss floor for the first time)
+- Wire `discoveryRepRequired` reading in `useAchievementStore.updateProgress()` — check if reputation meets threshold, auto-promote to `'rumored'` or `'known'`
 
-- **Discovery System** (Phase 2.3) — Achievement visibility states (Hidden → Rumored → Known → Completed), NPC reputation-based discovery. `DiscoveryState` type exists in code but never fed to UI.
-
-- **God Challenges** (Phase 2.4) — `useDeityStore.issueChallenge()` and `checkChallengeExpiry()` are implemented. What's missing: trigger conditions (shrine visit, low favor, approaching milestone), and many challenge event types still need routing via `recordChallengeEvent()`.
-
-- **Advanced Job Specializations** — Jobs branch at Level 5 (Path A/B) and become Advanced Class at Level 8. Design exists in `DESIGN_PROGRESSION.md`. Framework stored in `useJobStore`; Level 5 gating not coded.
-
-- **Shop/Economy Completion** (Phase 2.6) — Guild Hall sell exists ✅. Buy flow, haggling (CHA bonus to prices), town shop stock generation still need full wiring.
-
-- **Biome-Pantheon Monster Associations** — 9 biomes each tied to a pantheon in `DESIGN_DUNGEON.md`. Floor generation currently uses global monster pool regardless of depth/biome. Norse creatures (Frost Giant, Storm Giant) should dominate Frozen biome floors, etc.
-
-- **150+ Monster Bestiary** — Currently 36+ base monsters. Design doc targets 150+. Low priority until Phase 3.
-
-- **Sound Assets** — Audio files needed for all defined BGM/SFX types.
+Files: `src/stores/useAchievementStore.ts`, `app/town/guildhall/index.tsx`
 
 ---
 
-## Known Issues (Pike's List)
+### Task 2 — God Challenges: Wire combat/event callbacks (persona: Thane + Sylas)
+**Why second**: Scaffold exists. One missing piece: `recordChallengeEvent()` from the combat loop.
 
-| ID | Severity | Screen | Issue |
-|----|----------|--------|-------|
-| BUG-001 | Major | `dungeon/combat.tsx` | App force-closed during combat leaves `useDungeonStore` with the room marked unvisited, but `useCombatStore` (non-persisted) is cleared. Player re-enters same room without combat state — may double-spawn encounter. |
-| BUG-005 | Minor | `dungeon/combat.tsx` | `endCombat()` nulls `rewards` and `monster`. Currently safe (all reads precede the call), but any refactor moving `endCombat()` earlier will produce silent null-reference crashes. Snapshot `rewards` at top of `handleVictory()` as future-proofing. |
-| BUG-008 | Minor | `dungeon/combat.tsx` | Weapon Triangle not implemented — `weaknesses`/`resistances` arrays only used for inspection text, no damage formula effect. Tutorial implies type advantages exist. |
-| BUG-022 | Major | `boss-encounter.tsx` | Boss outcome achievements (`walked_past_death`, `fortune_s_pet`, etc.) are referenced in TODO comments but no matching achievement definitions exist. Achievement unlocks silently fail. |
-| BUG-023 | Minor | `boss-cleared.tsx` | Screen exists and is complete but unreachable — no route points to it. Routing decision pending. |
-| BUG-026 | Medium | `PlayerSnapshot.ts` | Boss `dominantVector` uses cumulative cross-run soul data. Approach style is correctly run-scoped; this is the only affected field. |
-| BUG-027 | Medium | `level-up.tsx` | "+X GLORY" display in ceremony is visual only — never feeds `useSoulStore` GLORY vector. |
-| BUG-031 | Major | `dungeon/inventory.tsx` | Armor equip/unequip UI dead for 5 of 7 slots — `handleSlotPress` gates all interaction with `if (slot === 'weapon')`. |
-| BUG-032 | Major | `useCombatStore.ts` | Weapon Triangle not in damage math. Slash/Pierce/Blunt vs monster type has zero effect on combat numbers. |
-| BUG-033 | RESOLVED | `useDeityStore` | Deity challenge routing complete. Gold/heal/kill types now route to active challenge. |
+What exists:
+- `issueChallenge()` — adds challenge to `useDeityStore.activeChallenge`
+- `checkChallengeExpiry()` — called on floor descent
+- `recordChallengeEvent(type, amount)` — routes progress for gold/heal/kill types
+
+What's missing:
+- `recordChallengeEvent('floor_clear', 1)` in `useDungeonStore.moveToNode()` or `floor.tsx` on descent
+- `recordChallengeEvent('boss_kill', 1)` in `handleVictory()` in `combat.tsx` when boss is killed
+- Challenge progress bar in the dungeon HUD (shows active challenge progress during run)
+- Challenge reward delivery UI (currently `completeChallenge()` sets a flag but no UI reacts to it)
+
+Files: `src/stores/useDeityStore.ts`, `app/dungeon/combat.tsx`, `app/dungeon/floor.tsx`
 
 ---
 
-## Design Questions Open
+### Task 3 — Economy: Buy flow + haggling (persona: Korben + Zenna)
+**Why third**: Sell is done. Buy flow lives in `app/town/shops/` — check existing implementation depth.
 
-1. **Paragon (Level 10) mechanics** — Denatus title formula is designed. What does Paragon unlock *mechanically* beyond the title? Passive stat bonuses from soul title adjectives? A unique Paragon skill? Meta-progression unlock that carries to future runs? Needs Valdris + Thane.
+What exists:
+- Guild Hall: sell all / sell item (wired)
+- `app/town/shops/`: multiple shop screens exist (check what's implemented)
+- `useShopStore`: stock refresh logic, `shouldRefreshStock()`, `generateStock()` exist
 
-2. **Deity Eviction UX** — At favor 0-10, deity abandons adventurer. Current behavior: favor drops, blessings weaken, nothing else happens. Options: (A) disable domain blessing only, (B) forced shrine visit to repair, (C) full eviction — player picks new deity. Needs Valdris.
+What's missing:
+- Haggling mechanic: CHA stat should modify purchase price (±20% based on CHA grade vs target DC)
+- Confirmation flow for purchases with gold drain
+- Shop stock tied to character level (same `generateLeveledWeaponDrop` approach as combat drops)
 
-3. **Flee cost** — Fleeing has no HP/SP cost, only AGI check and floor penalty. Thane: should failed flee attempts cost HP or SP, or is the lost proficiency and floor penalty sufficient?
+Files: `app/town/shops/`, `src/stores/useShopStore.ts`
 
-4. **GLORY + gloryPoints** — See BUG-027. The "+X GLORY" UI implies soul tracking; it doesn't. Pick one: wire it, rename it, or drop it.
+---
 
-5. **Consumables in dungeons** — Dungeon shop room type exists in floor generation but renders no merchant stock. When should dungeon shops spawn, what's their stock, and how do prices compare to town?
+### Task 4 — Job Specialization at Level 5 (persona: Thane + Sylas)
+**Later in sprint**: Level 5 is where jobs branch into Path A/B.
+
+What exists:
+- `useJobStore` has `selectSpecialization()` stub
+- `DESIGN_PROGRESSION.md` has full specialization tree
+- Framework gating in `useJobStore` at Level 5 check
+
+What's missing:
+- `src/data/jobs/specializations.ts` — define Path A/B for all 8 base jobs
+- `app/dungeon/job-select.tsx` — add specialization choice phase at Level 5
+- Combat effects of specialization (bonus passive in `useCombatStore`)
+
+---
+
+## Design Decisions Open (resolve before building)
+
+These are blocking or will become blocking. Put them on the table at the start of next session.
+
+| # | Question | Blocking | Personas |
+|---|----------|----------|---------|
+| 1 | **GLORY stacking multiplier** — 3+ hard-path achievements give 1.5× stat reward. GLORY vector fires but multiplier never applied in `performLevelUp()`. Implement it, or is the soul tracking sufficient? | Task 1 | Valdris + Eris |
+| 2 | **Deity Eviction UX** — At favor 0-10, what happens? Currently nothing. (A) disable domain blessing only, (B) forced shrine visit, (C) full eviction + new deity choice | Task 2 | Valdris |
+| 3 | **Per-boss achievements (BUG-034)** — Add `vanya_the_understood` etc. to level files and read from `resolvedOutcome.achievement`? Or keep generic IDs? | Task 1 | Orla |
+| 4 | **Paragon (Level 10) mechanics** — Beyond the Denatus title, what does Level 10 unlock mechanically? Passive from soul title? Unique skill? Meta-progression? | Future sprint | Valdris + Thane |
+| 5 | **RunFlags registry (BUG-025)** — Add a `DUNGEON_FLAGS` const object to document all valid flag strings and their semantics? | Task 2 | Sylas |
+
+---
+
+## Phase 2 Full Scope (for reference)
+
+| Phase | Target | Status |
+|-------|--------|--------|
+| 2.1 Job System | Complete | ✅ Done in Phase 1 sprint |
+| 2.2 Denatus Soul | ~90% | ✅ Mostly done; `glory_challenge_complete` deferred |
+| 2.3 Discovery System | Not started | UI built, feed logic missing |
+| 2.4 God Challenges | Scaffold only | `issueChallenge` exists, wire combat/events |
+| 2.5 Town Hub | Complete | ✅ Done |
+| 2.6 Shop/Economy | Sell done | Buy/haggling/dungeon shops pending |
+| 2.7 Extended Pantheons | 12 active | 7 additional planned (Phase 3) |
+| 2.8 Extended Monsters | 36 active | 150+ target (Phase 3) |
+| 2.9 Extended Equipment | Weapons done | Armor/accessories Phase 3 |
+
+---
+
+## What Phase 2 Feels Like When Done
+
+A player should be able to:
+1. Reach the Guild Hall and see RUMORED achievements they don't fully understand yet
+2. Take a God Challenge from their deity mid-run — a time-limited goal that changes how they play
+3. Visit a town shop, haggle using CHA, and buy a weapon tier above what they'd normally find
+4. Reach Level 5, enter a boss fight, then choose a job specialization that permanently branches their build
+5. See the Denatus soul ceremony at Level 10 produce a title that actually reflects how they played
 
 ---
 
