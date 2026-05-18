@@ -66,7 +66,7 @@ export default function RoomScreen() {
   const router = useRouter();
   const haptics = useHaptics();
   const { playSFX } = useSoundStore();
-  const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery, setRunFlag, getRunFlags } = useDungeonStore();
+  const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery, setRunFlag, clearRunFlag, getRunFlags } = useDungeonStore();
   const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, removeFromInventory, addToInventory, modifyDeityFavor, addStatusEffect, modifySatiation } = useCharacterStore();
   const { prepareEncounter } = useCombatStore();
   const { equipmentStock, purchaseEquipment, getEquipmentPrice, shouldRefreshStock, refreshStock } = useShopStore();
@@ -190,43 +190,99 @@ export default function RoomScreen() {
       playSFX('gold_pickup');
     }, 300);
 
-    // Generate loot based on floor (treasure is ultra-rare, so rewards should be good!)
+    // Generate loot based on floor — treasure is rare, every chest is a jackpot
     const floorNumber = map.floorNumber;
-    const lootTier = Math.floor(floorNumber / 5); // 0 for floors 1-4, 1 for 5-9, etc.
 
-    // Gold: Base 50-100 + 25-50 per tier
-    const baseGold = 50 + Math.floor(Math.random() * 51); // 50-100
-    const tierGold = lootTier * (25 + Math.floor(Math.random() * 26)); // +25-50 per tier
-    const totalGold = baseGold + tierGold;
+    // T0: 1-4  T1: 5-9  T2: 10-14  T3: 15-25  T4: 26-40  T5: 41+
+    const lootTier =
+      floorNumber <= 4  ? 0 :
+      floorNumber <= 9  ? 1 :
+      floorNumber <= 14 ? 2 :
+      floorNumber <= 25 ? 3 :
+      floorNumber <= 40 ? 4 : 5;
 
-    // Items based on tier
+    // ── Gold ──────────────────────────────────────────────────────────────────────
+    const GOLD_RANGES: [number, number][] = [
+      [75,  150],   // T0: floors  1-4
+      [120, 220],   // T1: floors  5-9
+      [180, 320],   // T2: floors 10-14
+      [280, 480],   // T3: floors 15-25
+      [450, 750],   // T4: floors 26-40
+      [700, 1200],  // T5: floors 41+
+    ];
+    const [goldMin, goldMax] = GOLD_RANGES[lootTier];
+    const totalGold = goldMin + Math.floor(Math.random() * (goldMax - goldMin + 1));
+
     const items: string[] = [];
 
-    // Always give at least one consumable
-    const consumablePool: Array<{ id: string; name: string }> = [
+    // ── Consumable pools ──────────────────────────────────────────────────────────
+    const addConsumable = (pool: Array<{ id: string; name: string; type?: 'consumable' | 'material' }>) => {
+      const c = pool[Math.floor(Math.random() * pool.length)];
+      items.push(`1x ${c.name}`);
+      addToInventory({ id: c.id, type: c.type ?? 'consumable', stackable: true, quantity: 1, identified: true });
+    };
+
+    const earlyConsumables = [
       { id: 'health_potion_small', name: 'Health Potion (Small)' },
       { id: 'spirit_potion_small', name: 'Spirit Potion (Small)' },
-      { id: 'ration', name: 'Ration' },
+      { id: 'antidote',            name: 'Antidote' },
+      { id: 'ration',              name: 'Ration' },
     ];
-    const picked = consumablePool[Math.floor(Math.random() * consumablePool.length)];
-    items.push(`1x ${picked.name}`);
-    addToInventory({ id: picked.id, type: 'consumable', stackable: true, quantity: 1, identified: true });
+    const midConsumables = [
+      { id: 'health_potion_small', name: 'Health Potion (Small)' },
+      { id: 'health_potion_large', name: 'Health Potion (Large)' },
+      { id: 'spirit_potion_small', name: 'Spirit Potion (Small)' },
+      { id: 'antidote',            name: 'Antidote' },
+    ];
+    const deepConsumables = [
+      { id: 'health_potion_large', name: 'Health Potion (Large)' },
+      { id: 'spirit_potion_large', name: 'Spirit Potion (Large)' },
+      { id: 'antidote',            name: 'Antidote' },
+    ];
+    const materials = [
+      { id: 'magic_stone', name: 'Magic Stone', type: 'material' as const },
+    ];
 
-    // Higher tier = more items
-    if (lootTier >= 1 && Math.random() < 0.6) {
-      items.push('1x Antidote');
-      addToInventory({ id: 'antidote', type: 'consumable', stackable: true, quantity: 1, identified: true });
-    }
-    if (lootTier >= 2 && Math.random() < 0.5) {
-      items.push('1x Health Potion (Large)');
-      addToInventory({ id: 'health_potion_large', type: 'consumable', stackable: true, quantity: 1, identified: true });
-    }
-    if (lootTier >= 3 && Math.random() < 0.4) {
-      items.push('1x Magic Stone');
-      addToInventory({ id: 'magic_stone', type: 'material', stackable: true, quantity: 1, identified: true });
+    // Consumables by tier
+    if (lootTier === 0) {
+      addConsumable(earlyConsumables);                        // 1 consumable
+      if (Math.random() < 0.20) addConsumable(earlyConsumables); // 20% bonus
+    } else if (lootTier === 1) {
+      addConsumable(earlyConsumables);
+      addConsumable(midConsumables);                          // 2 consumables
+    } else if (lootTier === 2) {
+      addConsumable(midConsumables);
+      addConsumable(midConsumables);                          // 2 mid consumables
+    } else if (lootTier === 3) {
+      addConsumable(deepConsumables);
+      addConsumable(deepConsumables);                         // 2 deep consumables
+      addConsumable(materials);                               // + 1 magic stone
+    } else if (lootTier === 4) {
+      addConsumable(deepConsumables);
+      addConsumable(deepConsumables);
+      addConsumable(materials);
+      addConsumable(materials);                               // + 2 magic stones
+    } else {
+      // T5: 41+ — 2 deep consumables + 3 magic stones
+      addConsumable(deepConsumables);
+      addConsumable(deepConsumables);
+      addConsumable(materials);
+      addConsumable(materials);
+      addConsumable(materials);
     }
 
-    // Apply rewards
+    // ── Weapon drops ──────────────────────────────────────────────────────────────
+    // T0: none  T1: 30%  T2: 55%  T3: guaranteed  T4: guaranteed  T5: guaranteed
+    const WEAPON_CHANCE = [0, 0.30, 0.55, 1.0, 1.0, 1.0][lootTier];
+    if (WEAPON_CHANCE > 0 && Math.random() < WEAPON_CHANCE && character) {
+      const weapon = generateLeveledWeaponDrop(floorNumber, character.level);
+      registerWeapon(weapon);
+      addToInventory({ id: weapon.id, type: 'weapon', stackable: false, quantity: 1, weaponData: weapon });
+      items.push(`⚔️ ${weapon.displayName}`);
+      useDeityStore.getState().recordChallengeEvent('item_found', 1);
+    }
+
+    // Apply gold
     modifyGold(totalGold);
     if (totalGold > 0) useDeityStore.getState().recordChallengeEvent('gold_collected', totalGold);
 
@@ -275,7 +331,9 @@ export default function RoomScreen() {
   ) ?? false;
 
   const rationCount = character?.inventory.find(i => i.id === 'ration')?.quantity ?? 0;
-  const hungerState = rationCount >= 4 ? 'adequate' : rationCount >= 2 ? 'hungry' : 'starving';
+  // Satiation drives rest quality — the single source of truth for hunger
+  const satiation = character?.satiation ?? 60;
+  const hungerState = satiation >= 60 ? 'adequate' : satiation >= 30 ? 'hungry' : 'starving';
 
   const [restChoice, setRestChoice] = useState<'pending' | 'full' | 'dangerous' | 'done'>('pending');
   const [restMessage, setRestMessage] = useState<string | null>(null);
@@ -293,8 +351,8 @@ export default function RoomScreen() {
     removeFromInventory('ration', 1);
     modifySatiation(40);
 
-    // Full rest: restore HP and SP scaled by hunger state
-    const restMult = hungerState === 'adequate' ? 0.30 : hungerState === 'hungry' ? 0.20 : 0.10;
+    // Full rest: restore HP and SP scaled by satiation
+    const restMult = hungerState === 'adequate' ? 0.25 : hungerState === 'hungry' ? 0.15 : 0.05;
     const hpRestore = Math.floor(character.maxHP * restMult);
     const spRestore = Math.floor(character.maxSP * restMult);
     modifyHP(hpRestore);
@@ -317,11 +375,11 @@ export default function RoomScreen() {
       revealMystery(node.id);
     }
 
-    // Dangerous rest: only 10% HP, no SP
-    const hpRestore = Math.floor(character.maxHP * 0.1);
+    // Dangerous rest: only 5% HP, no SP — you're exhausted and starving
+    const hpRestore = Math.floor(character.maxHP * 0.05);
     modifyHP(hpRestore);
 
-    setRestMessage(`You rest without food. Your body aches with hunger.\n\n+${hpRestore} HP (no SP recovery)`);
+    setRestMessage(`You rest fitfully, starving. The darkness offers no comfort.\n\n+${hpRestore} HP (no SP recovery)`);
     setRestChoice('done');
     useSoulStore.getState().incrementBehavement('caution_rest_sites');
     useDungeonStore.getState().setFloorFlag('restedThisFloor');
@@ -405,145 +463,84 @@ export default function RoomScreen() {
     playSFX('shrine_chime');
 
     const favor = character.deityFavor ?? 50;
-    const isFavored = favor >= 60;
-    const isDisfavored = favor < 25;
     const isAbandoned = favor < 10;
-    const domainStat = shrineDomain ? (DOMAIN_STAT_MAP[shrineDomain] ?? 'LCK') : 'LCK';
 
-    // Blood offering costs 15% current HP upfront
+    // Blood offering costs 10% max HP upfront (risk/reward)
     if (offering === 'blood') {
-      const cost = Math.floor(character.currentHP * 0.15);
+      const cost = Math.floor(character.maxHP * 0.10);
       modifyHP(-cost);
     }
 
-    // Resolve outcome tier
-    let tier: 'A' | 'B' | 'C' | 'D' | 'D+';
-    if (shrineAffinity === 'aligned' && (offering === 'blood' || isFavored)) {
-      tier = 'A';
-    } else if (shrineAffinity === 'aligned' || (shrineAffinity === 'opposed' && offering === 'blood' && isFavored)) {
-      tier = 'B';
-    } else if (shrineAffinity === 'neutral' && !isAbandoned) {
-      tier = Math.random() < 0.5 ? 'B' : 'C';
-    } else if (isAbandoned || (shrineAffinity === 'opposed' && offering === 'free' && isDisfavored)) {
-      tier = 'D+';
-    } else if (shrineAffinity === 'opposed' || isDisfavored) {
-      tier = 'D';
-    } else {
-      tier = 'C';
-    }
+    // Simplified 2×4 matrix: affinity × offering
+    // No more permanent excelia — that belongs exclusively to the Blessing Rite
+    type ShrineTier = 'aligned' | 'neutral' | 'opposed' | 'abandoned';
+    const affinity: ShrineTier = isAbandoned ? 'abandoned' : shrineAffinity as ShrineTier;
 
-    // Apply effects per tier
-    if (tier === 'A') {
-      // Perma stat buff — +15 excelia points to domain stat (treated as permanent via addPendingExcelia)
-      addPendingExcelia(domainStat, 15);
-      modifyDeityFavor(20);
-      playSFX('buff');
-      setShrineResult({
-        tier: 'A',
-        favorGain: 20,
-        hpHealed: 0,
-        spHealed: 0,
-        statBoosted: domainStat,
-        exceliGained: 15,
-        permaBuff: true,
-        cursed: false,
-        flavorText: 'Growth marked by divine will. Seal it at the Blessing Rite — or lose it to death.',
-      });
-    } else if (tier === 'B') {
-      const hpHealed = Math.floor(character.maxHP * 0.30);
-      const spHealed = Math.floor(character.maxSP * 0.20);
-      modifyHP(hpHealed);
-      modifySP(spHealed);
-      addPendingExcelia(domainStat, 25);
-      modifyDeityFavor(10);
-      playSFX('buff');
-      setShrineResult({
-        tier: 'B',
-        favorGain: 10,
-        hpHealed,
-        spHealed,
-        statBoosted: domainStat,
-        exceliGained: 25,
-        permaBuff: false,
-        cursed: false,
-        flavorText: shrineAffinity === 'aligned' ? 'Your patron smiles upon this devotion.' : 'The gods acknowledge your offering.',
-      });
-    } else if (tier === 'C') {
-      const minor = Math.random() < 0.5;
-      if (minor) {
-        const hpHealed = Math.floor(character.maxHP * 0.10);
-        modifyHP(hpHealed);
-        modifyDeityFavor(5);
-        setShrineResult({
-          tier: 'C',
-          favorGain: 5,
-          hpHealed,
-          spHealed: 0,
-          statBoosted: '',
-          exceliGained: 0,
-          permaBuff: false,
-          cursed: false,
-          flavorText: 'The gods spare a moment of attention.',
-        });
-      } else {
-        setShrineResult({
-          tier: 'C',
-          favorGain: 0,
-          hpHealed: 0,
-          spHealed: 0,
-          statBoosted: '',
-          exceliGained: 0,
-          permaBuff: false,
-          cursed: false,
-          flavorText: 'The shrine gazes through you. Divine silence.',
-        });
-      }
-    } else if (tier === 'D') {
-      const hpLost = -Math.floor(character.maxHP * 0.20);
-      modifyHP(hpLost);
-      modifyDeityFavor(-15);
+    const prayerHealHP: Record<ShrineTier, number>  = { aligned: 0.20, neutral: 0.10, opposed: 0, abandoned: 0 };
+    const prayerFavor: Record<ShrineTier, number>   = { aligned: 8, neutral: 3, opposed: -5, abandoned: -10 };
+    const bloodHealHP: Record<ShrineTier, number>   = { aligned: 0.40, neutral: 0.20, opposed: 0, abandoned: 0 };
+    const bloodHealSP: Record<ShrineTier, number>   = { aligned: 0.20, neutral: 0, opposed: 0, abandoned: 0 };
+    const bloodFavor: Record<ShrineTier, number>    = { aligned: 12, neutral: 5, opposed: -8, abandoned: -15 };
+    const bloodDmgHP: Record<ShrineTier, number>    = { aligned: 0, neutral: 0, opposed: 0.10, abandoned: 0.20 };
+    const curseLength: Record<ShrineTier, number>   = { aligned: 0, neutral: 0, opposed: 2, abandoned: 5 };
+
+    const isPositive = affinity === 'aligned' || affinity === 'neutral';
+    const hpHealPct = offering === 'blood' ? bloodHealHP[affinity] : prayerHealHP[affinity];
+    const spHealPct = offering === 'blood' ? bloodHealSP[affinity] : 0;
+    const favorDelta = offering === 'blood' ? bloodFavor[affinity] : prayerFavor[affinity];
+    const extraDmgPct = offering === 'blood' ? bloodDmgHP[affinity] : 0;
+    const curseTurns = curseLength[affinity];
+
+    const hpHealed = Math.floor(character.maxHP * hpHealPct);
+    const spHealed = Math.floor(character.maxSP * spHealPct);
+    const hpDmg = Math.floor(character.maxHP * extraDmgPct);
+
+    if (hpHealed > 0) { modifyHP(hpHealed); playSFX('heal'); }
+    if (spHealed > 0) { modifySP(spHealed); }
+    if (hpDmg > 0) { modifyHP(-hpDmg); }
+    modifyDeityFavor(favorDelta);
+
+    if (curseTurns > 0) {
       addStatusEffect({
         id: 'curse',
-        name: 'Shrine Curse',
-        duration: 3,
-        description: 'A divine curse lingers from an opposing shrine.',
-      });
-      setShrineResult({
-        tier: 'D',
-        favorGain: -15,
-        hpHealed: hpLost,
-        spHealed: 0,
-        statBoosted: '',
-        exceliGained: 0,
-        permaBuff: false,
-        cursed: true,
-        flavorText: 'The shrine rejects you. A curse settles on your shoulders.',
-      });
-    } else {
-      // D+ — severe
-      const hpLost = -Math.floor(character.maxHP * 0.30);
-      modifyHP(hpLost);
-      modifyDeityFavor(-20);
-      addStatusEffect({
-        id: 'curse',
-        name: 'Divine Wrath',
-        duration: 5,
-        description: 'The gods have forsaken you. A heavy curse weighs on your soul.',
-      });
-      setShrineResult({
-        tier: 'D+',
-        favorGain: -20,
-        hpHealed: hpLost,
-        spHealed: 0,
-        statBoosted: '',
-        exceliGained: 0,
-        permaBuff: false,
-        cursed: true,
-        flavorText: 'The gods answer with wrath. You have been forsaken.',
+        name: affinity === 'abandoned' ? 'Divine Wrath' : 'Shrine Curse',
+        duration: curseTurns,
+        description: affinity === 'abandoned' ? 'The gods have forsaken you.' : 'A curse from an opposing shrine.',
       });
     }
 
-    if (tier === 'A' || tier === 'B' || tier === 'C') {
+    const flavorMap: Record<ShrineTier, Record<'blood' | 'free', string>> = {
+      aligned: {
+        blood: 'Your blood sanctifies the offering. The deity's warmth fills you.',
+        free: 'Your patron acknowledges your reverence.',
+      },
+      neutral: {
+        blood: 'The gods accept your sacrifice. Modest warmth in return.',
+        free: 'The shrine notices. A faint blessing passes through you.',
+      },
+      opposed: {
+        blood: 'The shrine recoils. Your blood was not enough to appease.',
+        free: 'The shrine rejects you. A curse settles on your shoulders.',
+      },
+      abandoned: {
+        blood: 'The gods answer with wrath. You have been forsaken.',
+        free: 'Silence — then punishment. You were warned.',
+      },
+    };
+
+    setShrineResult({
+      tier: affinity === 'aligned' ? (offering === 'blood' ? 'A' : 'B') : affinity === 'neutral' ? 'C' : 'D',
+      favorGain: favorDelta,
+      hpHealed: hpHealed - hpDmg,
+      spHealed,
+      statBoosted: '',
+      exceliGained: 0,
+      permaBuff: false,
+      cursed: curseTurns > 0,
+      flavorText: flavorMap[affinity][offering],
+    });
+
+    if (isPositive) {
       useAchievementStore.getState().incrementProgress('shrine_blessing', 1);
     }
 
@@ -636,9 +633,17 @@ export default function RoomScreen() {
         break;
       case 'weapon_reward':
         if (outcome.stat && map && character) {
-          const weapon = generateLeveledWeaponDrop(map.floorNumber, character.level, [outcome.stat as import('../../src/types/Weapon').WeaponCategory]);
-          registerWeapon(weapon);
-          setPendingWeaponReward(weapon);
+          // Anti-farming: event weapons have a 4-floor cooldown between grants
+          if (!useDungeonStore.getState().canGrantEventWeapon()) {
+            const goldFallback = 30 + Math.floor(Math.random() * 40);
+            modifyGold(goldFallback);
+            result = `${outcome.message.replace(/weapon.*$/i, '')} Nothing of weapon quality remained. (+${goldFallback} gold)`.trim();
+          } else {
+            const weapon = generateLeveledWeaponDrop(map.floorNumber, character.level, [outcome.stat as import('../../src/types/Weapon').WeaponCategory]);
+            registerWeapon(weapon);
+            setPendingWeaponReward(weapon);
+            useDungeonStore.getState().recordEventWeaponGrant();
+          }
         }
         break;
     }
@@ -670,6 +675,10 @@ export default function RoomScreen() {
 
   const handleEventContinue = () => {
     if (!node) return;
+    // If this event consumed a run flag (e.g. Gambler's Ghost uses the coin), clear it
+    if (currentEvent?.requiresFlag) {
+      clearRunFlag(currentEvent.requiresFlag);
+    }
     useSoulStore.getState().incrementBehavement('social_event_rooms');
     completeNode(node.id);
     router.back();

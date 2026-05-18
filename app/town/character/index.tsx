@@ -3,7 +3,7 @@
  * Displays all stats with grades, points, and progress
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,7 @@ import { Typography } from '../../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
 import { useCharacterStore } from '../../../src/stores/useCharacterStore';
 import { useJobStore } from '../../../src/stores/useJobStore';
+import { useGameStore } from '../../../src/stores/useGameStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
 import {
   StatName,
@@ -93,6 +94,12 @@ export default function CharacterStatsScreen() {
   const { character, getDerivedStats, getPendingExcelia } = useCharacterStore();
   const currentJob = useJobStore((s) => s.getCurrentJob());
   const [showGuide, setShowGuide] = useState(false);
+  const [showStatsHint, setShowStatsHint] = useState(false);
+  const { hasSeenStatsHint, markHintSeen } = useGameStore();
+
+  useEffect(() => {
+    if (!hasSeenStatsHint) setShowStatsHint(true);
+  }, []);
 
   // Get pending excelia (stat gains waiting to be committed via Blessing Rite)
   const pendingExcelia = getPendingExcelia();
@@ -434,6 +441,31 @@ export default function CharacterStatsScreen() {
                 Grades I → SSS. Stats grow through combat actions — your weapon determines which stat trains.
               </Text>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Eight Pillars — first-use hint overlay */}
+      <Modal visible={showStatsHint} transparent animationType="fade">
+        <View style={styles.hintOverlay}>
+          <View style={styles.hintCard}>
+            <Text style={styles.hintCardTitle}>Eight Pillars</Text>
+            <Text style={styles.hintCardSubtitle}>Every action trains something.</Text>
+            <View style={styles.hintDivider} />
+            {STAT_GUIDE.map(stat => (
+              <View key={stat.abbr} style={styles.hintStatRow}>
+                <Text style={[styles.hintStatAbbr, { color: stat.color }]}>{stat.abbr}</Text>
+                <Text style={styles.hintStatRole}>{stat.role}</Text>
+              </View>
+            ))}
+            <View style={styles.hintDivider} />
+            <Text style={styles.hintGradeNote}>Grade scale: I → D → A → SSS. Need 6 of 8 at Grade D to level up.</Text>
+            <Pressable
+              style={styles.hintButton}
+              onPress={() => { markHintSeen('stats'); setShowStatsHint(false); }}
+            >
+              <Text style={styles.hintButtonText}>Got it</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -876,5 +908,68 @@ const styles = StyleSheet.create({
   runStatLabel: {
     ...Typography.caption,
     color: Colors.text.muted,
+  },
+  hintOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Padding.screen.horizontal,
+  },
+  hintCard: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    width: '100%',
+  },
+  hintCardTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 1,
+  },
+  hintCardSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+  },
+  hintDivider: {
+    height: 1,
+    backgroundColor: Colors.border.primary,
+  },
+  hintStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  hintStatAbbr: {
+    ...Typography.label,
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 1,
+    width: 36,
+  },
+  hintStatRole: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    flex: 1,
+  },
+  hintGradeNote: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+  },
+  hintButton: {
+    backgroundColor: Colors.domain.death,
+    borderWidth: 1,
+    borderColor: Colors.text.accent,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  hintButtonText: {
+    ...Typography.button,
+    color: Colors.text.accent,
+    letterSpacing: 2,
   },
 });

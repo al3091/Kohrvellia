@@ -4,14 +4,15 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../../src/constants/Colors';
 import { Typography } from '../../../src/constants/Typography';
-import { Spacing, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
+import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/constants/Spacing';
 import { useCharacterStore } from '../../../src/stores/useCharacterStore';
 import { useDeityStore } from '../../../src/stores/useDeityStore';
+import { useGameStore } from '../../../src/stores/useGameStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
 import { useSoundStore } from '../../../src/stores/useSoundStore';
 import { ConfettiBurst } from '../../../src/components/ceremony/CeremonyEffects';
@@ -112,6 +113,12 @@ export default function BlessingRiteScreen() {
   const [revealedStats, setRevealedStats] = useState<StatRevealData[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCinematicCeremony, setShowCinematicCeremony] = useState(false);
+  const [showFalnaHint, setShowFalnaHint] = useState(false);
+  const { hasSeenFalnaHint, markHintSeen } = useGameStore();
+
+  useEffect(() => {
+    if (!hasSeenFalnaHint) setShowFalnaHint(true);
+  }, []);
   const [commitResult, setCommitResult] = useState<{ statsGained: Record<StatName, number>; gradeUps: Array<{ stat: StatName; newGrade: string }> } | null>(null);
   const [totalGain, setTotalGain] = useState(0);
   const [leadingStats, setLeadingStats] = useState<StatName[]>([]);
@@ -478,6 +485,32 @@ export default function BlessingRiteScreen() {
           </View>
         )}
       </Animated.View>
+
+      {/* The Falna — first-use hint overlay */}
+      <Modal visible={showFalnaHint} transparent animationType="fade">
+        <View style={styles.hintOverlay}>
+          <View style={styles.hintCard}>
+            <Text style={styles.hintCardTitle}>The Falna</Text>
+            <Text style={styles.hintCardSubtitle}>Your actions write your growth.</Text>
+            <View style={styles.hintDivider} />
+            <View style={styles.hintFormulaBlock}>
+              <Text style={styles.hintFormula}>Effective Stat = (Level × 500) + Grade Points</Text>
+            </View>
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemBody}>Your weapon determines which stat your combat actions train. Each action in the dungeon builds hidden Excelia — revealed only here, at the Blessing Rite.</Text>
+            </View>
+            <View style={styles.hintItem}>
+              <Text style={[styles.hintItemBody, { color: Colors.domain.death }]}>Die before returning — lose all growth earned that run.</Text>
+            </View>
+            <Pressable
+              style={styles.hintButton}
+              onPress={() => { markHintSeen('falna'); setShowFalnaHint(false); }}
+            >
+              <Text style={styles.hintButtonText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -718,5 +751,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  hintOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Padding.screen.horizontal,
+  },
+  hintCard: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    width: '100%',
+  },
+  hintCardTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 1,
+  },
+  hintCardSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+  },
+  hintDivider: {
+    height: 1,
+    backgroundColor: Colors.border.primary,
+  },
+  hintFormulaBlock: {
+    backgroundColor: Colors.background.card,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.text.accent,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  hintFormula: {
+    ...Typography.bodySmall,
+    color: Colors.text.accent,
+    letterSpacing: 0.5,
+  },
+  hintItem: {
+    gap: Spacing.xs,
+  },
+  hintItemBody: {
+    ...Typography.bodySmall,
+    color: Colors.text.primary,
+  },
+  hintButton: {
+    backgroundColor: Colors.domain.death,
+    borderWidth: 1,
+    borderColor: Colors.text.accent,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  hintButtonText: {
+    ...Typography.button,
+    color: Colors.text.accent,
+    letterSpacing: 2,
   },
 });

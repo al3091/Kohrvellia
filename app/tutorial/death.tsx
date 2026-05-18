@@ -30,7 +30,7 @@ export default function TutorialLedgerScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <TutorialProgress currentStep={6} totalSteps={6} />
+      <TutorialProgress currentStep={2} totalSteps={2} />
       <View style={styles.body}>
         {/* Kill vs Deed contrast */}
         <View style={styles.contrastBlock}>

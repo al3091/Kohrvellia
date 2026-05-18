@@ -176,6 +176,12 @@ export interface DungeonRun {
   clearedBossIds: string[];           // Bosses defeated this run (for dialogue flavor)
   milestoneChestsOpenedThisRun: number[]; // Floor milestones whose chests were claimed
 
+  // Soul vector scores captured at run start — used to compute this-run behavioral delta for bosses
+  soulVectorSnapshot: Partial<Record<string, number>>;
+
+  // Anti-farming: floor number when last event weapon was granted (0 = never)
+  lastEventWeaponFloor: number;
+
   // Timestamps
   startedAt: number;
   lastActivityAt: number;
@@ -191,19 +197,18 @@ export const NODES_PER_TIER_INCREASE = 1;  // +1 node every 10 floors
 // Row structure (vertical layers)
 export const ROWS_PER_FLOOR = 12;  // start, 10 middle rows, boss (~25-36 nodes)
 
-// Node type weights by row
-// Note: Treasure is ultra-rare (actual spawn controlled by floor probability in useDungeonStore)
-// Shop is rare (weight 5) — a wandering merchant occasionally appears inside dungeons
+// Node type weights — the dungeon is dangerous; combat is the primary experience
+// Rest is a miracle when found; events are special, not routine
 export const NODE_TYPE_WEIGHTS: Record<NodeType, number> = {
   start: 0,       // Placed automatically
-  combat: 40,     // Most common
-  elite: 12,      // Rare but rewarding
-  treasure: 3,    // Ultra-rare base weight (further filtered by floor probability)
-  event: 22,      // Narrative encounters
-  rest: 4,        // Rest sites kept scarce
-  shop: 5,        // Rare wandering merchant
-  shrine: 3,      // Rare deity interactions
-  mystery: 16,    // Variety and tension
+  combat: 61,     // Clear majority — the dungeon IS dangerous
+  elite: 8,       // Reduced; one elite forced structurally before descent
+  treasure: 4,    // Rarer — should feel like a jackpot when found (loot tables buffed)
+  event: 12,      // Special, not routine
+  rest: 2,        // A desperately hoped-for miracle — no guarantees
+  shop: 0,        // Removed — excluded from generation anyway; dead weight
+  shrine: 3,      // Unchanged — hard-capped 1/floor; mechanics reworked
+  mystery: 10,    // World-building and lore only (event/shrine/treasure reveals)
   boss: 0,        // Placed automatically
 };
 
@@ -387,6 +392,8 @@ export function createDungeonRun(): DungeonRun {
     runFlags: [],
     clearedBossIds: [],
     milestoneChestsOpenedThisRun: [],
+    soulVectorSnapshot: {},
+    lastEventWeaponFloor: 0,
     startedAt: Date.now(),
     lastActivityAt: Date.now(),
   };

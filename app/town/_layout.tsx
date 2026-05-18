@@ -25,6 +25,7 @@ export default function TownLayout() {
       <Stack.Screen name="character/index" />
       <Stack.Screen name="familia/index" />
       <Stack.Screen name="familia/blessing-rite" />
+      <Stack.Screen name="familia/ascension" />
       <Stack.Screen name="shops" />
       <Stack.Screen name="blacksmith" />
       <Stack.Screen name="guildhall" />

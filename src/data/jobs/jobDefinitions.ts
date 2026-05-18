@@ -19,6 +19,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'AGI'],
     tier: 'base',
     statBonus: { stat: 'STR', value: 15 },
+    starterWeaponCategory: 'STR',
     starterSkill: {
       id: 'job_power_strike',
       name: 'Power Strike',
@@ -42,6 +43,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'AGI'],
     tier: 'base',
     statBonus: { stat: 'STR', value: 20 },
+    starterWeaponCategory: 'STR',
     starterSkill: {
       id: 'job_berserker_rage',
       name: 'Berserk Rage',
@@ -68,6 +70,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'AGI'],
     tier: 'base',
     statBonus: { stat: 'END', value: 15 },
+    starterWeaponCategory: 'END',
     starterSkill: {
       id: 'job_iron_wall',
       name: 'Iron Wall',
@@ -91,6 +94,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'AGI'],
     tier: 'base',
     statBonus: { stat: 'CHA', value: 10 },
+    starterWeaponCategory: 'STR',
     starterSkill: {
       id: 'job_crowd_pleaser',
       name: 'Crowd Pleaser',
@@ -118,6 +122,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'WIS'],
     tier: 'base',
     statBonus: { stat: 'WIS', value: 10 },
+    starterWeaponCategory: 'WIS',
     starterSkill: {
       id: 'job_holy_strike',
       name: 'Holy Strike',
@@ -144,6 +149,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'END', 'WIS'],
     tier: 'base',
     statBonus: { stat: 'STR', value: 12 },
+    starterWeaponCategory: 'STR',
     starterSkill: {
       id: 'job_divine_smite',
       name: 'Divine Smite',
@@ -244,6 +250,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'AGI', 'PER'],
     tier: 'base',
     statBonus: { stat: 'PER', value: 15 },
+    starterWeaponCategory: 'PER',
     starterSkill: {
       id: 'job_hunters_mark',
       name: "Hunter's Mark",
@@ -267,6 +274,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['STR', 'AGI', 'PER'],
     tier: 'base',
     statBonus: { stat: 'AGI', value: 15 },
+    starterWeaponCategory: 'AGI',
     starterSkill: {
       id: 'job_hit_and_run',
       name: 'Hit and Run',
@@ -400,6 +408,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['AGI', 'PER', 'LCK'],
     tier: 'base',
     statBonus: { stat: 'AGI', value: 15 },
+    starterWeaponCategory: 'AGI',
     starterSkill: {
       id: 'job_shadow_step',
       name: 'Shadow Step',
@@ -431,7 +440,10 @@ export const JOB_DEFINITIONS: Job[] = [
       cooldown: 2,
       category: 'physical',
       scalingStat: 'AGI',
-      effects: [{ type: 'damage', target: 'enemy', value: 12, scaling: 1.1, damageType: 'physical' }],
+      effects: [
+        { type: 'damage', target: 'enemy', value: 12, scaling: 1.1, damageType: 'physical' },
+        { type: 'gold_steal', target: 'enemy', value: 5, scaling: 10 },
+      ],
       icon: '💎',
       color: '#C89030',
       animation: 'thrust',
@@ -646,6 +658,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['INT', 'WIS', 'CHA'],
     tier: 'base',
     statBonus: { stat: 'INT', value: 15 },
+    starterWeaponCategory: 'INT',
     starterSkill: {
       id: 'job_ancient_knowledge',
       name: 'Ancient Knowledge',
@@ -745,6 +758,7 @@ export const JOB_DEFINITIONS: Job[] = [
     statRequirements: ['INT', 'WIS', 'LCK'],
     tier: 'base',
     statBonus: { stat: 'INT', value: 20 },
+    starterWeaponCategory: 'INT',
     starterSkill: {
       id: 'job_arcane_surge',
       name: 'Arcane Surge',

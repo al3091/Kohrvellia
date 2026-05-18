@@ -62,6 +62,8 @@ export default function CombatScreen() {
   const [monsterTakingDamage, setMonsterTakingDamage] = useState(false);
   const [retreatModalVisible, setRetreatModalVisible] = useState(false);
   const [lastPrimaryAction, setLastPrimaryAction] = useState<{ action: CombatAction; label: string } | null>(null);
+  const [showCombatHint, setShowCombatHint] = useState(false);
+  const { hasSeenCombatHint, markHintSeen } = useGameStore();
 
   // Per-fight soul tracking refs (reset each combat via fresh component mount)
   const tookDamageThisFight = useRef(false);
@@ -157,6 +159,8 @@ export default function CombatScreen() {
           useSoulStore.getState().incrementBehavement('caution_heal_before_boss');
         }
       }
+      // First-use Kairos hint
+      if (!hasSeenCombatHint) setShowCombatHint(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInCombat]);
@@ -328,6 +332,7 @@ export default function CombatScreen() {
     addPendingExcelia('END', 1);
     useSoulStore.getState().incrementBehavement('tank_blocks_50');
     useSoulStore.getState().incrementBehavement('tank_blocks_200');
+    useCombatStore.getState().updateCombatDynamic({ lastActionTag: 'WARD' });
   };
 
   const runFlee = (derived: DerivedStats): void => {
@@ -430,6 +435,9 @@ export default function CombatScreen() {
 
     const result = playerUseSkill(skill, statValue, derived, onHeal, onSpendSP, onApplyShield);
 
+    // Put skill on cooldown
+    useCharacterStore.getState().useSkill(skill.id);
+
     if (result.success) {
       addPendingExcelia(skill.scalingStat, 2);
       updateRunStats({ damageDealt: character.runStats.damageDealt + result.damage });
@@ -476,6 +484,7 @@ export default function CombatScreen() {
       addDamagePopup(0, 'miss', 10);
       useSoundStore.getState().playSFX('miss');
     }
+    useCombatStore.getState().updateCombatDynamic({ lastActionTag: 'STRIKE' });
     if (useCombatStore.getState().phase === 'victory') {
       const soul = useSoulStore.getState();
       const qsScalingStat = getWeaponScalingStat();
@@ -845,6 +854,9 @@ export default function CombatScreen() {
     // Get fresh character reference to avoid stale closure
     const currentCharacter = useCharacterStore.getState().character;
     if (!currentCharacter) return;
+
+    // Tick skill cooldowns at the start of each player turn
+    useCharacterStore.getState().tickSkillCooldowns();
 
     // Phase F: passive per-turn effects (HP/SP regen, divine shield, status clear)
     const derived = getDerivedStats();
@@ -1844,6 +1856,35 @@ export default function CombatScreen() {
             </View>
           </View>
         </Pressable>
+      </Modal>
+
+      {/* Kairos Protocol — first-use hint overlay */}
+      <Modal visible={showCombatHint} transparent animationType="fade">
+        <View style={styles.hintOverlay}>
+          <View style={styles.hintCard}>
+            <Text style={styles.hintCardTitle}>The Kairos Protocol</Text>
+            <Text style={styles.hintCardSubtitle}>Stage both slots. Then invoke.</Text>
+            <View style={styles.hintDivider} />
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>PRIMARY</Text>
+              <Text style={styles.hintItemBody}>Attack · Skill · Item · Charge · Flee</Text>
+            </View>
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>BONUS  (speed required)</Text>
+              <Text style={styles.hintItemBody}>Observe · Defend · Quick Strike · Taunt</Text>
+            </View>
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>INVOKE</Text>
+              <Text style={styles.hintItemBody}>Bonus fires first, then Primary. Nothing happens until you invoke.</Text>
+            </View>
+            <Pressable
+              style={styles.hintButton}
+              onPress={() => { markHintSeen('combat'); setShowCombatHint(false); }}
+            >
+              <Text style={styles.hintButtonText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -3041,5 +3082,59 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#A08870',
     letterSpacing: 1,
+  },
+  hintOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Padding.screen.horizontal,
+  },
+  hintCard: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    width: '100%',
+  },
+  hintCardTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 1,
+  },
+  hintCardSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+  },
+  hintDivider: {
+    height: 1,
+    backgroundColor: Colors.border.primary,
+  },
+  hintItem: {
+    gap: Spacing.xs,
+  },
+  hintItemLabel: {
+    ...Typography.label,
+    color: Colors.text.muted,
+    fontSize: 11,
+    letterSpacing: 2,
+  },
+  hintItemBody: {
+    ...Typography.bodySmall,
+    color: Colors.text.primary,
+  },
+  hintButton: {
+    backgroundColor: Colors.domain.death,
+    borderWidth: 1,
+    borderColor: Colors.text.accent,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  hintButtonText: {
+    ...Typography.button,
+    color: Colors.text.accent,
+    letterSpacing: 2,
   },
 });

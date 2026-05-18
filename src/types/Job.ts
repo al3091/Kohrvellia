@@ -27,6 +27,9 @@ export interface Job {
 
   /** Small stat bonus received on job selection */
   statBonus: { stat: StatName; value: number };
+
+  /** Weapon category to generate and grant on job selection (deity gift if favor ≥ 60) */
+  starterWeaponCategory?: StatName;
 }
 
 /** Lookup all jobs by their stat combination key (sorted stat names joined by '+') */

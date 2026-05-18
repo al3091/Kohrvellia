@@ -253,12 +253,19 @@ export default function LevelUpScreen() {
       playSFX('victory');
     }, 2500);
 
-    // Soul: track glory from achievement tiers selected
+    // Soul: track glory for every hard-path achievement selected this level-up
     {
       const soul = useSoulStore.getState();
-      const highestSelected = getHighestTier();
-      if (highestSelected === 'legendary') soul.incrementBehavement('glory_legendary_achievement');
-      if (highestSelected === 'mythic') soul.incrementBehavement('glory_mythic_achievement');
+      for (const achievementId of selectedForLevelUp) {
+        const ach = getAchievement(achievementId);
+        if (!ach) continue;
+        if (ach.tier === 'heroic' || ach.tier === 'legendary') {
+          soul.incrementBehavement('glory_legendary_achievement');
+        }
+        if (ach.tier === 'mythic') {
+          soul.incrementBehavement('glory_mythic_achievement');
+        }
+      }
     }
 
     // Complete the level up after celebration

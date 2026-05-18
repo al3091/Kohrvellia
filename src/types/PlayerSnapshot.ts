@@ -84,6 +84,7 @@ export interface PlayerSnapshot {
 type SoulStoreRef = {
   getBehavementProgress: (id: string) => { current: number } | null;
   getDominantVector: () => BehaviorVector | null;
+  getVectorScore: (vector: string) => number;
 };
 
 type GameStateRef = {
@@ -97,7 +98,8 @@ export function createPlayerSnapshot(
   soul: SoulStoreRef,
   patronDeityName: string,
   deityDomain: string,
-  bossId?: string
+  bossId?: string,
+  runVectorSnapshot?: Partial<Record<string, number>>
 ): PlayerSnapshot {
   // Primary stat by current-level points
   const statEntries = (Object.entries(character.stats) as [StatName, { points: number }][])
@@ -174,6 +176,22 @@ export function createPlayerSnapshot(
     deityFavor,
     deityFavorPercent: favorPercent,
     statPoints,
-    dominantVector: soul.getDominantVector(),
+    dominantVector: (() => {
+      // Compute this-run dominant vector using delta from run-start snapshot
+      if (runVectorSnapshot && Object.keys(runVectorSnapshot).length > 0) {
+        const SOUL_VECTORS: BehaviorVector[] = [
+          'COMBAT_PHYSICAL', 'COMBAT_MAGIC', 'DEFENSE_TANK', 'DEFENSE_EVASION',
+          'RISK_TAKING', 'CAUTION', 'SOCIAL', 'EXPLORATION', 'RESOURCE', 'GLORY',
+        ] as BehaviorVector[];
+        let maxDelta = 0;
+        let deltaLeader: BehaviorVector | null = null;
+        for (const vec of SOUL_VECTORS) {
+          const delta = soul.getVectorScore(vec) - (runVectorSnapshot[vec] ?? 0);
+          if (delta > maxDelta) { maxDelta = delta; deltaLeader = vec; }
+        }
+        if (deltaLeader) return deltaLeader;
+      }
+      return soul.getDominantVector();
+    })(),
   };
 }

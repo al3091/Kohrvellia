@@ -128,6 +128,7 @@ interface CharacterState {
   observeSkill: (skillId: string) => void;
   learnSkill: (skill: Skill) => void;
   useSkill: (skillId: string) => void;
+  tickSkillCooldowns: () => void;
 
   // Actions - Level up
   canLevelUp: () => boolean;
@@ -948,6 +949,21 @@ export const useCharacterStore = create<CharacterState>()(
               skills: state.character.skills.map((s) =>
                 s.id === skillId ? { ...s, currentCooldown: s.cooldown } : s
               ),
+            },
+          };
+        });
+      },
+
+      tickSkillCooldowns: () => {
+        set((state) => {
+          if (!state.character) return state;
+          return {
+            character: {
+              ...state.character,
+              skills: state.character.skills.map((s) => ({
+                ...s,
+                currentCooldown: Math.max(0, s.currentCooldown - 1),
+              })),
             },
           };
         });

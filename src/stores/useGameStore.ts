@@ -105,6 +105,12 @@ interface GameState {
   // First combat protection
   hasHadFirstCombat: boolean;
 
+  // First-use in-game hint overlays (replace removed tutorial screens)
+  hasSeenCombatHint: boolean;
+  hasSeenStatsHint: boolean;
+  hasSeenFalnaHint: boolean;
+  hasSeenLevelingHint: boolean;
+
   // Permanently defeated milestone bosses (meta-progression — survives character deletion)
   defeatedBosses: string[];
 
@@ -132,6 +138,9 @@ interface GameState {
 
   // Actions - First combat
   setHasHadFirstCombat: () => void;
+
+  // Actions - Hint overlays
+  markHintSeen: (hint: 'combat' | 'stats' | 'falna' | 'leveling') => void;
 
   // Actions - Boss defeats (permanent, cross-character meta-progression)
   defeatBoss: (bossId: string) => void;
@@ -174,6 +183,10 @@ export const useGameStore = create<GameState>()(
       hasSkippedTutorial: false,
       tutorialStep: 0,
       hasHadFirstCombat: false,
+      hasSeenCombatHint: false,
+      hasSeenStatsHint: false,
+      hasSeenFalnaHint: false,
+      hasSeenLevelingHint: false,
       defeatedBosses: [],
 
       // Phase
@@ -300,6 +313,14 @@ export const useGameStore = create<GameState>()(
       // First combat
       setHasHadFirstCombat: () => {
         set({ hasHadFirstCombat: true });
+      },
+
+      // Hint overlays
+      markHintSeen: (hint) => {
+        if (hint === 'combat') set({ hasSeenCombatHint: true });
+        else if (hint === 'stats') set({ hasSeenStatsHint: true });
+        else if (hint === 'falna') set({ hasSeenFalnaHint: true });
+        else if (hint === 'leveling') set({ hasSeenLevelingHint: true });
       },
 
       defeatBoss: (bossId) => {

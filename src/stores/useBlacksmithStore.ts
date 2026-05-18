@@ -60,6 +60,9 @@ interface BlacksmithState {
   // Actions - Utility
   getUnidentifiedWeapons: () => Array<{ id: string; weapon: Weapon }>;
   getUpgradeableWeapons: () => Array<{ id: string; weapon: Weapon }>;
+
+  // Reset on new character
+  reset: () => void;
 }
 
 export const useBlacksmithStore = create<BlacksmithState>()(
@@ -348,6 +351,10 @@ export const useBlacksmithStore = create<BlacksmithState>()(
             item.weapon.identified &&
             item.weapon.quality.tier !== 'legendary'
           );
+      },
+
+      reset: () => {
+        set({ reputation: 0, totalGoldSpent: 0, itemsIdentified: 0, itemsUpgraded: 0 });
       },
     }),
     {

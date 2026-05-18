@@ -40,12 +40,12 @@ export default function TutorialBasicsScreen() {
   const handleContinue = () => {
     haptics.medium();
     advanceTutorial();
-    router.push('/tutorial/combat');
+    router.push('/tutorial/death');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <TutorialProgress currentStep={1} totalSteps={6} />
+      <TutorialProgress currentStep={1} totalSteps={2} />
       <View style={styles.header}>
         <Text style={styles.title}>Three Rules</Text>
         <Text style={styles.subtitle}>Every run. No exceptions.</Text>

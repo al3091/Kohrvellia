@@ -106,6 +106,9 @@ interface MarketState {
   // Used by Guild Hall Market Board UI
   getActiveEvents: () => ActiveMarketEvent[];
   getSupplyPressures: () => SupplyPressure[];
+
+  // Reset on new character
+  reset: () => void;
 }
 
 export const useMarketStore = create<MarketState>()(
@@ -198,6 +201,14 @@ export const useMarketStore = create<MarketState>()(
             multiplier: 0.75,
             reason: `Your recent ${cat} sales have suppressed prices in this category.`,
           }));
+      },
+
+      reset: () => {
+        set({
+          activeEvents: [],
+          recentSales: { metal: 0, monster: 0, gem: 0, essence: 0 },
+          floorDescentsInWindow: 0,
+        });
       },
     }),
     {

@@ -85,7 +85,7 @@ export default function FamiliaHomeScreen() {
   const [isResting, setIsResting] = useState(false);
   const [challengeResult, setChallengeResult] = useState<ChallengeResultState | null>(null);
 
-  const { character, hasPendingExcelia, getPendingExcelia, modifyHP, modifySP, getDerivedStatsWithBlessings } = useCharacterStore();
+  const { character, hasPendingExcelia, getPendingExcelia, modifyHP, modifySP, getDerivedStatsWithBlessings, canLevelUp } = useCharacterStore();
   const {
     getPatronDeity,
     getFavorStatus,
@@ -148,12 +148,14 @@ export default function FamiliaHomeScreen() {
 
     modifyHP(hpToHeal);
     modifySP(spToHeal);
+    // Home rest fully restores satiation — you're sleeping and eating at your deity's home
+    useCharacterStore.getState().modifySatiation(100);
 
     setTimeout(() => {
       setIsResting(false);
       Alert.alert(
         'Rest Complete',
-        'You feel refreshed. HP and SP have been fully restored.',
+        'You feel refreshed. HP, SP, and hunger have been fully restored.',
         [{ text: 'OK' }]
       );
     }, 1500);
@@ -262,6 +264,24 @@ export default function FamiliaHomeScreen() {
             <Text style={styles.greetingText}>"{getGreeting()}"</Text>
           </View>
         </View>
+
+        {/* Ascension Available — when all level-up requirements are met */}
+        {canLevelUp() && (
+          <View style={styles.ascensionSection}>
+            <View style={styles.ascensionHeader}>
+              <Text style={styles.ascensionIcon}>🌟</Text>
+              <Text style={styles.ascensionTitle}>ASCENSION AWAITS</Text>
+            </View>
+            <Text style={styles.ascensionText}>
+              {deity
+                ? `"${deity.name} calls to you. Your growth has been witnessed. Come forward."`
+                : '"Your potential calls to you. Come forward."'}
+            </Text>
+            <Pressable style={styles.ascensionButton} onPress={() => { haptics.heavy(); router.push('/town/familia/ascension'); }}>
+              <Text style={styles.ascensionButtonText}>FACE YOUR DEITY</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Pending Excelia / Blessing Rite */}
         {pendingExcelia && (
@@ -619,6 +639,50 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+
+  // Ascension Section — appears when level-up requirements met
+  ascensionSection: {
+    backgroundColor: Colors.text.accent + '18',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.text.accent + '80',
+  },
+  ascensionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  ascensionIcon: {
+    fontSize: 28,
+  },
+  ascensionTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 2,
+  },
+  ascensionText: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  ascensionButton: {
+    backgroundColor: Colors.text.accent,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  ascensionButtonText: {
+    ...Typography.button,
+    color: Colors.background.primary,
+    letterSpacing: 2,
+    fontWeight: '700',
   },
 
   // Blessing Section

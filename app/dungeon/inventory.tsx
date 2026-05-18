@@ -162,7 +162,7 @@ export default function InventoryScreen() {
           <Text style={styles.sectionTitle}>Equipped</Text>
 
           <View style={styles.equipmentGrid}>
-            {(Object.keys(SLOT_INFO) as (keyof Equipment)[]).map((slot) => {
+            {(['weapon'] as (keyof Equipment)[]).map((slot) => {
               const info = SLOT_INFO[slot];
               const item = character.equipment[slot];
               const weapon = slot === 'weapon' ? (item as Weapon | null) : null;
@@ -196,6 +196,16 @@ export default function InventoryScreen() {
                 </Pressable>
               );
             })}
+
+            {/* Armor slots — not yet implemented */}
+            <View style={styles.armorPlaceholder}>
+              <Text style={styles.armorPlaceholderIcon}>🛡️</Text>
+              <View style={styles.armorPlaceholderInfo}>
+                <Text style={styles.armorPlaceholderLabel}>Armor & Accessories</Text>
+                <Text style={styles.armorPlaceholderSub}>Available in a future update</Text>
+              </View>
+              <Text style={styles.armorPlaceholderLock}>🔒</Text>
+            </View>
           </View>
         </View>
 
@@ -508,6 +518,32 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     fontStyle: 'italic',
   },
+  armorPlaceholder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.primary,
+    backgroundColor: Colors.background.secondary,
+    opacity: 0.5,
+    gap: Spacing.md,
+    width: '100%',
+    marginTop: Spacing.xs,
+  },
+  armorPlaceholderIcon: { fontSize: 24 },
+  armorPlaceholderInfo: { flex: 1 },
+  armorPlaceholderLabel: {
+    ...Typography.bodySmall,
+    color: Colors.text.secondary,
+    fontWeight: '600',
+  },
+  armorPlaceholderSub: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+  },
+  armorPlaceholderLock: { fontSize: 16 },
   emptyInventory: {
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.md,

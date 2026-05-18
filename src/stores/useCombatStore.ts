@@ -1042,6 +1042,14 @@ export const useCombatStore = create<CombatState>((set, get) => ({
           }
           break;
         }
+
+        case 'gold_steal': {
+          const goldGain = effect.value + Math.floor(Math.random() * (effect.scaling ?? 10));
+          useCharacterStore.getState().modifyGold(goldGain);
+          get().addLogEntry(`Pickpocketed ${goldGain} gold!`, 'system');
+          results.push(`+${goldGain}G`);
+          break;
+        }
       }
     }
 

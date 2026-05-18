@@ -12,6 +12,8 @@ import { useAchievementStore } from '../stores/useAchievementStore';
 import { useSoulStore } from '../stores/useSoulStore';
 import { useJobStore } from '../stores/useJobStore';
 import { useDeityStore } from '../stores/useDeityStore';
+import { useMarketStore } from '../stores/useMarketStore';
+import { useBlacksmithStore } from '../stores/useBlacksmithStore';
 import { clearWeaponRegistry } from '../data/weaponRegistry';
 
 export function clearAllStores(): void {
@@ -22,4 +24,6 @@ export function clearAllStores(): void {
   useSoulStore.getState().reset();
   useJobStore.getState().reset();
   useDeityStore.getState().reset();
+  useMarketStore.getState().reset();
+  useBlacksmithStore.getState().reset();
 }

@@ -32,6 +32,7 @@ import {
 import { rollStepRamifications } from '../data/ramifications';
 import { useCharacterStore } from './useCharacterStore';
 import { useMarketStore } from './useMarketStore';
+import { useSoulStore } from './useSoulStore';
 
 // ===== MAP GENERATION =====
 
@@ -155,6 +156,17 @@ function generateFloorMap(floorNumber: number): FloorMap {
     }
   }
 
+  // Structural elite: guarantee one elite on penultimate row (gatekeeper before boss)
+  const penultimateRow = ROWS_PER_FLOOR - 2;
+  const hasEliteOnPenultimate = nodes.some(n => n.row === penultimateRow && n.type === 'elite');
+  if (!hasEliteOnPenultimate) {
+    const candidates = nodes.filter(n => n.row === penultimateRow && n.type === 'combat');
+    if (candidates.length > 0) {
+      const target = candidates[Math.floor(rng() * candidates.length)];
+      target.type = 'elite';
+    }
+  }
+
   return {
     floorNumber,
     biome,
@@ -176,14 +188,14 @@ function generateFloorMap(floorNumber: number): FloorMap {
 // Floor-tiered weight profiles
 function getFloorWeightProfile(floorNumber: number): Partial<Record<NodeType, number>> {
   if (floorNumber <= 5) {
-    // Early: more events, fewer elites
-    return { event: 5, elite: -3, rest: 1 };
+    // Early: slightly more events (narrative onboarding), fewer elites
+    return { event: 3, elite: -3, rest: 1 };
   } else if (floorNumber <= 15) {
-    // Mid: more elites, fewer events
-    return { elite: 4, event: -3, mystery: 2 };
+    // Mid: danger ramps up, events fade, mystery grows
+    return { elite: 4, event: -4, mystery: 2 };
   } else {
-    // Deep: survival mode — elites spike, rest gets rare, mystery spikes
-    return { elite: 6, rest: -2, mystery: 4, event: -2 };
+    // Deep: survival mode — elites spike, rest becomes a luxury, mystery peaks
+    return { elite: 6, rest: -1, mystery: 4, event: -4 };
   }
 }
 
@@ -208,17 +220,20 @@ function selectNodeType(
 
   // Row-position adjustments
   if (row <= 2) {
-    weights.combat = Math.max(0, weights.combat - 10);
+    // Near start: flavor over danger
+    weights.combat = Math.max(0, weights.combat - 15);
     weights.event += 5;
+    weights.mystery += 3;
   }
-  if (row === 3 || row === 4) {
-    weights.rest += 2;
+  if (row >= 3 && row <= 5) {
+    // Early-middle: slight discovery opportunity
     weights.mystery += 2;
   }
+  // Penultimate row: NO more guaranteed rest before boss.
+  // Structural elite is forced after generation (see generateFloorMap).
+  // Rest gets no bonus — let weight 2 decide fate.
   if (row === ROWS_PER_FLOOR - 2) {
-    weights.rest += 6;
-    weights.elite += 5;
-    weights.combat = Math.max(0, weights.combat - 15);
+    weights.combat = Math.max(0, weights.combat - 5); // slight deemphasis only
   }
 
   // Anti-cluster guards
@@ -253,50 +268,15 @@ function selectNodeType(
  * Select what a mystery node reveals to when entered
  * Mystery nodes have a chance to reveal good or bad outcomes
  */
-function selectMysteryRevealType(floorNumber: number, rng: () => number): NodeType {
-  // Mystery reveal weights - different from normal node weights
-  // More chance for interesting outcomes (good or bad)
-  const revealWeights: Record<NodeType, number> = {
-    start: 0,
-    mystery: 0, // Can't reveal to another mystery
-    boss: 0,
-    shop: 3, // Rare wandering merchant in mystery reveals
-    // Positive outcomes (40% total)
-    treasure: 12, // Higher chance than normal - mystery reward
-    rest: 10,
-    shrine: 8,
-    event: 10, // Events can be positive
-    // Neutral/Negative outcomes (60% total)
-    combat: 38,
-    elite: 15, // Higher elite chance - mystery can be dangerous
-  };
-
-  // Floor adjustments
-  if (floorNumber >= 10) {
-    // Deeper floors: more elites in mystery
-    revealWeights.elite += 5;
-    revealWeights.combat -= 5;
-  }
-
-  if (floorNumber >= 5) {
-    // More shrine encounters on deeper floors
-    revealWeights.shrine += 3;
-  }
-
-  // Calculate total and select
-  const validTypes: NodeType[] = ['combat', 'elite', 'treasure', 'event', 'rest', 'shrine'];
-  const totalWeight = validTypes.reduce((sum, type) => sum + revealWeights[type], 0);
-
-  let roll = rng() * totalWeight;
-
-  for (const type of validTypes) {
-    roll -= revealWeights[type];
-    if (roll <= 0) {
-      return type;
-    }
-  }
-
-  return 'combat'; // Fallback
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function selectMysteryRevealType(_floorNumber: number, rng: () => number): NodeType {
+  // Mystery rooms are world-building — never random combat.
+  // They reveal as event (60%), shrine (20%), or treasure (20%).
+  // Players who explore everything find narrative and loot, not surprise fights.
+  const roll = rng();
+  if (roll < 0.60) return 'event';
+  if (roll < 0.80) return 'shrine';
+  return 'treasure';
 }
 
 /**
@@ -369,8 +349,13 @@ interface DungeonState {
 
   // Per-run event flags (multi-step events)
   setRunFlag: (flag: string) => void;
+  clearRunFlag: (flag: string) => void;
   hasRunFlag: (flag: string) => boolean;
   getRunFlags: () => string[];
+
+  // Event weapon anti-farming (4-floor cooldown between grants)
+  canGrantEventWeapon: () => boolean;
+  recordEventWeaponGrant: () => void;
 
   // Boss encounter snapshot (personalized dialogue)
   bossSnapshot: import('../types/PlayerSnapshot').PlayerSnapshot | null;
@@ -406,6 +391,18 @@ export const useDungeonStore = create<DungeonState>()(
       // Run lifecycle
       startNewRun: () => {
         const newRun = createDungeonRun();
+
+        // Snapshot soul vector scores so boss dialogue reads only this run's behavioral delta
+        const soulStore = useSoulStore.getState();
+        const SOUL_VECTORS = [
+          'COMBAT_PHYSICAL', 'COMBAT_MAGIC', 'DEFENSE_TANK', 'DEFENSE_EVASION',
+          'RISK_TAKING', 'CAUTION', 'SOCIAL', 'EXPLORATION', 'RESOURCE', 'GLORY',
+        ] as const;
+        const snapshot: Record<string, number> = {};
+        for (const vec of SOUL_VECTORS) {
+          snapshot[vec] = soulStore.getVectorScore(vec) ?? 0;
+        }
+        newRun.soulVectorSnapshot = snapshot;
 
         // Generate floor 1 and start there
         const floor1 = generateFloorMap(1);
@@ -492,6 +489,32 @@ export const useDungeonStore = create<DungeonState>()(
         set((state) => ({
           currentRun: state.currentRun
             ? { ...state.currentRun, runFlags: [...(state.currentRun.runFlags ?? []), flag] }
+            : state.currentRun,
+        }));
+      },
+
+      clearRunFlag: (flag) => {
+        const { currentRun } = get();
+        if (!currentRun) return;
+        set((state) => ({
+          currentRun: state.currentRun
+            ? { ...state.currentRun, runFlags: (state.currentRun.runFlags ?? []).filter(f => f !== flag) }
+            : state.currentRun,
+        }));
+      },
+
+      canGrantEventWeapon: () => {
+        const { currentRun } = get();
+        if (!currentRun) return true;
+        return currentRun.currentFloor - (currentRun.lastEventWeaponFloor ?? 0) >= 4;
+      },
+
+      recordEventWeaponGrant: () => {
+        const { currentRun } = get();
+        if (!currentRun) return;
+        set((state) => ({
+          currentRun: state.currentRun
+            ? { ...state.currentRun, lastEventWeaponFloor: state.currentRun.currentFloor }
             : state.currentRun,
         }));
       },

@@ -18,7 +18,8 @@ export type SkillEffectType =
   | 'cleanse'          // Remove negative status from self
   | 'drain'            // Deal damage and heal
   | 'shield'           // Temporary HP shield
-  | 'flee';            // Guaranteed escape
+  | 'flee'             // Guaranteed escape
+  | 'gold_steal';      // Steal gold from enemy
 
 // Skill targeting
 export type SkillTarget =

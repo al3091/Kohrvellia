@@ -844,13 +844,20 @@ export function getRandomTrapForFloor(floorNumber: number): TrapData {
  */
 export function performStatCheck(playerStatPoints: number, dc: number): { success: boolean; margin: number } {
   const roll = Math.floor(Math.random() * 20) + 1;
-  // Cap stat contribution so even maxed stats can fail high-DC checks (H grade ≈ 200+ pts uncapped = always win)
-  const cappedBonus = Math.min(playerStatPoints, 50);
-  const total = roll + cappedBonus;
-  const adjustedDC = dc + Math.floor(Math.random() * 10) - 5;
 
+  // Skill bonus scales meaningfully with character progression:
+  // Grade I (~15pts): +0 bonus  | Grade D (~500pts): +25 bonus
+  // Grade A (~800pts): +40 bonus | Grade SSS (~990pts): +49 bonus (hard cap)
+  // This makes specialists reliably pass their stat checks while keeping
+  // hard checks (DC 50+) challenging even for masters.
+  const skillBonus = Math.min(Math.floor(playerStatPoints / 20), 49);
+
+  const total = roll + skillBonus;
+
+  // Fixed DC — no more random ±5 variance that swamps skill.
+  // DC spread is already encoded per-event (25–60 range); random DC noise was canceling skill investment.
   return {
-    success: total >= adjustedDC,
-    margin: total - adjustedDC,
+    success: total >= dc,
+    margin: total - dc,
   };
 }

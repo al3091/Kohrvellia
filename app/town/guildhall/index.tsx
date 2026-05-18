@@ -3,7 +3,7 @@
  * Achievement quest board, advisor NPC, and deity approval for level-up
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -217,9 +217,14 @@ function LevelUpPanel({
       )}
 
       {canLevel && (
-        <Pressable style={styles.levelUpBtn} onPress={onLevelUp}>
-          <Text style={styles.levelUpBtnText}>ASCEND TO NEXT LEVEL</Text>
-        </Pressable>
+        <View style={styles.ascensionReadyPanel}>
+          <Text style={styles.ascensionReadyText}>
+            Your potential calls to you. Return to your Familia.
+          </Text>
+          <Pressable style={styles.visitFamiliaBtn} onPress={onLevelUp}>
+            <Text style={styles.visitFamiliaBtnText}>Visit Familia Home →</Text>
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -230,12 +235,17 @@ function LevelUpPanel({
 export default function GuildHallScreen() {
   const router = useRouter();
   const haptics = useHaptics();
-  const { character, canLevelUp, setDeityApproval, performLevelUp, modifyGold, removeFromInventory } = useCharacterStore();
+  const { character, canLevelUp, setDeityApproval, modifyGold, removeFromInventory } = useCharacterStore();
   const { getMultiplier, getActiveEvents, getSupplyPressures, recordSale } = useMarketStore();
   const gameStore = useGameStore.getState();
   const achievementStore = useAchievementStore();
 
-  const [confirmLevelUpVisible, setConfirmLevelUpVisible] = useState(false);
+  const [showLevelingHint, setShowLevelingHint] = useState(false);
+  const { hasSeenLevelingHint, markHintSeen } = useGameStore();
+
+  useEffect(() => {
+    if (!hasSeenLevelingHint) setShowLevelingHint(true);
+  }, []);
 
   if (!character) {
     return (
@@ -302,19 +312,8 @@ export default function GuildHallScreen() {
   };
 
   const handleLevelUp = () => {
-    haptics.heavy();
-    setConfirmLevelUpVisible(true);
-  };
-
-  const confirmLevel = () => {
-    setConfirmLevelUpVisible(false);
-    performLevelUp();
-    haptics.success();
-    Alert.alert(
-      'Ascension Complete',
-      `${character.name} has advanced to Level ${character.level + 1}. Your stats reset — the next chapter begins.`,
-      [{ text: 'Continue', onPress: () => router.back() }]
-    );
+    haptics.medium();
+    router.push('/town/familia');
   };
 
   return (
@@ -651,27 +650,31 @@ export default function GuildHallScreen() {
         </View>
       </ScrollView>
 
-      {/* Level-Up Confirm Modal */}
-      <Modal visible={confirmLevelUpVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Ascension</Text>
-            <Text style={styles.modalBody}>
-              You are about to advance to Level {character.level + 1}.{'\n\n'}
-              Your stat points will reset to Grade I. All progress carries forward as permanent bonuses that scale with future gains.{'\n\n'}
-              This cannot be undone.
-            </Text>
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={styles.modalCancel}
-                onPress={() => { haptics.light(); setConfirmLevelUpVisible(false); }}
-              >
-                <Text style={styles.modalCancelText}>Wait</Text>
-              </Pressable>
-              <Pressable style={styles.modalConfirm} onPress={confirmLevel}>
-                <Text style={styles.modalConfirmText}>Ascend</Text>
-              </Pressable>
+      {/* The Ascent — first-use leveling hint overlay */}
+      <Modal visible={showLevelingHint} transparent animationType="fade">
+        <View style={styles.hintOverlay}>
+          <View style={styles.hintCard}>
+            <Text style={styles.hintCardTitle}>The Ascent</Text>
+            <Text style={styles.hintCardSubtitle}>Level up is earned. Not given.</Text>
+            <View style={styles.hintDivider} />
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>1 — STATS</Text>
+              <Text style={styles.hintItemBody}>6 of 8 stats must reach Grade D. Two pillars may be sacrificed to your build.</Text>
             </View>
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>2 — ACHIEVEMENT</Text>
+              <Text style={styles.hintItemBody}>Complete one great deed from this board. Standard to Mythic — harder choices, greater stat rewards.</Text>
+            </View>
+            <View style={styles.hintItem}>
+              <Text style={styles.hintItemLabel}>3 — DEITY APPROVAL</Text>
+              <Text style={styles.hintItemBody}>Your god must recognize your growth. Favor matters. Don't disappoint them.</Text>
+            </View>
+            <Pressable
+              style={styles.hintButton}
+              onPress={() => { markHintSeen('leveling'); setShowLevelingHint(false); }}
+            >
+              <Text style={styles.hintButtonText}>Got it</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -859,6 +862,33 @@ const styles = StyleSheet.create({
     color: Colors.background.primary,
     fontWeight: 'bold',
     letterSpacing: 2,
+  },
+  ascensionReadyPanel: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.text.accent + '12',
+    borderWidth: 1,
+    borderColor: Colors.text.accent + '60',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  ascensionReadyText: {
+    ...Typography.bodySmall,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  visitFamiliaBtn: {
+    backgroundColor: Colors.text.accent,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  visitFamiliaBtnText: {
+    ...Typography.button,
+    color: Colors.background.primary,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
 
   // Sections
@@ -1293,6 +1323,60 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.background.primary,
     fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  hintOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Padding.screen.horizontal,
+  },
+  hintCard: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: BorderWidth.thin,
+    borderColor: Colors.border.accent,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    width: '100%',
+  },
+  hintCardTitle: {
+    ...Typography.h4,
+    color: Colors.text.accent,
+    letterSpacing: 1,
+  },
+  hintCardSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+  },
+  hintDivider: {
+    height: 1,
+    backgroundColor: Colors.border.primary,
+  },
+  hintItem: {
+    gap: Spacing.xs,
+  },
+  hintItemLabel: {
+    ...Typography.label,
+    color: Colors.text.muted,
+    fontSize: 11,
+    letterSpacing: 2,
+  },
+  hintItemBody: {
+    ...Typography.bodySmall,
+    color: Colors.text.primary,
+  },
+  hintButton: {
+    backgroundColor: Colors.domain.death,
+    borderWidth: 1,
+    borderColor: Colors.text.accent,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  hintButtonText: {
+    ...Typography.button,
+    color: Colors.text.accent,
     letterSpacing: 2,
   },
 });

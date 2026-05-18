@@ -19,10 +19,6 @@ export default function TutorialLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="basics" />
-      <Stack.Screen name="combat" />
-      <Stack.Screen name="stats" />
-      <Stack.Screen name="falna" />
-      <Stack.Screen name="leveling" />
       <Stack.Screen name="death" />
     </Stack>
   );

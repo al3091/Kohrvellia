@@ -400,7 +400,8 @@ export default function FloorScreen() {
         soul,
         patronDeityName,
         deityDomain,
-        milestoneBoss?.id
+        milestoneBoss?.id,
+        useDungeonStore.getState().currentRun?.soulVectorSnapshot ?? {}
       );
       useDungeonStore.getState().setBossSnapshot(snapshot);
       router.push('/dungeon/boss-encounter');
