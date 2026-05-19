@@ -86,6 +86,13 @@ export default function GeneralStoreScreen() {
   const npc = SHOP_NPCS.general;
   const reputation = getReputation('general');
   const discount = getReputationDiscount(reputation);
+
+  const getNpcGreeting = () => {
+    if (reputation <= -10) return '"Get what you need and leave. I am watching you."';
+    if (reputation <= -5) return '"...What do you want."';
+    if (reputation <= -1) return '"Hmm. You again."';
+    return `"${npc.greeting}"`;
+  };
   const chaGrade = character?.stats?.CHA?.grade ?? 'I';
   const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
@@ -205,7 +212,9 @@ export default function GeneralStoreScreen() {
           <Text style={styles.npcIcon}>{npc.icon}</Text>
           <View style={styles.npcInfo}>
             <Text style={styles.npcName}>{npc.name}</Text>
-            <Text style={styles.npcGreeting}>"{npc.greeting}"</Text>
+            <Text style={[styles.npcGreeting, reputation <= -5 && { color: Colors.ui.error }]}>
+              {getNpcGreeting()}
+            </Text>
           </View>
         </View>
 

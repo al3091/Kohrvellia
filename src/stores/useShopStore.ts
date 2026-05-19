@@ -47,6 +47,10 @@ interface ShopStoreState extends ShopState {
   // Session purchase counts (not persisted — resets on app reload / stock refresh)
   sessionPurchaseCounts: Record<string, number>;
 
+  // Tracks how many times this session the player used grade B+ CHA haggling per shop
+  // When it hits the threshold → rep penalty
+  sessionHaggleCount: Record<'general' | 'equipment', number>;
+
   // Actions - Stock Management
   refreshStock: () => void;
   shouldRefreshStock: () => boolean;
@@ -90,6 +94,7 @@ export const useShopStore = create<ShopStoreState>()(
       totalRunsAtRefresh: 0,
       npcReputation: DEFAULT_NPC_REPUTATION,
       sessionPurchaseCounts: {},
+      sessionHaggleCount: { general: 0, equipment: 0 },
 
       // Check if stock should be refreshed
       shouldRefreshStock: () => {
@@ -180,7 +185,7 @@ export const useShopStore = create<ShopStoreState>()(
 
       // Reset session surcharges (call on dungeon return to town)
       resetSessionCounts: () => {
-        set({ sessionPurchaseCounts: {} });
+        set({ sessionPurchaseCounts: {}, sessionHaggleCount: { general: 0, equipment: 0 } });
       },
 
       // Purchase a consumable
@@ -261,6 +266,17 @@ export const useShopStore = create<ShopStoreState>()(
           get().addReputation('general', 1);
         }
 
+        // CHA haggling irritation: grade B+ (≥12%) wears out the merchant's goodwill
+        if (chaDiscount >= 0.12) {
+          const currentHaggle = get().sessionHaggleCount.general + 1;
+          const threshold = chaDiscount >= 0.18 ? 2 : 3; // SS/SSS grade: 2 uses; B-A grade: 3 uses
+          set((s) => ({ sessionHaggleCount: { ...s.sessionHaggleCount, general: currentHaggle } }));
+          if (currentHaggle >= threshold) {
+            get().addReputation('general', -1);
+            set((s) => ({ sessionHaggleCount: { ...s.sessionHaggleCount, general: 0 } }));
+          }
+        }
+
         return {
           success: true,
           goldSpent: totalPrice,
@@ -336,6 +352,17 @@ export const useShopStore = create<ShopStoreState>()(
         // Reputation gain for purchases over 100g
         if (finalPrice >= 100) {
           get().addReputation('equipment', 1);
+        }
+
+        // CHA haggling irritation: same pattern as general store
+        if (chaDiscount >= 0.12) {
+          const currentHaggle = get().sessionHaggleCount.equipment + 1;
+          const threshold = chaDiscount >= 0.18 ? 2 : 3;
+          set((s) => ({ sessionHaggleCount: { ...s.sessionHaggleCount, equipment: currentHaggle } }));
+          if (currentHaggle >= threshold) {
+            get().addReputation('equipment', -1);
+            set((s) => ({ sessionHaggleCount: { ...s.sessionHaggleCount, equipment: 0 } }));
+          }
         }
 
         return {

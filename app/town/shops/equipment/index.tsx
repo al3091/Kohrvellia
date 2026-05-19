@@ -162,6 +162,13 @@ export default function EquipmentShopScreen() {
   const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
 
+  const getNpcGreeting = () => {
+    if (reputation <= -10) return '"Touch nothing. I am only serving you because I have to."';
+    if (reputation <= -5) return '"You have some nerve showing up again."';
+    if (reputation <= -1) return '"Hmm. Keep it brief."';
+    return `"${npc.greeting}"`;
+  };
+
   // Refresh stock if needed
   useEffect(() => {
     if (shouldRefreshStock()) {
@@ -323,7 +330,9 @@ export default function EquipmentShopScreen() {
           <Text style={styles.npcIcon}>{npc.icon}</Text>
           <View style={styles.npcInfo}>
             <Text style={styles.npcName}>{npc.name}</Text>
-            <Text style={styles.npcGreeting}>"{npc.greeting}"</Text>
+            <Text style={[styles.npcGreeting, reputation <= -5 && { color: Colors.ui.error }]}>
+              {getNpcGreeting()}
+            </Text>
           </View>
         </View>
 
