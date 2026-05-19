@@ -95,6 +95,10 @@ export default function FamiliaHomeScreen() {
     hasActiveChallenge,
     issueChallenge,
     abandonChallenge,
+    pendingChallengeReward,
+    claimChallengeReward,
+    isPatronEvicted,
+    evictPatron,
   } = useDeityStore();
 
   // Fallback: If deity relationship isn't initialized, try to initialize from character
@@ -103,6 +107,41 @@ export default function FamiliaHomeScreen() {
       initializeDeityRelationship(character.patronDeityId);
     }
   }, [relationship, character?.patronDeityId]);
+
+  // Show pending challenge reward if one was earned mid-dungeon
+  React.useEffect(() => {
+    if (pendingChallengeReward) {
+      const { challengeName, favorGain, bonusStatPoints } = pendingChallengeReward;
+      setChallengeResult({ kind: 'completed', challengeName, favorDelta: favorGain });
+      claimChallengeReward();
+      if (bonusStatPoints > 0) {
+        Alert.alert(
+          'Challenge Reward',
+          `${challengeName} complete!\n+${favorGain} Favor granted.\n+${bonusStatPoints} stat excelia added to your Falna.`,
+          [{ text: 'Praise be.' }]
+        );
+      }
+    }
+  }, [pendingChallengeReward]);
+
+  // Eviction: deity has withdrawn at ABANDONED tier — show farewell, clear patron
+  React.useEffect(() => {
+    if (isPatronEvicted && relationship) {
+      const deityName = getPatronDeity()?.name ?? 'Your patron';
+      Alert.alert(
+        `${deityName} Has Withdrawn`,
+        `Your Falna flickers and fades. ${deityName} has severed the contract — your favor was too low to sustain their blessing.\n\nYou stand alone in the Tower. Seek a new patron at the Guild Hall or continue without divine aid.`,
+        [
+          {
+            text: 'Accept Your Fate',
+            style: 'destructive',
+            onPress: () => evictPatron(),
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+  }, [isPatronEvicted, relationship]);
 
   const deity = getPatronDeity();
   const favorStatus = getFavorStatus();

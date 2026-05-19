@@ -40,6 +40,12 @@ interface DeityState {
   // Completed challenge IDs (persists across sessions)
   completedChallengeIds: string[];
 
+  // Pending reward to show in Familia Home after a challenge completes mid-dungeon
+  pendingChallengeReward: { challengeName: string; favorGain: number; bonusStatPoints: number } | null;
+
+  // Set when favor drops to ABANDONED — triggers eviction modal in Familia Home
+  isPatronEvicted: boolean;
+
   // Actions - Setup
   setPatronDeity: (deityId: string) => void;
   clearPatronDeity: () => void;
@@ -78,6 +84,10 @@ interface DeityState {
   hasActiveChallenge: () => boolean;
   /** Route a game event to challenge progress if the active challenge matches the event type */
   recordChallengeEvent: (eventType: string, amount?: number) => void;
+  /** Dismiss and clear the pending challenge reward notification */
+  claimChallengeReward: () => void;
+  /** Execute eviction: clear patron relationship */
+  evictPatron: () => void;
 }
 
 export const useDeityStore = create<DeityState>()(
@@ -85,6 +95,8 @@ export const useDeityStore = create<DeityState>()(
     (set, get) => ({
       relationship: null,
       completedChallengeIds: [],
+      pendingChallengeReward: null,
+      isPatronEvicted: false,
 
       // Setup
       setPatronDeity: (deityId) => {
@@ -114,6 +126,12 @@ export const useDeityStore = create<DeityState>()(
             },
           };
         });
+
+        // Eviction: if favor drops to ABANDONED tier, flag for eviction modal in Familia Home
+        const updatedFavor = get().relationship?.favor ?? 0;
+        if (updatedFavor <= FAVOR_STATUS.ABANDONED.max && !get().isPatronEvicted) {
+          set({ isPatronEvicted: true });
+        }
 
         // Track high-favor milestone in soul system (target is 80, so set to actual favor value)
         const newFavor = get().relationship?.favor;
@@ -285,6 +303,21 @@ export const useDeityStore = create<DeityState>()(
         // Soul: challenge completed
         useSoulStore.getState().incrementBehavement('glory_challenge_complete');
         void relationship; // suppress unused warning
+
+        // Store reward details so Familia Home can display them on next visit
+        const updatedState2 = get();
+        const completedDeity = updatedState2.getPatronDeity();
+        const lastId = updatedState2.completedChallengeIds[updatedState2.completedChallengeIds.length - 1];
+        const completedChallenge = completedDeity?.challenges.find((c) => c.id === lastId);
+        if (completedChallenge) {
+          set({
+            pendingChallengeReward: {
+              challengeName: completedChallenge.name,
+              favorGain: completedChallenge.favorGain ?? 15,
+              bonusStatPoints: completedChallenge.bonusStatPoints ?? 0,
+            },
+          });
+        }
       },
 
       failChallenge: () => {
@@ -379,6 +412,14 @@ export const useDeityStore = create<DeityState>()(
             },
           };
         });
+      },
+
+      claimChallengeReward: () => {
+        set({ pendingChallengeReward: null });
+      },
+
+      evictPatron: () => {
+        set({ relationship: null, isPatronEvicted: false });
       },
 
       // Getters
