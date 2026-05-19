@@ -589,6 +589,16 @@ import { EAST_ASIAN_DEITY_RELICS } from './deityRelics_eastAsian';
 import { WESTERN_DEITY_RELICS } from './deityRelics_western';
 import { SOUTH_DEITY_RELICS } from './deityRelics_south';
 import { DARK_DEITY_RELICS } from './deityRelics_dark';
+import { GREEK_REMAINING_RELICS } from './deityRelics_greek_remaining';
+import { EGYPTIAN_REMAINING_RELICS } from './deityRelics_egyptian_remaining';
+import { JAPANESE_REMAINING_RELICS } from './deityRelics_japanese_remaining';
+import { CELTIC_REMAINING_RELICS } from './deityRelics_celtic_remaining';
+import { MESOPOTAMIAN_REMAINING_RELICS } from './deityRelics_mesopotamian_remaining';
+import { HINDU_REMAINING_RELICS } from './deityRelics_hindu_remaining';
+import { SLAVIC_REMAINING_RELICS } from './deityRelics_slavic_remaining';
+import { AZTEC_REMAINING_RELICS } from './deityRelics_aztec_remaining';
+import { GOETIA_REMAINING_RELICS } from './deityRelics_goetia_remaining';
+import { FALLEN_REMAINING_RELICS } from './deityRelics_fallen_remaining';
 
 export const ALL_DEITY_RELICS: DeityRelicPair[] = [
   // Milestone Bosses (Slavic-adjacent)
@@ -596,21 +606,31 @@ export const ALL_DEITY_RELICS: DeityRelicPair[] = [
   // Greek (zeus, athena, ares here; rest in deityRelics_greek)
   ZEUS_RELICS, ATHENA_RELICS, ARES_RELICS,
   ...GREEK_DEITY_RELICS,
+  ...GREEK_REMAINING_RELICS,
   // Norse (odin, thor here; rest in deityRelics_norse)
   ODIN_RELICS, THOR_RELICS,
   ...NORSE_DEITY_RELICS,
   // Egyptian (ra, anubis here; rest in deityRelics_egyptian)
   RA_RELICS, ANUBIS_RELICS,
   ...EGYPTIAN_DEITY_RELICS,
-  // East Asian (Japanese + Chinese)
+  ...EGYPTIAN_REMAINING_RELICS,
+  // East Asian (Japanese + Chinese; remaining Japanese in deityRelics_japanese_remaining)
   ...EAST_ASIAN_DEITY_RELICS,
-  // Western (Celtic + Mesopotamian)
+  ...JAPANESE_REMAINING_RELICS,
+  // Western (Celtic + Mesopotamian; remaining in separate files)
   ...WESTERN_DEITY_RELICS,
-  // South (Hindu + Slavic non-boss + Aztec)
+  ...CELTIC_REMAINING_RELICS,
+  ...MESOPOTAMIAN_REMAINING_RELICS,
+  // South (Hindu + Slavic non-boss + Aztec; remaining in separate files)
   ...SOUTH_DEITY_RELICS,
-  // Dark (Ars Goetia + Fallen Angels; astaroth here)
+  ...HINDU_REMAINING_RELICS,
+  ...SLAVIC_REMAINING_RELICS,
+  ...AZTEC_REMAINING_RELICS,
+  // Dark (Ars Goetia + Fallen Angels; astaroth here; remaining in separate files)
   ASTAROTH_RELIC_EXAMPLE,
   ...DARK_DEITY_RELICS,
+  ...GOETIA_REMAINING_RELICS,
+  ...FALLEN_REMAINING_RELICS,
 ];
 
 export function getDeityRelics(deityId: string): DeityRelicPair | undefined {
