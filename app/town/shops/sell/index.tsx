@@ -21,7 +21,6 @@ import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../../src/con
 import { useCharacterStore } from '../../../../src/stores/useCharacterStore';
 import { useInventoryStore } from '../../../../src/stores/useInventoryStore';
 import { useHaptics } from '../../../../src/hooks/useHaptics';
-import { useShopStore } from '../../../../src/stores/useShopStore';
 import { getConsumableById } from '../../../../src/data/consumables';
 import { getMaterialById, MATERIAL_TIER_COLORS } from '../../../../src/data/materials';
 import { RARITY_COLORS } from '../../../../src/types/Consumable';
@@ -75,7 +74,6 @@ export default function SellScreen() {
   const [selectedItem, setSelectedItem] = useState<SellableItem | null>(null);
   const [sellQuantity, setSellQuantity] = useState(1);
   const [showModal, setShowModal] = useState(false);
-  const [sessionSoldCount, setSessionSoldCount] = useState(0);
 
   const gold = getGold();
 
@@ -170,38 +168,15 @@ export default function SellScreen() {
 
     const totalGold = selectedItem.sellPrice * sellQuantity;
 
-    // Remove items and add gold
     removeItem(selectedItem.item.id, sellQuantity);
     addGold(totalGold);
 
-    // Dump detection: flooding the merchant degrades the relationship
-    const newSoldCount = sessionSoldCount + sellQuantity;
-    setSessionSoldCount(newSoldCount);
-
-    if (newSoldCount >= 10 && sessionSoldCount < 10) {
-      useShopStore.getState().addReputation('general', -2);
-      haptics.warning();
-      Alert.alert(
-        'Sale Complete',
-        `You sold ${sellQuantity}x ${selectedItem.name} for ${totalGold} gold.\n\nThe merchant looks exhausted. "Do you have an entire dungeon to offload? I am not a warehouse."`,
-        [{ text: 'Sorry.', onPress: () => setShowModal(false) }]
-      );
-    } else if (newSoldCount >= 5 && sessionSoldCount < 5) {
-      useShopStore.getState().addReputation('general', -1);
-      haptics.warning();
-      Alert.alert(
-        'Sale Complete',
-        `You sold ${sellQuantity}x ${selectedItem.name} for ${totalGold} gold.\n\nThe merchant sighs. "You are bringing a lot today. I am losing space."`,
-        [{ text: 'OK', onPress: () => setShowModal(false) }]
-      );
-    } else {
-      haptics.success();
-      Alert.alert(
-        'Sale Complete',
-        `You sold ${sellQuantity}x ${selectedItem.name} for ${totalGold} gold.`,
-        [{ text: 'OK', onPress: () => setShowModal(false) }]
-      );
-    }
+    haptics.success();
+    Alert.alert(
+      'Sale Complete',
+      `You sold ${sellQuantity}x ${selectedItem.name} for ${totalGold} gold.`,
+      [{ text: 'OK', onPress: () => setShowModal(false) }]
+    );
   };
 
   const handleBack = () => {

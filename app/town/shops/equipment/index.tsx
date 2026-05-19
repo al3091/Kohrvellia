@@ -3,7 +3,7 @@
  * Buy procedurally generated weapons and armor
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -146,6 +146,9 @@ export default function EquipmentShopScreen() {
     shouldRefreshStock,
     equipmentStock,
     deepestFloorAtRefresh,
+    recordVisitEnd,
+    getExpectedSpend,
+    belowExpectationScore,
   } = useShopStore();
   const { getGold, canAddItem } = useInventoryStore();
   const bestFloorReached = useGameStore((s) => s.bestFloorReached);
@@ -155,19 +158,36 @@ export default function EquipmentShopScreen() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'weapons' | 'armor'>('all');
   const [statFilter, setStatFilter] = useState<WeaponCategory | 'all'>('all');
 
+  // Track how much was spent this visit for expectation accounting
+  const spentThisVisit = useRef(0);
+
   const npc = SHOP_NPCS.equipment;
   const reputation = getReputation('equipment');
   const discount = getReputationDiscount(reputation);
   const chaGrade = character?.stats?.CHA?.grade ?? 'I';
   const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
+  const characterLevel = character?.level ?? 1;
+  const expectedSpend = getExpectedSpend('equipment', characterLevel);
+  const disappointmentScore = belowExpectationScore.equipment;
 
   const getNpcGreeting = () => {
     if (reputation <= -10) return '"Touch nothing. I am only serving you because I have to."';
     if (reputation <= -5) return '"You have some nerve showing up again."';
     if (reputation <= -1) return '"Hmm. Keep it brief."';
+    if (expectedSpend > 0 && disappointmentScore >= 2) return '"Back again without buying? My weapons are not decorations."';
+    if (expectedSpend > 0 && disappointmentScore >= 1) return '"I hope you have gold to spend this time."';
     return `"${npc.greeting}"`;
   };
+
+  // Report visit outcome when leaving the screen
+  useEffect(() => {
+    return () => {
+      if (character) {
+        recordVisitEnd('equipment', spentThisVisit.current, character.level);
+      }
+    };
+  }, []);
 
   // Refresh stock if needed
   useEffect(() => {
@@ -237,6 +257,7 @@ export default function EquipmentShopScreen() {
     const result = purchaseEquipment(selectedIndex, chaDiscount);
 
     if (result.success) {
+      spentThisVisit.current += result.goldSpent ?? 0;
       haptics.success();
       const stockItem = equipmentStock[selectedIndex];
       const itemName = isArmorItem(stockItem.item)

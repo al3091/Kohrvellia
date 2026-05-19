@@ -48,8 +48,14 @@ interface ShopStoreState extends ShopState {
   sessionPurchaseCounts: Record<string, number>;
 
   // Tracks how many times this session the player used grade B+ CHA haggling per shop
-  // When it hits the threshold → rep penalty
   sessionHaggleCount: Record<'general' | 'equipment', number>;
+
+  // Lifetime gold spent per shop (persisted — merchant memory)
+  lifetimeGoldSpent: Record<'general' | 'equipment', number>;
+
+  // Disappointment counter: increments when player spends below expectation.
+  // Threshold of 6 (see recordVisitEnd for scoring) → -1 rep, reset.
+  belowExpectationScore: Record<'general' | 'equipment', number>;
 
   // Actions - Stock Management
   refreshStock: () => void;
@@ -67,6 +73,10 @@ interface ShopStoreState extends ShopState {
   getConsumablePrice: (consumableId: string, quantity: number) => number;
   getEquipmentPrice: (index: number) => number;
 
+  // Actions - Visit tracking (call on screen unmount with what was spent)
+  recordVisitEnd: (shopType: 'general' | 'equipment', goldSpent: number, characterLevel: number) => void;
+  getExpectedSpend: (shopType: 'general' | 'equipment', characterLevel: number) => number;
+
   // Actions - Reputation
   getReputation: (shopType: 'general' | 'equipment' | 'blacksmith') => number;
   addReputation: (shopType: 'general' | 'equipment' | 'blacksmith', amount: number) => void;
@@ -83,6 +93,30 @@ const DEFAULT_NPC_REPUTATION: NPCReputation = {
   blacksmith: 1,
 };
 
+// ===== EXPECTATION SYSTEM =====
+// Minimum gold per visit the merchant expects, based on lifetime relationship + character level.
+// Exponential: once you've spent a lot, they expect you to keep spending at that pace.
+function calcExpectedSpend(lifetimeSpent: number, characterLevel: number): number {
+  if (lifetimeSpent < 300) return 0; // Grace period
+
+  let base: number;
+  if (lifetimeSpent < 1000) base = 80;
+  else if (lifetimeSpent < 3000) base = 200;
+  else if (lifetimeSpent < 8000) base = 500;
+  else if (lifetimeSpent < 20000) base = 1200;
+  else base = 3000;
+
+  // High-level adventurers are expected to spend proportionally more
+  const levelMult =
+    characterLevel <= 2 ? 0.5
+    : characterLevel <= 4 ? 0.75
+    : characterLevel <= 6 ? 1.0
+    : characterLevel <= 8 ? 1.5
+    : 2.0;
+
+  return Math.floor(base * levelMult);
+}
+
 export const useShopStore = create<ShopStoreState>()(
   persist(
     (set, get) => ({
@@ -95,6 +129,8 @@ export const useShopStore = create<ShopStoreState>()(
       npcReputation: DEFAULT_NPC_REPUTATION,
       sessionPurchaseCounts: {},
       sessionHaggleCount: { general: 0, equipment: 0 },
+      lifetimeGoldSpent: { general: 0, equipment: 0 },
+      belowExpectationScore: { general: 0, equipment: 0 },
 
       // Check if stock should be refreshed
       shouldRefreshStock: () => {
@@ -185,7 +221,11 @@ export const useShopStore = create<ShopStoreState>()(
 
       // Reset session surcharges (call on dungeon return to town)
       resetSessionCounts: () => {
-        set({ sessionPurchaseCounts: {}, sessionHaggleCount: { general: 0, equipment: 0 } });
+        set({
+          sessionPurchaseCounts: {},
+          sessionHaggleCount: { general: 0, equipment: 0 },
+          belowExpectationScore: { general: 0, equipment: 0 },
+        });
       },
 
       // Purchase a consumable
@@ -445,6 +485,45 @@ export const useShopStore = create<ShopStoreState>()(
         return get().npcReputation[shopType];
       },
 
+      // Called when the player navigates away from a shop screen
+      recordVisitEnd: (shopType, goldSpent, characterLevel) => {
+        const state = get();
+        const prevLifetime = state.lifetimeGoldSpent[shopType];
+        const newLifetime = prevLifetime + goldSpent;
+
+        // Update lifetime (even a zero-spend visit is recorded so expectations don't inflate)
+        set((s) => ({
+          lifetimeGoldSpent: { ...s.lifetimeGoldSpent, [shopType]: newLifetime },
+        }));
+
+        const expected = calcExpectedSpend(prevLifetime, characterLevel);
+        if (expected === 0) return; // Still in grace period
+
+        // Score the visit: 0 = spent nothing, 1 = below 50%, 2 = 50–99%, met = reset
+        let score = 0;
+        if (goldSpent === 0) score = 2;
+        else if (goldSpent < expected * 0.5) score = 1;
+        else if (goldSpent < expected) score = 0; // Between 50–99% — mild, no score add
+        else {
+          // Met or exceeded expectations — reset disappointment
+          set((s) => ({ belowExpectationScore: { ...s.belowExpectationScore, [shopType]: 0 } }));
+          return;
+        }
+
+        const newScore = state.belowExpectationScore[shopType] + score;
+        // Threshold 4: 2× nothing, or 4× slight underspend, or mixed
+        if (newScore >= 4) {
+          get().addReputation(shopType, -1);
+          set((s) => ({ belowExpectationScore: { ...s.belowExpectationScore, [shopType]: 0 } }));
+        } else {
+          set((s) => ({ belowExpectationScore: { ...s.belowExpectationScore, [shopType]: newScore } }));
+        }
+      },
+
+      getExpectedSpend: (shopType, characterLevel) => {
+        return calcExpectedSpend(get().lifetimeGoldSpent[shopType], characterLevel);
+      },
+
       // Add reputation
       addReputation: (shopType, amount) => {
         set((state) => ({
@@ -482,6 +561,7 @@ export const useShopStore = create<ShopStoreState>()(
         deepestFloorAtRefresh: state.deepestFloorAtRefresh,
         totalRunsAtRefresh: state.totalRunsAtRefresh,
         npcReputation: state.npcReputation,
+        lifetimeGoldSpent: state.lifetimeGoldSpent,
       }),
     }
   )

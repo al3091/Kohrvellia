@@ -3,7 +3,7 @@
  * Buy consumables (potions, food, supplies)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -76,6 +76,9 @@ export default function GeneralStoreScreen() {
     getReputation,
     refreshStock,
     shouldRefreshStock,
+    recordVisitEnd,
+    getExpectedSpend,
+    belowExpectationScore,
   } = useShopStore();
   const { getGold, canAddItem } = useInventoryStore();
 
@@ -83,19 +86,36 @@ export default function GeneralStoreScreen() {
   const [quantity, setQuantity] = useState(1);
   const [showModal, setShowModal] = useState(false);
 
+  // Track how much was spent this visit for expectation accounting
+  const spentThisVisit = useRef(0);
+
   const npc = SHOP_NPCS.general;
   const reputation = getReputation('general');
   const discount = getReputationDiscount(reputation);
+  const characterLevel = character?.level ?? 1;
+  const expectedSpend = getExpectedSpend('general', characterLevel);
+  const disappointmentScore = belowExpectationScore.general;
 
   const getNpcGreeting = () => {
     if (reputation <= -10) return '"Get what you need and leave. I am watching you."';
     if (reputation <= -5) return '"...What do you want."';
     if (reputation <= -1) return '"Hmm. You again."';
+    if (expectedSpend > 0 && disappointmentScore >= 2) return '"Are you actually going to buy something this time?"';
+    if (expectedSpend > 0 && disappointmentScore >= 1) return '"I hope you find something worth buying today."';
     return `"${npc.greeting}"`;
   };
   const chaGrade = character?.stats?.CHA?.grade ?? 'I';
   const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
+
+  // Report visit outcome when leaving the screen
+  useEffect(() => {
+    return () => {
+      if (character) {
+        recordVisitEnd('general', spentThisVisit.current, character.level);
+      }
+    };
+  }, []);
 
   // Refresh stock if needed
   useEffect(() => {
@@ -140,6 +160,7 @@ export default function GeneralStoreScreen() {
     const result = purchaseConsumable(selectedItem.id, quantity, chaDiscount);
 
     if (result.success) {
+      spentThisVisit.current += result.goldSpent ?? 0;
       haptics.success();
       Alert.alert(
         'Purchase Complete',
