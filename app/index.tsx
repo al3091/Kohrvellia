@@ -49,7 +49,7 @@ export default function TitleScreen() {
       return `"${lastDeath.characterName}. Floor ${lastDeath.deepestFloor}. ${lastDeath.causeOfDeath}. The Tower remembers."`;
     }
     return STATIC_EPITAPHS[Math.floor(Math.random() * STATIC_EPITAPHS.length)];
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lastDeath]);
 
   useEffect(() => {
     useSoundStore.getState().crossfadeBGM('title', 500);

@@ -260,3 +260,28 @@ export const SoulSystem = {
   },
   statBonusBase: 0.15, // 15% base bonus to top 2 stats
 } as const;
+
+// ===== DUNGEON RUN FLAGS =====
+// All valid string flags used with setRunFlag() / getRunFlags() / clearRunFlag()
+// in useDungeonStore. String literals live here to prevent typos across the codebase.
+export const DUNGEON_FLAGS = {
+  // Multi-step event: Gambler's Coin (step 1) → Gambler's Ghost (step 2)
+  GAMBLERS_COIN: 'gamblers_coin',
+
+  // Boss dialogue outcomes
+  BOSS_BYPASSED: 'boss_bypassed',           // Player talked their way past the boss
+  BOSS_MECHANIC_HINT: 'boss_mechanic_hint', // Weakness was exposed via conversation
+
+  // Per-boss loot cache grants (prevent double-grant per run)
+  // Format: 'loot_cache_granted_<bossId>'
+  // e.g. 'loot_cache_granted_vanya', 'loot_cache_granted_sorath'
+
+  // Per-boss weakness reveals (prevent duplicate flags)
+  // Format: 'weakness_revealed_<bossId>'
+  // e.g. 'weakness_revealed_vanya', 'weakness_revealed_sorath'
+
+  // Trap tracking (cleared per floor)
+  TRIGGERED_TRAP: 'triggeredTrap',
+} as const;
+
+export type DungeonFlag = typeof DUNGEON_FLAGS[keyof typeof DUNGEON_FLAGS];

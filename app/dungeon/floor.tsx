@@ -411,7 +411,15 @@ export default function FloorScreen() {
         useDungeonStore.getState().currentRun?.soulVectorSnapshot ?? {}
       );
       useDungeonStore.getState().setBossSnapshot(snapshot);
-      router.push('/dungeon/boss-encounter');
+
+      // If this boss was already defeated by a previous character, show the lore tablet
+      // rather than forcing another fight. bosses always fight per run for gear, but
+      // defeatedBosses is meta-flavor for the "world remembers" narrative.
+      if (milestoneBoss && gameState.defeatedBosses.includes(milestoneBoss.id)) {
+        router.push('/dungeon/boss-cleared');
+      } else {
+        router.push('/dungeon/boss-encounter');
+      }
       return;
     }
 

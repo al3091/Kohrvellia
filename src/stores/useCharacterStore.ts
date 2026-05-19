@@ -1074,10 +1074,10 @@ export const useCharacterStore = create<CharacterState>()(
           };
         });
 
-        // Reveal current level's standard achievements so player knows what to work on
+        // Reveal NEXT level's standard achievements so player knows what to work toward
         const updatedCharacter = get().character;
         if (updatedCharacter) {
-          useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level);
+          useAchievementStore.getState().unlockAchievementsForLevel(updatedCharacter.level + 1);
           // Soul: level 10 (Paragon)
           if (updatedCharacter.level === 10) {
             useSoulStore.getState().incrementBehavement('glory_level_10', 10);
