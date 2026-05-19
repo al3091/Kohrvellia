@@ -158,6 +158,7 @@ export const DISCOVERY_SOURCES = {
   temple: { name: 'Temple', baseRepRequired: 5 },
   shrine: { name: 'Shrine (Deity)', baseRepRequired: 0 }, // Favor-based instead
   journal: { name: 'Past Adventurer Journal', baseRepRequired: 0 }, // Floor loot
+  boss_dialogue: { name: 'Boss Encounter', baseRepRequired: 0 }, // Unlocked via boss conversation
   undiscovered: { name: 'Unknown', baseRepRequired: -1 }, // Cannot be discovered normally
 } as const;
 

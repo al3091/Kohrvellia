@@ -209,6 +209,24 @@ export const LEVEL_5_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Invincible',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 25 — Malik) =====
+  {
+    id: 'malik_void_scholar',
+    name: 'Void Scholar',
+    description: 'Engage Malik on his own terms — and find the pattern in the unreality.',
+    tier: 'legendary',
+    targetLevel: 6,
+    requirements: [
+      { type: 'custom', value: 1, description: "Decipher Malik's void logic" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: 'Malik speaks in paradox. There is an answer inside the answer.',
+    bonusStatPoints: 3,
+    gloryPoints: 7,
+    titleModifier: 'the Void-Touched',
+  },
 ];
 
 export function getLevel5AchievementsByTier(tier: Achievement['tier']): Achievement[] {

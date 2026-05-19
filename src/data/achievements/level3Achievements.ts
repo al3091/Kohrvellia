@@ -208,6 +208,24 @@ export const LEVEL_3_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Fearless',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 15 — Kutcher) =====
+  {
+    id: 'kutcher_song_of_truth',
+    name: 'Song of Truth',
+    description: 'Hear the song Kutcher carries — the one no one else has listened to.',
+    tier: 'heroic',
+    targetLevel: 4,
+    requirements: [
+      { type: 'custom', value: 1, description: "Hear Kutcher's song" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: 'Kutcher talks about mortality. But does he know his own?',
+    bonusStatPoints: 2,
+    gloryPoints: 5,
+    titleModifier: 'the Listening',
+  },
 ];
 
 export function getLevel3AchievementsByTier(tier: Achievement['tier']): Achievement[] {

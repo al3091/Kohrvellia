@@ -208,6 +208,24 @@ export const LEVEL_4_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Swift',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 20 — Kalindi) =====
+  {
+    id: 'kalindi_river_wisdom',
+    name: 'River Wisdom',
+    description: 'Accept the purification Kalindi offers — and pass through clean.',
+    tier: 'heroic',
+    targetLevel: 5,
+    requirements: [
+      { type: 'custom', value: 1, description: "Pass Kalindi's purification" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: 'Kalindi cleanses. What will remain of you?',
+    bonusStatPoints: 2,
+    gloryPoints: 5,
+    titleModifier: 'the Purified',
+  },
 ];
 
 export function getLevel4AchievementsByTier(tier: Achievement['tier']): Achievement[] {

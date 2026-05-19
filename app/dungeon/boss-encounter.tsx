@@ -147,6 +147,10 @@ export default function BossEncounterScreen() {
         const achStore = useAchievementStore.getState();
         achStore.discoverAchievement('walked_past_death', 'boss_dialogue');
         achStore.updateProgress('custom', 1);
+        if (resolvedOutcome.achievement) {
+          achStore.discoverAchievement(resolvedOutcome.achievement, 'boss_dialogue');
+          achStore.updateProgress('custom', 1);
+        }
         useDungeonStore.getState().setRunFlag('boss_bypassed');
         const node = getCurrentNode();
         if (node) completeNode(node.id);
@@ -162,6 +166,10 @@ export default function BossEncounterScreen() {
         const achStoreLoot = useAchievementStore.getState();
         achStoreLoot.discoverAchievement('fortune_s_pet', 'boss_dialogue');
         achStoreLoot.updateProgress('custom', 1);
+        if (resolvedOutcome.achievement) {
+          achStoreLoot.discoverAchievement(resolvedOutcome.achievement, 'boss_dialogue');
+          achStoreLoot.updateProgress('custom', 1);
+        }
         setRunFlag(`loot_cache_granted_${boss.id}`);
         startCombatAndGo();
         break;
@@ -175,6 +183,10 @@ export default function BossEncounterScreen() {
         const achStoreWeak = useAchievementStore.getState();
         achStoreWeak.discoverAchievement('boss_weakness_revealed', 'boss_dialogue');
         achStoreWeak.updateProgress('custom', 1);
+        if (resolvedOutcome.achievement) {
+          achStoreWeak.discoverAchievement(resolvedOutcome.achievement, 'boss_dialogue');
+          achStoreWeak.updateProgress('custom', 1);
+        }
         startCombatAndGo();
         break;
       }

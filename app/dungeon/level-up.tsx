@@ -271,7 +271,22 @@ export default function LevelUpScreen() {
     // Complete the level up after celebration
     setTimeout(() => {
       setPhase('complete');
-      completeLevelUp();
+      const levelUpResult = completeLevelUp();
+
+      // GLORY bonus: distribute tier reward points as pending excelia across top 3 stats
+      if (levelUpResult.bonusPoints > 0) {
+        const char = useCharacterStore.getState().character;
+        if (char) {
+          const sortedStats = (Object.keys(char.stats) as import('../../src/types/Stats').StatName[])
+            .sort((a, b) => char.stats[b].points - char.stats[a].points)
+            .slice(0, 3);
+          const perStat = Math.max(1, Math.floor(levelUpResult.bonusPoints / sortedStats.length));
+          for (const stat of sortedStats) {
+            useCharacterStore.getState().addPendingExcelia(stat, perStat);
+          }
+        }
+      }
+
       performLevelUp();
 
       // Navigate based on new level

@@ -27,6 +27,7 @@ import { getAchievementById, getAchievementsForLevel } from '../../../src/data/a
 import { AchievementTracker } from '../../../src/components/achievement/AchievementTracker';
 import { getMaterialById, MATERIAL_TIER_COLORS } from '../../../src/data/materials';
 import { useMarketStore } from '../../../src/stores/useMarketStore';
+import { useShopStore } from '../../../src/stores/useShopStore';
 import { useSoulStore } from '../../../src/stores/useSoulStore';
 
 // ─── Advisor NPC ──────────────────────────────────────────────────────────────
@@ -276,9 +277,10 @@ export default function GuildHallScreen() {
   const hasCompleted = completed.length > 0;
   const deityApproved = character.levelProgress.deityApproved;
 
-  // Trigger guild discovery on first visit — advance all guild achievements to known
+  // Trigger guild discovery + reputation-gated unlocks on entry
   React.useEffect(() => {
     achievementStore.discoverAllFromSource('guild');
+    achievementStore.checkReputationDiscovery(useShopStore.getState().npcReputation.general);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const isLevelUp = canLevelUp();

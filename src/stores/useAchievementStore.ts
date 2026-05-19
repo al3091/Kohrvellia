@@ -58,6 +58,10 @@ interface AchievementState {
   getTierCount: (targetLevel: number) => Record<AchievementTier, number>;
   getDiscoveryStateForLevel: (targetLevel: number) => Record<string, DiscoveryState>;
 
+  // Discovery helpers
+  checkReputationDiscovery: (guildRep: number) => void;
+  hintDiscovery: (achievementId: string) => void;
+
   // Reset for new game
   resetAllProgress: () => void;
   unlockAchievementsForLevel: (targetLevel: number) => void;
@@ -395,6 +399,33 @@ export const useAchievementStore = create<AchievementState>()(
           isInCeremony: false,
           ceremonyLevel: 0,
         });
+      },
+
+      checkReputationDiscovery: (guildRep) => {
+        const { progress } = get();
+        const updatedProgress = { ...progress };
+        let changed = false;
+
+        for (const achievement of ALL_ACHIEVEMENTS) {
+          if (achievement.discoveryRepRequired === undefined) continue;
+          const p = updatedProgress[achievement.id];
+          if (!p || p.discoveryState === 'known' || p.discoveryState === 'completed') continue;
+
+          if (guildRep >= achievement.discoveryRepRequired) {
+            const nextState: DiscoveryState = p.discoveryState === 'hidden' ? 'rumored' : 'known';
+            updatedProgress[achievement.id] = { ...p, discoveryState: nextState };
+            changed = true;
+          }
+        }
+
+        if (changed) set({ progress: updatedProgress });
+      },
+
+      hintDiscovery: (achievementId) => {
+        const { progress } = get();
+        const p = progress[achievementId];
+        if (!p || p.discoveryState !== 'hidden') return;
+        set({ progress: { ...progress, [achievementId]: { ...p, discoveryState: 'rumored' } } });
       },
 
       unlockAchievementsForLevel: (targetLevel) => {

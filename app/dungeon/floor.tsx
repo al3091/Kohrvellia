@@ -317,6 +317,13 @@ export default function FloorScreen() {
 
     // Decrement challenge floor countdown — auto-fails if time runs out
     useDeityStore.getState().checkChallengeExpiry(newFloor);
+    // Record floor descent for floor-clear challenge type
+    useDeityStore.getState().recordChallengeEvent('floor_clear', 1);
+
+    // Boss floor approaching — hint the bypass achievement so players know it exists
+    if (newFloor % 5 === 0) {
+      useAchievementStore.getState().hintDiscovery('walked_past_death');
+    }
   };
 
   const handleExitToTown = () => {

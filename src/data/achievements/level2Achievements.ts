@@ -206,6 +206,24 @@ export const LEVEL_2_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Perfect',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 10 — Sorath) =====
+  {
+    id: 'sorath_truth_extracted',
+    name: 'The Extracted Truth',
+    description: 'Draw the real answer from Sorath before the bargain is sealed.',
+    tier: 'heroic',
+    targetLevel: 3,
+    requirements: [
+      { type: 'custom', value: 1, description: 'Extract truth from Sorath\'s temptation' },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: 'Sorath deals in temptation. What does he really want?',
+    bonusStatPoints: 2,
+    gloryPoints: 5,
+    titleModifier: 'the Untempted',
+  },
 ];
 
 export function getLevel2AchievementsByTier(tier: Achievement['tier']): Achievement[] {
