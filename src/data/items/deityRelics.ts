@@ -599,6 +599,7 @@ import { SLAVIC_REMAINING_RELICS } from './deityRelics_slavic_remaining';
 import { AZTEC_REMAINING_RELICS } from './deityRelics_aztec_remaining';
 import { GOETIA_REMAINING_RELICS } from './deityRelics_goetia_remaining';
 import { FALLEN_REMAINING_RELICS } from './deityRelics_fallen_remaining';
+import { FINAL_REMAINING_RELICS } from './deityRelics_final';
 
 export const ALL_DEITY_RELICS: DeityRelicPair[] = [
   // Milestone Bosses (Slavic-adjacent)
@@ -631,6 +632,8 @@ export const ALL_DEITY_RELICS: DeityRelicPair[] = [
   ...DARK_DEITY_RELICS,
   ...GOETIA_REMAINING_RELICS,
   ...FALLEN_REMAINING_RELICS,
+  // Final remaining: Chinese (16) + Hindu skanda/kamadeva/budha (3) + astaroth_fallen (1)
+  ...FINAL_REMAINING_RELICS,
 ];
 
 export function getDeityRelics(deityId: string): DeityRelicPair | undefined {
