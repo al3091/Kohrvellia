@@ -53,8 +53,8 @@ interface ShopStoreState extends ShopState {
   resetSessionCounts: () => void;
 
   // Actions - Purchasing
-  purchaseConsumable: (consumableId: string, quantity: number) => PurchaseResult;
-  purchaseEquipment: (index: number) => PurchaseResult;
+  purchaseConsumable: (consumableId: string, quantity: number, chaDiscount?: number) => PurchaseResult;
+  purchaseEquipment: (index: number, chaDiscount?: number) => PurchaseResult;
 
   // Actions - Selling
   sellItem: (itemId: string, quantity: number) => SellResult;
@@ -184,7 +184,7 @@ export const useShopStore = create<ShopStoreState>()(
       },
 
       // Purchase a consumable
-      purchaseConsumable: (consumableId, quantity) => {
+      purchaseConsumable: (consumableId, quantity, chaDiscount = 0) => {
         const state = get();
         const inventoryStore = useInventoryStore.getState();
 
@@ -204,10 +204,11 @@ export const useShopStore = create<ShopStoreState>()(
         const purchaseCount = state.sessionPurchaseCounts[consumableId] ?? 0;
         const surchargeFactor = Math.pow(1.25, purchaseCount);
         const reputation = state.npcReputation.general;
-        const totalPrice = applyReputationDiscount(
+        const repPrice = applyReputationDiscount(
           Math.ceil(stockItem.basePrice * quantity * surchargeFactor),
           reputation
         );
+        const totalPrice = Math.max(1, Math.floor(repPrice * (1 - chaDiscount)));
 
         // Check gold
         const currentGold = inventoryStore.getGold();
@@ -268,7 +269,7 @@ export const useShopStore = create<ShopStoreState>()(
       },
 
       // Purchase equipment
-      purchaseEquipment: (index) => {
+      purchaseEquipment: (index, chaDiscount = 0) => {
         const state = get();
         const inventoryStore = useInventoryStore.getState();
 
@@ -278,9 +279,10 @@ export const useShopStore = create<ShopStoreState>()(
           return { success: false, reason: 'Item not available' };
         }
 
-        // Calculate price with reputation discount
+        // Calculate price with reputation + CHA haggling
         const reputation = state.npcReputation.equipment;
-        const finalPrice = applyReputationDiscount(stockItem.basePrice, reputation);
+        const repPrice = applyReputationDiscount(stockItem.basePrice, reputation);
+        const finalPrice = Math.max(1, Math.floor(repPrice * (1 - chaDiscount)));
 
         // Check gold
         const currentGold = inventoryStore.getGold();

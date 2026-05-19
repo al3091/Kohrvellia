@@ -129,6 +129,20 @@ export function applyReputationDiscount(basePrice: number, reputation: number): 
   return Math.floor(basePrice * (1 - discount));
 }
 
+// ===== CHA HAGGLING =====
+
+// Grade order: I H G F E D C B A S SS SSS
+const CHA_HAGGLE_DISCOUNTS: Record<string, number> = {
+  D: 0.05, C: 0.08, B: 0.12, A: 0.15, S: 0.18, SS: 0.20, SSS: 0.20,
+};
+
+/**
+ * Additional price reduction from CHA grade. Returns 0 for grades below D.
+ */
+export function getCHAHaggleDiscount(chaGrade: string): number {
+  return CHA_HAGGLE_DISCOUNTS[chaGrade] ?? 0;
+}
+
 // ===== TRANSACTION TYPES =====
 
 export interface PurchaseResult {

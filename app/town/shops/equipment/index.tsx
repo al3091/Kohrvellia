@@ -23,7 +23,7 @@ import { useShopStore } from '../../../../src/stores/useShopStore';
 import { useInventoryStore } from '../../../../src/stores/useInventoryStore';
 import { useGameStore } from '../../../../src/stores/useGameStore';
 import { useHaptics } from '../../../../src/hooks/useHaptics';
-import { SHOP_NPCS, getReputationDiscount } from '../../../../src/types/Shop';
+import { SHOP_NPCS, getReputationDiscount, getCHAHaggleDiscount } from '../../../../src/types/Shop';
 import type { Weapon, WeaponCategory } from '../../../../src/types/Weapon';
 import { WEAPON_CATEGORY_INFO } from '../../../../src/types/Weapon';
 import type { Armor } from '../../../../src/types/Armor';
@@ -158,6 +158,8 @@ export default function EquipmentShopScreen() {
   const npc = SHOP_NPCS.equipment;
   const reputation = getReputation('equipment');
   const discount = getReputationDiscount(reputation);
+  const chaGrade = character?.stats?.CHA?.grade ?? 'I';
+  const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
 
   // Refresh stock if needed
@@ -225,7 +227,7 @@ export default function EquipmentShopScreen() {
       return;
     }
 
-    const result = purchaseEquipment(selectedIndex);
+    const result = purchaseEquipment(selectedIndex, chaDiscount);
 
     if (result.success) {
       haptics.success();
@@ -266,9 +268,14 @@ export default function EquipmentShopScreen() {
     return item as Armor;
   };
 
-  const getSelectedPrice = (): number => {
+  const getSelectedRepPrice = (): number => {
     if (selectedIndex === null) return 0;
     return getEquipmentPrice(selectedIndex);
+  };
+
+  const getSelectedPrice = (): number => {
+    const repPrice = getSelectedRepPrice();
+    return chaDiscount > 0 ? Math.max(1, Math.floor(repPrice * (1 - chaDiscount))) : repPrice;
   };
 
   // Get discount display text
@@ -564,7 +571,14 @@ export default function EquipmentShopScreen() {
 
                 {/* Price */}
                 <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Price:</Text>
+                  <View>
+                    <Text style={styles.priceLabel}>Price:</Text>
+                    {chaDiscount > 0 && (
+                      <Text style={styles.chaHaggleText}>
+                        CHA {chaGrade} −{Math.round(chaDiscount * 100)}% haggle
+                      </Text>
+                    )}
+                  </View>
                   <Text style={[
                     styles.modalPrice,
                     gold < selectedPrice && styles.priceUnaffordable,
@@ -943,6 +957,11 @@ const styles = StyleSheet.create({
   priceLabel: {
     ...Typography.h5,
     color: Colors.text.secondary,
+  },
+  chaHaggleText: {
+    ...Typography.caption,
+    color: Colors.ui.success,
+    marginTop: 2,
   },
   modalPrice: {
     ...Typography.h4,

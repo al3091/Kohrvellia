@@ -22,7 +22,7 @@ import { useCharacterStore } from '../../../../src/stores/useCharacterStore';
 import { useShopStore } from '../../../../src/stores/useShopStore';
 import { useInventoryStore } from '../../../../src/stores/useInventoryStore';
 import { useHaptics } from '../../../../src/hooks/useHaptics';
-import { SHOP_NPCS, getReputationDiscount } from '../../../../src/types/Shop';
+import { SHOP_NPCS, getReputationDiscount, getCHAHaggleDiscount } from '../../../../src/types/Shop';
 import { getConsumableById } from '../../../../src/data/consumables';
 import { RARITY_COLORS, formatConsumableEffect } from '../../../../src/types/Consumable';
 import type { Consumable } from '../../../../src/types/Consumable';
@@ -86,6 +86,8 @@ export default function GeneralStoreScreen() {
   const npc = SHOP_NPCS.general;
   const reputation = getReputation('general');
   const discount = getReputationDiscount(reputation);
+  const chaGrade = character?.stats?.CHA?.grade ?? 'I';
+  const chaDiscount = getCHAHaggleDiscount(chaGrade);
   const gold = getGold();
 
   // Refresh stock if needed
@@ -128,7 +130,7 @@ export default function GeneralStoreScreen() {
       return;
     }
 
-    const result = purchaseConsumable(selectedItem.id, quantity);
+    const result = purchaseConsumable(selectedItem.id, quantity, chaDiscount);
 
     if (result.success) {
       haptics.success();
@@ -152,9 +154,14 @@ export default function GeneralStoreScreen() {
     return getConsumablePrice(consumableId, 1);
   };
 
-  const getTotalPrice = () => {
+  const getRepPrice = () => {
     if (!selectedItem) return 0;
     return getConsumablePrice(selectedItem.id, quantity);
+  };
+
+  const getTotalPrice = () => {
+    const repPrice = getRepPrice();
+    return chaDiscount > 0 ? Math.max(1, Math.floor(repPrice * (1 - chaDiscount))) : repPrice;
   };
 
   // Get discount display text
@@ -275,6 +282,13 @@ export default function GeneralStoreScreen() {
                 <Text style={styles.modalEffect}>
                   {formatConsumableEffect(selectedItem.effect)}
                 </Text>
+
+                {/* CHA haggle indicator */}
+                {chaDiscount > 0 && (
+                  <Text style={styles.chaHaggleText}>
+                    CHA {chaGrade}: −{Math.round(chaDiscount * 100)}% haggle
+                  </Text>
+                )}
 
                 {/* Quantity selector */}
                 <View style={styles.quantityContainer}>
@@ -577,6 +591,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.sm,
     fontWeight: '600',
+  },
+  chaHaggleText: {
+    ...Typography.caption,
+    color: Colors.ui.success,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
   quantityContainer: {
     flexDirection: 'row',
