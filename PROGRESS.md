@@ -192,7 +192,7 @@
 - [x] **Equip/Unequip** - Slot management with haptic feedback
 - [x] **Weapon Drops** - Combat rewards with equip/discard choice
 - [x] **Starter Weapon** - Auto-assigned based on highest stat at creation
-- [ ] **Drop/Destroy** - Full item removal system
+- [x] **Drop/Destroy** - Town inventory: Discard button with confirmation (key items + materials blocked). Dungeon inventory: Drop button calls destroyItem(). Weapons use destroyItem(); consumables/materials use removeFromInventory().
 
 ### 1.9 Monster System
 - [x] **Base Monster Data** (30 types implemented):
@@ -314,7 +314,7 @@
 - [x] **job-select.tsx** - UI screen with BackHandler, top-stat filter, confirmation flow; routes from level-up at Level 2
 - [x] **Job stat bonus** - Applied to character stats at selection via `applyJobStatBonus()`; recalculates grades + maxHP/SP
 - [x] **Job benefits in combat** - Starter skill granted on job select, appears in combat skill modal, SP cost and cooldown tracked in character store; `tickSkillCooldowns()` called on player turn start; `gold_steal` effect type wired in `useCombatStore`
-- [ ] **Level 5 job specialization** - Branch into Path A/B (e.g. Warrior → Knight or Berserker)
+- [x] **Level 5 job specialization** - Branch into Path A/B (e.g. Warrior → Knight or Berserker)
 - [ ] **Level 8 advanced class** - Final specialization unlock
 - [ ] **Level 10 mastery skills** - Paragon-tier job abilities
 
@@ -333,29 +333,30 @@
   - [~] GLORY (10 behavements) - 8/10 wired; `glory_challenge_complete` deferred to God Challenges phase
 - [x] **Denatus screen** (`app/dungeon/denatus.tsx`) - Exists, reads from `useSoulStore`
 - [x] **PlayerSnapshot** (`src/types/PlayerSnapshot.ts`) - Archetype + approach style; used for boss dialogue
-- [ ] **Title Generation end-to-end** - `[CR Adj] + [Stat Adj] + [Skill Noun]` formula at Level 10 needs testing
+- [~] **Title Generation end-to-end** - `[CR Adj] + [Stat Adj] + [Skill Noun]` formula at Level 10 needs testing
 - [ ] **Paragon Skills** - Passive abilities from dominant behavement vector (design: BUG design question open)
 
 ### 2.3 Discovery System
-- [ ] **Rumor System** - NPC hints about achievements
-- [ ] **Deity Hints** - Domain-specific guidance
-- [ ] **Library/Tome Discovery** - Ancient knowledge unlocks
-- [ ] **Achievement Visibility States**:
-  - [ ] Hidden (no info)
-  - [ ] Rumored (vague hint)
-  - [ ] Known (full requirements)
-  - [ ] Completed (unlocked)
-- [ ] **Discovery Reputation Thresholds** - NPC trust levels
+- [x] **Rumor System** - NPC hints via Guild + reputation thresholds + boss-floor hints
+- [ ] **Deity Hints** - Domain-specific guidance (deferred Phase 2.X)
+- [ ] **Library/Tome Discovery** - Ancient knowledge unlocks (deferred Phase 2.X)
+- [x] **Achievement Visibility States**:
+  - [x] Hidden (no info)
+  - [x] Rumored (vague hint)
+  - [x] Known (full requirements)
+  - [x] Completed (unlocked)
+- [x] **Discovery Reputation Thresholds** - checkReputationDiscovery() in Guild Hall
 
 ### 2.4 God Challenges
-- [ ] **Challenge Announcement** - Deity proposes hard task
-- [ ] **Challenge Types**:
-  - [ ] Floor clear challenges
-  - [ ] Boss kill challenges
-  - [ ] Stat growth challenges
-  - [ ] No-death challenges
-- [ ] **Challenge Rewards** - Enhanced deity buffs
-- [ ] **Failure Consequences** - Temporary debuff increase
+- [x] **Challenge Announcement** - Deity proposes hard task (familia home)
+- [x] **Challenge Types**:
+  - [x] Floor clear challenges — recordChallengeEvent('floor_clear') on descent
+  - [x] Boss kill challenges — updateChallengeProgress in combat victory
+  - [x] Gold collected, heal self, elite kills — all wired
+  - [ ] Stat growth challenges (deferred Phase 2.X)
+  - [ ] No-death challenges (deferred Phase 2.X)
+- [x] **Challenge Rewards** — pendingChallengeReward displayed in Familia Home
+- [x] **Failure Consequences** — favor loss + deity eviction at ABANDONED tier (Option C)
 
 ### 2.5 Town Hub & Familia Home
 - [x] **Town Hub Screen** - Central navigation between dungeon runs
@@ -386,24 +387,24 @@
   - [x] Initialize pending excelia on dungeon entry
 
 ### 2.6 Shop & Economy
-- [ ] **Town Shops**:
-  - [ ] Weapon Smith
-  - [ ] Armor Smith
-  - [ ] General Store
-  - [ ] Potion Brewer
-  - [ ] Enchanter
-- [ ] **Dungeon Shops** - Limited stock, higher prices
-- [ ] **Buy/Sell UI** - Pricing, haggling (CHA bonus)
-- [ ] **Currency System** - Gold, rare currency
+- [x] **Town Shops**:
+  - [~] Weapon Smith (blacksmith identifies/upgrades weapons; sell via sell screen)
+  - [ ] Armor Smith (Phase 3)
+  - [x] General Store (consumables + CHA haggling)
+  - [ ] Potion Brewer (merged with General Store for now)
+  - [ ] Enchanter (Phase 3)
+- [ ] **Dungeon Shops** - Limited stock, higher prices (gated out; Phase 3)
+- [x] **Buy/Sell UI** - Pricing, CHA haggling (D=5%→SSS=20%), confirmation modal
+- [x] **Currency System** - Gold + market rate material pricing (useMarketStore)
 
 ### 2.6 Reputation System
-- [ ] **Faction Tracking** - Guild, Town, Deity
-- [ ] **Reputation Scale** - -20 to +20
-- [ ] **Reputation Effects**:
-  - [ ] Shop prices
-  - [ ] NPC dialogue
-  - [ ] Quest availability
-  - [ ] Achievement hints
+- [x] **Faction Tracking** - Shop NPCs (general, equipment, blacksmith) + Guild Hall
+- [x] **Reputation Scale** - -20 to +20 (bidirectional: gains from purchases, loss from CHA over-haggling + expectation mismatch)
+- [x] **Reputation Effects**:
+  - [x] Shop prices (Hostile=2.0× → Beloved=0.6×)
+  - [x] NPC dialogue (hostile text + red coloring at rep ≤ -5)
+  - [ ] Quest availability (Phase 3)
+  - [x] Achievement hints (discoveryRepRequired → checkReputationDiscovery)
 
 ### 2.7 Extended Pantheons
 - [x] **12 pantheons active** (~168 total deities): Greek, Norse, Egyptian, Japanese, Celtic, Mesopotamian, Hindu, Chinese, Slavic, Aztec, Ars Goetia, Fallen Angels
