@@ -194,6 +194,18 @@ export default function AscensionScreen() {
   const handleComplete = () => {
     allowBack.current = true;
     haptics.medium();
+
+    // Level 5: route to job specialization if not yet chosen
+    const currentLevel = useCharacterStore.getState().character?.level ?? 0;
+    if (currentLevel === 5) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { useJobStore: jobStore } = require('../../../src/stores/useJobStore') as typeof import('../../../src/stores/useJobStore');
+      if (!jobStore.getState().currentSpecializationId) {
+        router.replace('/dungeon/job-select?mode=specialization');
+        return;
+      }
+    }
+
     router.replace('/town');
   };
 

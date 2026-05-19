@@ -15,7 +15,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
@@ -52,7 +52,9 @@ export default function JobSelectScreen() {
   const haptics = useHaptics();
   const { playSFX } = useSoundStore();
   const { character, getEffectiveStats } = useCharacterStore();
-  const { selectJob } = useJobStore();
+  const { selectJob, selectSpecialization, getCurrentJob, getAvailableSpecializations } = useJobStore();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const isSpecializationMode = mode === 'specialization';
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -78,6 +80,12 @@ export default function JobSelectScreen() {
   }, []);
 
   const { topThree, availableJobs } = useMemo(() => {
+    if (isSpecializationMode) {
+      const specs = getAvailableSpecializations();
+      const currentJob = getCurrentJob();
+      return { topThree: (currentJob?.statRequirements ?? ['STR', 'END', 'AGI']) as [StatName, StatName, StatName], availableJobs: specs };
+    }
+
     const effectiveStats = getEffectiveStats();
     const topThree = resolveTopThreeStats(effectiveStats);
 
@@ -89,7 +97,7 @@ export default function JobSelectScreen() {
     const availableJobs = getJobsForStats(topThree);
 
     return { topThree, availableJobs };
-  }, []);
+  }, [isSpecializationMode]);
 
   const handleSelect = (jobId: string) => {
     if (confirmed) return;
@@ -102,7 +110,11 @@ export default function JobSelectScreen() {
     haptics.heavy();
     playSFX('achievement');
     setConfirmed(true);
-    selectJob(selectedJobId);
+    if (isSpecializationMode) {
+      selectSpecialization(selectedJobId);
+    } else {
+      selectJob(selectedJobId);
+    }
     setTimeout(() => {
       allowBack.current = true;
       router.back();
@@ -124,8 +136,13 @@ export default function JobSelectScreen() {
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Your Calling Awakens</Text>
-          <Text style={styles.subtitle}>Level 2 — Choose Your Path</Text>
+          <Text style={styles.title}>{isSpecializationMode ? 'The Path Branches' : 'Your Calling Awakens'}</Text>
+          <Text style={styles.subtitle}>{isSpecializationMode ? `Level 5 — Choose Your Specialization` : 'Level 2 — Choose Your Path'}</Text>
+          {isSpecializationMode && getCurrentJob() && (
+            <Text style={[styles.subtitle, { marginTop: 4, color: Colors.text.accent }]}>
+              {getCurrentJob()!.name} → Path A or Path B
+            </Text>
+          )}
         </View>
 
         {/* Top 3 stats pill row */}
@@ -178,7 +195,7 @@ export default function JobSelectScreen() {
 
                   {/* Starter skill preview */}
                   <View style={styles.skillBox}>
-                    <Text style={styles.skillLabel}>Starter Skill</Text>
+                    <Text style={styles.skillLabel}>{isSpecializationMode ? 'Specialization Skill' : 'Starter Skill'}</Text>
                     <View style={styles.skillRow}>
                       <Text style={styles.skillIcon}>{job.starterSkill.icon}</Text>
                       <View style={styles.skillInfo}>

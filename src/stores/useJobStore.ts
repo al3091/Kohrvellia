@@ -10,20 +10,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { Job } from '../types/Job';
 import type { StatName } from '../types/Stats';
-import { getJobsForStats, getJobById } from '../data/jobs';
+import { getJobsForStats, getJobById, getSpecializationsForJob } from '../data/jobs';
 import { useCharacterStore } from './useCharacterStore';
 import type { Skill } from '../types/Character';
 
 interface JobState {
   currentJobId: string | null;
   hasSelectedJob: boolean;
+  currentSpecializationId: string | null;
 
   // Derived — recomputed from currentJobId when needed
   getCurrentJob: () => Job | null;
   getAvailableJobsForTopStats: (topStats: [StatName, StatName, StatName]) => Job[];
+  getAvailableSpecializations: () => Job[];
 
   // Actions
   selectJob: (jobId: string) => void;
+  selectSpecialization: (specializationId: string) => void;
   reset: () => void;
 }
 
@@ -32,6 +35,7 @@ export const useJobStore = create<JobState>()(
     (set, get) => ({
       currentJobId: null,
       hasSelectedJob: false,
+      currentSpecializationId: null,
 
       getCurrentJob: () => {
         const { currentJobId } = get();
@@ -40,6 +44,12 @@ export const useJobStore = create<JobState>()(
 
       getAvailableJobsForTopStats: (topStats) => {
         return getJobsForStats(topStats);
+      },
+
+      getAvailableSpecializations: () => {
+        const { currentJobId } = get();
+        if (!currentJobId) return [];
+        return getSpecializationsForJob(currentJobId);
       },
 
       selectJob: (jobId) => {
@@ -73,8 +83,33 @@ export const useJobStore = create<JobState>()(
         });
       },
 
+      selectSpecialization: (specializationId) => {
+        // Find spec in all specializations
+        const specs = get().getAvailableSpecializations();
+        const spec = specs.find(s => s.id === specializationId);
+        if (!spec) return;
+
+        set({ currentSpecializationId: specializationId });
+
+        // Grant specialization skill
+        const charStore = useCharacterStore.getState();
+        const specSkill: Skill = {
+          ...spec.starterSkill,
+          currentCooldown: 0,
+          proficiency: 0,
+          timesUsed: 0,
+          level: 1,
+          observed: true,
+          learned: true,
+        };
+        charStore.learnSkill(specSkill);
+
+        // Apply specialization stat bonus
+        charStore.applyJobStatBonus(spec.statBonus.stat, spec.statBonus.value);
+      },
+
       reset: () => {
-        set({ currentJobId: null, hasSelectedJob: false });
+        set({ currentJobId: null, hasSelectedJob: false, currentSpecializationId: null });
       },
     }),
     {
@@ -83,6 +118,7 @@ export const useJobStore = create<JobState>()(
       partialize: (state) => ({
         currentJobId: state.currentJobId,
         hasSelectedJob: state.hasSelectedJob,
+        currentSpecializationId: state.currentSpecializationId,
       }),
     }
   )

@@ -78,7 +78,7 @@ export interface CombatSkill {
   animation?: 'slash' | 'thrust' | 'magic' | 'heal' | 'buff' | 'area';
 
   // Learning
-  learnMethod: 'starter' | 'levelup' | 'quest' | 'observe' | 'deity';
+  learnMethod: 'starter' | 'levelup' | 'quest' | 'observe' | 'deity' | 'specialization';
   observeChance?: number; // % chance to learn when observed
 }
 

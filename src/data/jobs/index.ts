@@ -2,8 +2,9 @@ import type { Job } from '../../types/Job';
 import { makeJobKey } from '../../types/Job';
 import type { StatName } from '../../types/Stats';
 import { JOB_DEFINITIONS } from './jobDefinitions';
+import { JOB_SPECIALIZATIONS, getSpecializationsForJob } from './specializations';
 
-export { JOB_DEFINITIONS };
+export { JOB_DEFINITIONS, JOB_SPECIALIZATIONS, getSpecializationsForJob };
 
 /**
  * Return the 2-4 jobs that match the given top-3-stat combination.
