@@ -487,6 +487,11 @@ export const useShopStore = create<ShopStoreState>()(
 
       // Called when the player navigates away from a shop screen
       recordVisitEnd: (shopType, goldSpent, characterLevel) => {
+        // Sacred item: track shop visits and spending
+        const { useSacredItemStore } = require('./useSacredItemStore') as typeof import('./useSacredItemStore');
+        useSacredItemStore.getState().incrementShopVisit();
+        if (goldSpent > 0) useSacredItemStore.getState().incrementShopSpend(goldSpent);
+
         const state = get();
         const prevLifetime = state.lifetimeGoldSpent[shopType];
         const newLifetime = prevLifetime + goldSpent;

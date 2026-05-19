@@ -13,6 +13,8 @@ import { Spacing, Padding, BorderRadius, BorderWidth } from '../../../src/consta
 import { useCharacterStore } from '../../../src/stores/useCharacterStore';
 import { useDeityStore, FAVOR_STATUS } from '../../../src/stores/useDeityStore';
 import { useHaptics } from '../../../src/hooks/useHaptics';
+import { useSacredItemStore } from '../../../src/stores/useSacredItemStore';
+import { ALL_DEITY_RELICS } from '../../../src/data/items/deityRelics';
 
 // Deity greetings based on personality
 const DEITY_GREETINGS: Record<string, string[]> = {
@@ -123,6 +125,24 @@ export default function FamiliaHomeScreen() {
       }
     }
   }, [pendingChallengeReward]);
+
+  // Sacred item: track familia visit and show pending relic reveals
+  React.useEffect(() => {
+    useSacredItemStore.getState().incrementFamiliaVisit();
+    const { metrics, dismissRelicReveal } = useSacredItemStore.getState();
+    if (metrics.pending_relic_reveals.length > 0 && deity) {
+      const deityId = metrics.pending_relic_reveals[0];
+      const relicPair = ALL_DEITY_RELICS.find(r => r.deityId === deityId);
+      if (relicPair) {
+        const relicText = relicPair.weapon.deityRevealText || relicPair.accessory.deityRevealText;
+        Alert.alert(
+          `${deity.name} Speaks`,
+          `Your devotion has reached its peak. ${deity.name} reveals the path to their sacred relics:\n\n"${relicText}"`,
+          [{ text: 'I Will Remember', onPress: () => dismissRelicReveal(deityId) }]
+        );
+      }
+    }
+  }, []);
 
   // Eviction: deity has withdrawn at ABANDONED tier — show farewell, clear patron
   React.useEffect(() => {

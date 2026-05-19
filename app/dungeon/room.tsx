@@ -32,6 +32,7 @@ import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { ALL_ACHIEVEMENTS } from '../../src/data/achievements';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
+import { useSacredItemStore } from '../../src/stores/useSacredItemStore';
 import type { Weapon } from '../../src/types/Weapon';
 import { generateLeveledWeaponDrop } from '../../src/data/weapons';
 import { registerWeapon } from '../../src/data/weaponRegistry';
@@ -179,6 +180,7 @@ export default function RoomScreen() {
     // If this is a mystery node, reveal it first
     if (node.type === 'mystery') {
       revealMystery(node.id);
+      useSacredItemStore.getState().incrementMysteryRoom();
     }
 
     haptics.success();
@@ -317,6 +319,7 @@ export default function RoomScreen() {
     });
     setTreasureOpened(true);
     useSoulStore.getState().incrementBehavement('explore_treasure_rooms');
+    useSacredItemStore.getState().incrementTreasureRoom();
   };
 
   const handleTreasureContinue = () => {
@@ -361,6 +364,7 @@ export default function RoomScreen() {
     setRestMessage(`You eat a ration and rest by the fire.${hungerNote}\n\n+${hpRestore} HP | +${spRestore} SP`);
     setRestChoice('done');
     useSoulStore.getState().incrementBehavement('caution_rest_sites');
+    useSacredItemStore.getState().incrementRestSite();
     useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
   };
@@ -381,6 +385,7 @@ export default function RoomScreen() {
     setRestMessage(`You rest fitfully, starving. The darkness offers no comfort.\n\n+${hpRestore} HP (no SP recovery)`);
     setRestChoice('done');
     useSoulStore.getState().incrementBehavement('caution_rest_sites');
+    useSacredItemStore.getState().incrementRestSite();
     useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
   };

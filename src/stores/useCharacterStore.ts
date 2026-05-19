@@ -37,6 +37,7 @@ import {
   indexToGrade,
 } from '../types/Stats';
 import { calculateTotalDefense, calculateTotalMagicDefense } from '../types/Armor';
+import { getAccessoryStatBonuses, getArmorStatBonuses } from '../lib/sacredItemConversion';
 import { getBlessingMultiplier } from '../types/Deity';
 import { QUALITY_OUTPUT_CAP_MULTIPLIER } from '../types/Weapon';
 import type { QualityTier } from '../types/Weapon';
@@ -188,8 +189,18 @@ function computeMaxResources(
   const armorMagicDef = calculateTotalMagicDefense(equipment);
   const weaponOutputCap = resolveWeaponOutputCap(equipment.weapon);
   const carryStats = computeCarryStats(levelHistory);
+  // Merge accessory stat bonuses (from equipped accessories and sacred armor) into carryStats
+  const accBonuses = getAccessoryStatBonuses(equipment);
+  const armorBonuses = getArmorStatBonuses(equipment);
+  const mergedCarry: Partial<Record<import('../types/Stats').StatName, number>> = { ...carryStats };
+  for (const [stat, val] of Object.entries(accBonuses)) {
+    mergedCarry[stat as import('../types/Stats').StatName] = (mergedCarry[stat as import('../types/Stats').StatName] ?? 0) + (val as number);
+  }
+  for (const [stat, val] of Object.entries(armorBonuses)) {
+    mergedCarry[stat as import('../types/Stats').StatName] = (mergedCarry[stat as import('../types/Stats').StatName] ?? 0) + (val as number);
+  }
   const derived = calculateDerivedStats(
-    level, stats, carryStats, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance
+    level, stats, mergedCarry, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance
   );
   return { maxHP: derived.maxHP, maxSP: derived.maxSP };
 }
@@ -517,6 +528,12 @@ export const useCharacterStore = create<CharacterState>()(
           const newHP = Math.max(0, Math.min(state.character.maxHP, state.character.currentHP + amount));
           const isDead = newHP <= 0;
 
+          // Sacred item: track healing events
+          if (amount > 0) {
+            const { useSacredItemStore: si } = require('./useSacredItemStore') as typeof import('./useSacredItemStore');
+            si.getState().incrementHealingReceived(1);
+          }
+
           return {
             character: {
               ...state.character,
@@ -554,6 +571,10 @@ export const useCharacterStore = create<CharacterState>()(
             soul.incrementBehavement('resource_gold_1000', amount);
             soul.incrementBehavement('resource_gold_10000', amount);
           }
+
+          // Sacred item: track peak gold held
+          const { useSacredItemStore: si } = require('./useSacredItemStore') as typeof import('./useSacredItemStore');
+          si.getState().updateGoldHeld(newGold);
 
           return {
             character: {
@@ -1214,11 +1235,16 @@ export const useCharacterStore = create<CharacterState>()(
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
+        const accBonuses = getAccessoryStatBonuses(character.equipment);
+        const armorBonuses = getArmorStatBonuses(character.equipment);
+        const mergedCarry: Partial<Record<StatName, number>> = { ...carryStats };
+        for (const [s, v] of Object.entries(accBonuses)) mergedCarry[s as StatName] = (mergedCarry[s as StatName] ?? 0) + (v as number);
+        for (const [s, v] of Object.entries(armorBonuses)) mergedCarry[s as StatName] = (mergedCarry[s as StatName] ?? 0) + (v as number);
 
         return calculateDerivedStats(
           character.level,
           character.stats,
-          carryStats,
+          mergedCarry,
           weaponDamage,
           weaponMagic,
           armorDefense,
@@ -1259,11 +1285,16 @@ export const useCharacterStore = create<CharacterState>()(
         const armorDefense = calculateTotalDefense(character.equipment);
         const armorMagicDef = calculateTotalMagicDefense(character.equipment);
         const weaponOutputCap = resolveWeaponOutputCap(character.equipment.weapon);
+        const accBonusesB = getAccessoryStatBonuses(character.equipment);
+        const armorBonusesB = getArmorStatBonuses(character.equipment);
+        const mergedCarryB: Partial<Record<StatName, number>> = { ...carryStats };
+        for (const [s, v] of Object.entries(accBonusesB)) mergedCarryB[s as StatName] = (mergedCarryB[s as StatName] ?? 0) + (v as number);
+        for (const [s, v] of Object.entries(armorBonusesB)) mergedCarryB[s as StatName] = (mergedCarryB[s as StatName] ?? 0) + (v as number);
 
         const base = calculateDerivedStats(
           character.level,
           character.stats,
-          carryStats,
+          mergedCarryB,
           weaponDamage,
           weaponMagic,
           armorDefense,

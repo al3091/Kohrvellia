@@ -19,6 +19,7 @@ import {
 import { getDeityById } from '../data/pantheons';
 import { useCharacterStore } from './useCharacterStore';
 import { useSoulStore } from './useSoulStore';
+import { useSacredItemStore } from './useSacredItemStore';
 
 // Favor status thresholds
 export const FAVOR_STATUS = {
@@ -137,6 +138,16 @@ export const useDeityStore = create<DeityState>()(
         const newFavor = get().relationship?.favor;
         if (newFavor !== undefined && newFavor >= 80) {
           useSoulStore.getState().setBehavementProgress('social_deity_favor_high', newFavor);
+        }
+        // Deity relic reveal: trigger when reaching 100% favor
+        if (newFavor !== undefined && newFavor >= 100) {
+          const deityId = get().relationship?.deityId;
+          if (deityId) useSacredItemStore.getState().recordMaxFavor(deityId, newFavor);
+        }
+        // Favoured Child tracking (91+)
+        if (newFavor !== undefined && newFavor >= 91) {
+          const deityId = get().relationship?.deityId;
+          if (deityId) useSacredItemStore.getState().recordFavoredChild(deityId);
         }
       },
 

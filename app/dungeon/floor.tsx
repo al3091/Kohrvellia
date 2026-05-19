@@ -28,6 +28,7 @@ import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useShopStore } from '../../src/stores/useShopStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
+import { useSacredItemStore } from '../../src/stores/useSacredItemStore';
 
 // Node type colors
 const NODE_COLORS: Record<NodeType, string> = {
@@ -324,6 +325,9 @@ export default function FloorScreen() {
     if (newFloor % 5 === 0) {
       useAchievementStore.getState().hintDiscovery('walked_past_death');
     }
+
+    // Sacred item: floor reached tracking
+    useSacredItemStore.getState().updateRunFloorReached(newFloor);
   };
 
   const handleExitToTown = () => {

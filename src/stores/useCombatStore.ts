@@ -54,6 +54,7 @@ import {
 import { Combat as CombatConfig, Loot as LootConfig } from '../constants/GameConstants';
 import { useCharacterStore } from './useCharacterStore';
 import { useSoulStore } from './useSoulStore';
+import { useSacredItemStore } from './useSacredItemStore';
 
 export type ActionTag = 'STRIKE' | 'WARD' | 'READ' | 'SURGE';
 export type CombatAction = 'attack' | 'defend' | 'flee' | 'skill' | 'item' | 'observe' | 'taunt'
@@ -727,6 +728,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     if (success) {
       set({ phase: 'fled' });
       get().addLogEntry(narration, 'system');
+      const { monster: m } = get();
+      useSacredItemStore.getState().incrementFlee(m?.isElite ?? false, m?.isBoss ?? false);
       return true;
     } else {
       set({ playerFledAttempts: playerFledAttempts + 1 });
@@ -752,6 +755,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       soul.incrementBehavement('caution_observes', 1);
       soul.incrementBehavement('caution_observes_200', 1);
     }
+    useSacredItemStore.getState().incrementObserve(monster.base.id);
 
     // Generate info about the monster
     const weaknessText = monster.base.weaknesses.length > 0
@@ -793,6 +797,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       soul.incrementBehavement('social_taunts', 1);
       soul.incrementBehavement('social_taunts_100', 1);
     }
+    useSacredItemStore.getState().incrementTaunt(success);
     get().updateCombatDynamic({ lastActionTag: 'READ' });
     return { success };
   },
@@ -1270,6 +1275,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       soul.incrementBehavement('tank_damage_taken_5000', damage);
       soul.checkConsecutiveBehavement('evade_consecutive_dodges', false);
     }
+    useSacredItemStore.getState().incrementDamageTaken(damage, true);
 
     set({ playerDefending: false });
     return { damage, hit: true, statusApplied };
@@ -1420,6 +1426,13 @@ export const useCombatStore = create<CombatState>((set, get) => ({
         soul.incrementBehavement('glory_boss_streak_5', 1);
       }
     }
+    // Sacred item metric: kills
+    {
+      const sacred = useSacredItemStore.getState();
+      const weaponCat = useCharacterStore.getState().character?.equipment.weapon?.base?.category;
+      sacred.incrementKills(1, weaponCat ?? undefined, monster.base.category);
+      if (monster.isBoss) sacred.incrementBossKill(monster.base.id);
+    }
 
     // Get monster category for loot pool
     const category = (monster.base.category || 'beast') as MonsterCategory;
@@ -1531,6 +1544,8 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     const updatedEffects = applyStatusEffect(monsterEffects, newEffect);
 
     if (updatedEffects.length > monsterEffects.length) {
+      // Track status inflict for sacred item acquisition
+      useSacredItemStore.getState().incrementStatusInflict(type);
       get().addLogEntry(
         `${STATUS_EFFECT_ICONS[type]} The ${monster?.displayName} is afflicted with ${newEffect.name}!`,
         'status'

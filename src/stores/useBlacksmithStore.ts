@@ -18,6 +18,7 @@ import { getMaterialById } from '../data/materials';
 import { getWeaponById, updateWeapon, registerWeapon } from '../data/weaponRegistry';
 import { useCharacterStore } from './useCharacterStore';
 import { useInventoryStore } from './useInventoryStore';
+import { useSacredItemStore } from './useSacredItemStore';
 import { QUALITY_TIERS, generateWeaponDisplayName, calculateWeaponDamage } from '../types/Weapon';
 
 export interface IdentificationResult {
@@ -303,6 +304,11 @@ export const useBlacksmithStore = create<BlacksmithState>()(
           itemsUpgraded: state.itemsUpgraded + 1,
           reputation: Math.min(20, state.reputation + repGain),
         }));
+
+        // Sacred item tracking
+        const isLegendary = upgradedWeapon.quality.tier === 'legendary';
+        useSacredItemStore.getState().incrementWeaponUpgrade(isLegendary);
+        useSacredItemStore.getState().incrementBlacksmithSpend(requirement.goldCost);
 
         return { success: true, weapon: upgradedWeapon };
       },

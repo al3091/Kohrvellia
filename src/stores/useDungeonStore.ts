@@ -33,6 +33,7 @@ import { rollStepRamifications } from '../data/ramifications';
 import { useCharacterStore } from './useCharacterStore';
 import { useMarketStore } from './useMarketStore';
 import { useSoulStore } from './useSoulStore';
+import { useSacredItemStore } from './useSacredItemStore';
 
 // ===== MAP GENERATION =====
 
@@ -410,6 +411,8 @@ export const useDungeonStore = create<DungeonState>()(
         newRun.currentMap = floor1;
 
         set({ currentRun: newRun, lastRamifications: null });
+        // Reset per-run sacred item metrics
+        useSacredItemStore.getState().resetRunMetrics();
       },
 
       endRun: (reason) => {
