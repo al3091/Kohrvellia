@@ -295,7 +295,11 @@ export default function FloorScreen() {
     }
 
     // Navigate to travel screen to show ramifications
-    router.push('/dungeon/travel');
+    try {
+      router.push('/dungeon/travel');
+    } catch {
+      router.replace('/dungeon/floor');
+    }
   };
 
   const handleDescend = () => {
@@ -791,6 +795,13 @@ export default function FloorScreen() {
             <Text style={styles.menuButtonText}>Menu</Text>
           </Pressable>
         </View>
+
+        {/* Hint: tell the player how to exit when they're stuck on Floor 1 */}
+        {currentRun?.currentFloor === 1 && !canExitDungeon() && (
+          <Text style={styles.exitHintText}>
+            Return to Floor 1 entrance (start node) to exit
+          </Text>
+        )}
       </View>
 
       {/* Node Tooltip Modal */}
@@ -1319,6 +1330,15 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.text.muted,
     letterSpacing: 1,
+  },
+  exitHintText: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontSize: 11,
+    marginTop: 4,
+    opacity: 0.7,
   },
 
   // Path Preview Styles

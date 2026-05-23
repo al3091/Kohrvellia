@@ -89,10 +89,13 @@ export default function TravelScreen() {
     haptics.light();
     clearRamifications();
 
-    // Go back to floor map or directly to room based on node completion
-    if (currentNode && !currentNode.isCompleted && currentNode.type !== 'start') {
-      router.replace('/dungeon/room');
-    } else {
+    try {
+      if (currentNode && !currentNode.isCompleted && currentNode.type !== 'start') {
+        router.replace('/dungeon/room');
+      } else {
+        router.replace('/dungeon/floor');
+      }
+    } catch {
       router.replace('/dungeon/floor');
     }
   };

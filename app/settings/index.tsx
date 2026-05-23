@@ -12,6 +12,8 @@ import { useSoundStore } from '../../src/stores/useSoundStore';
 import { useGameStore } from '../../src/stores/useGameStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
+import { useDungeonStore } from '../../src/stores/useDungeonStore';
+import { useShopStore } from '../../src/stores/useShopStore';
 import { clearAllStores } from '../../src/lib/clearAllStores';
 import { Colors } from '../../src/constants/Colors';
 import { Typography } from '../../src/constants/Typography';
@@ -85,6 +87,26 @@ export default function SettingsScreen() {
     const current = charStore.character?.stats[stat]?.points ?? 0;
     charStore.setStatPoints(stat, Math.min(999, current + 100));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleResetSession = () => {
+    Alert.alert(
+      'Reset Dungeon Session',
+      'Your current dungeon run will be abandoned. Your character, inventory, and achievements are kept.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Abandon Run',
+          style: 'destructive',
+          onPress: () => {
+            useDungeonStore.getState().clearAllData();
+            useShopStore.getState().resetSessionCounts();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            router.replace('/');
+          },
+        },
+      ]
+    );
   };
 
   const handleClearAllData = () => {
@@ -230,6 +252,13 @@ export default function SettingsScreen() {
           onPress={handleResetTutorial}
         >
           <Text style={styles.buttonText}>Reset Tutorial</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          onPress={handleResetSession}
+        >
+          <Text style={styles.buttonText}>Reset Dungeon Session</Text>
         </Pressable>
 
         <Pressable
