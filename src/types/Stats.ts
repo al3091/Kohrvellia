@@ -271,6 +271,7 @@ export interface DerivedStats {
   spCostReduction: number;      // 0.0–0.30: reduces all skill SP costs
   exploitWeaknessMultiplier: number; // Per-debuff damage multiplier (base; applied N times)
   arcaneArmor: number;          // Bonus magic defense from INT intellect
+  spellPierce: number;          // Flat reduction to enemy magicDefense on magic attacks
 
   // ── AGI secondary interactions ──
   doubleActionChance: number;   // % chance for a free second hit at 70% power
@@ -314,7 +315,8 @@ export function calculateDerivedStats(
   blessingMultiplier: number = 1.0,
   weaponMaxOutputCap: number = Infinity,
   weaponLuck: number = 0,
-  weaponCritChance: number = 0
+  weaponCritChance: number = 0,
+  weaponCategory: string = ''
 ): DerivedStats {
   // Effective stats include current-level points + permanent carry from all previous levels
   const effSTR = calculateEffectiveStat(level, stats.STR.points, carryStats.STR ?? 0);
@@ -330,13 +332,30 @@ export function calculateDerivedStats(
   const baseHP = 50 + effEND * 0.1 + effSTR * 0.02;
   const baseSP = 30 + effWIS * 0.06 + effINT * 0.04;
 
-  // ── INT arcane armor (contributes to magicDefense) ──
+  // ── INT arcane armor + spell pierce (contributes to magicDefense / enemy-magic-def reduction) ──
   const arcaneArmor = Math.min(30, effINT * 0.002);
+  const baseSpellPierce = Math.floor(effINT * 0.002);
 
-  // ── Core combat stats (linear scale, no soft cap) ──
+  // ── Per-stat physical attack coefficients ──
   // C2: Weapon quality caps total physical attack — crude weapons cannot scale with high stats
-  const basePhysicalAttack = Math.min(effSTR * 0.008 + weaponDamage, weaponMaxOutputCap);
-  const baseMagicAttack = effINT * 0.008 + effWIS * 0.002 + weaponMagic;
+  const PHYS_COEFFICIENTS: Record<string, number> = {
+    STR: 0.008, AGI: 0.007, PER: 0.005, END: 0.006, CHA: 0.005,
+  };
+  const PHYS_STAT_VALUES: Record<string, number> = {
+    STR: effSTR, AGI: effAGI, PER: effPER, END: effEND, CHA: effCHA,
+  };
+  const physScaling = (() => {
+    if (PHYS_COEFFICIENTS[weaponCategory] !== undefined) {
+      return (PHYS_STAT_VALUES[weaponCategory] ?? effSTR) * PHYS_COEFFICIENTS[weaponCategory];
+    }
+    return effSTR * 0.008; // fallback for hybrids / no weapon
+  })();
+  const basePhysicalAttack = Math.min(physScaling + weaponDamage, weaponMaxOutputCap);
+
+  // ── Magic attack — WIS weapons swap primary/secondary coefficients ──
+  const baseMagicAttack = weaponCategory === 'WIS'
+    ? effWIS * 0.008 + effINT * 0.002 + weaponMagic
+    : effINT * 0.008 + effWIS * 0.002 + weaponMagic;
   const baseLuckAttack = effLCK * 0.012 + weaponLuck;
   const basePhysicalDefense = effEND * 0.006 + armorDefense;
   const baseMagicDefense = effWIS * 0.008 + armorMagicDef + arcaneArmor;
@@ -439,6 +458,7 @@ export function calculateDerivedStats(
     spCostReduction: baseSpCostReduce,
     exploitWeaknessMultiplier: baseExploitMult,
     arcaneArmor: Math.floor(arcaneArmor),
+    spellPierce: baseSpellPierce,
 
     doubleActionChance: baseDoubleAction,
     comboRamp: baseComboRamp,

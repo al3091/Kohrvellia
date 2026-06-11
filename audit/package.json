@@ -1,0 +1,18 @@
+{
+  "name": "kohrvellia-audit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Walled-off audit harness for Kohrvellia. Imports game source READ-ONLY; never modifies src/, the game package.json, or CI. Report-only.",
+  "scripts": {
+    "smoke": "tsx sim/smoke.ts",
+    "sim": "tsx sim/scaling.ts",
+    "validate": "tsx schemas/validate.ts"
+  },
+  "dependencies": {
+    "fast-check": "^4.8.0",
+    "glob": "^13.0.6",
+    "tsx": "^4.22.4",
+    "zod": "^4.4.3"
+  }
+}

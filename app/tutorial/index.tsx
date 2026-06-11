@@ -125,6 +125,7 @@ export default function TutorialStakesScreen() {
             <Text style={styles.line}>Going deeper is a promise.</Text>
             <Text style={styles.lineGold}>Death keeps it.</Text>
             <Text style={styles.lineDim}>Everything you built. Everything you carry. Gone.</Text>
+            <Text style={styles.lineDim}>Not every god agrees with your existence here.</Text>
           </View>
         </View>
 

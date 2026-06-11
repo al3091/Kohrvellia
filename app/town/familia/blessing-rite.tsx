@@ -25,29 +25,38 @@ import { getLeadingStats } from '../../../src/types/Character';
 // Ceremony phases
 type CeremonyPhase = 'approach' | 'examination' | 'revelation' | 'stat_selection' | 'approval' | 'complete';
 
-// Deity messages based on total growth
+// Deity messages based on total growth — a frightened god committing a crime, not a teacher grading homework
 const BLESSING_MESSAGES = {
   minimal: [
-    'A modest effort. You must push harder.',
-    'Barely perceptible growth. Train more diligently.',
-    'Hmm... I expected more from you.',
+    "You survived. That is more than most of your kind manage.",
+    "The mark holds. Barely. Go back and do better.",
+    "I risk much for little gain here. Prove me wrong next time.",
   ],
   decent: [
-    'Acceptable progress. Keep striving.',
-    'Your efforts are bearing fruit.',
-    'Not bad. Continue on this path.',
+    "The excelia is confirmed. Your patron's record is updated.",
+    "Better. The divine ledger records this. So do I.",
+    "You're still alive. That alone makes this illegal gift worthwhile.",
   ],
   impressive: [
-    'Impressive! Your dedication shows.',
-    'You grow stronger by the day.',
-    'Well done, my child. I am pleased.',
+    "This is unexpected. Even for me.",
+    "The mark flares — visible to any divine eye within range. Worth it.",
+    "Your growth makes the law I broke feel less like a mistake.",
   ],
   exceptional: [
-    'MAGNIFICENT! Such growth is rare!',
-    'The heavens themselves take notice!',
-    'You surpass all expectations!',
+    "They will notice. What you are becoming — they will NOTICE.",
+    "No Wilak should be capable of this. The records are being rewritten.",
+    "I did not expect to be proud of a crime. And yet.",
   ],
 };
+
+const DOMAIN_GLYPH: Record<string, string> = {
+  death: '[Ω]', fire: '[∆]', water: '[~]', nature: '[ψ]',
+  war: '[✕]', knowledge: '[◉]', sky: '[↑]', earth: '[⊕]',
+  shadow: '[◆]', chaos: '[≋]', order: '[≡]', void: '[∅]',
+};
+
+const getDeityGlyph = (domain: string, name: string): string =>
+  DOMAIN_GLYPH[domain] ?? `[${name.charAt(0).toUpperCase()}.]`;
 
 // Archetype labels for each stat, used in the primary stat selection UI
 const STAT_ARCHETYPES: Record<StatName, string> = {
@@ -367,9 +376,17 @@ export default function BlessingRiteScreen() {
         {/* Approach Phase */}
         {phase === 'approach' && (
           <View style={styles.phaseContainer}>
-            <Text style={styles.deityName}>{deity.name}</Text>
+            <Text style={styles.deityName}>
+              <Text style={styles.deityGlyph}>{getDeityGlyph(deity.domain, deity.name)} </Text>
+              {deity.name}
+            </Text>
             <Text style={styles.phaseText}>{`"Come, ${character.name}. Kneel before me..."`}</Text>
             <Text style={styles.phaseSubtext}>"Let me see your back..."</Text>
+            {character.level >= 3 && (
+              <Text style={styles.phaseSubtext}>
+                {"\"The mark flares. Any divine eye within range sees this moment.\""}
+              </Text>
+            )}
           </View>
         )}
 
@@ -461,7 +478,10 @@ export default function BlessingRiteScreen() {
         {/* Approval Phase */}
         {(phase === 'approval' || phase === 'complete') && (
           <View style={styles.phaseContainer}>
-            <Text style={styles.deityName}>{deity.name}</Text>
+            <Text style={styles.deityName}>
+              <Text style={styles.deityGlyph}>{getDeityGlyph(deity.domain, deity.name)} </Text>
+              {deity.name}
+            </Text>
             <View style={styles.approvalContainer}>
               <Text style={styles.approvalText}>"{getApprovalMessage()}"</Text>
             </View>
@@ -559,6 +579,11 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  deityGlyph: {
+    fontSize: 14,
+    color: Colors.text.muted,
+    letterSpacing: 2,
   },
 
   // Examination

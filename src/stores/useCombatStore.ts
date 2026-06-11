@@ -29,6 +29,7 @@ import {
 } from '../data/materials';
 import type { Weapon } from '../types/Weapon';
 import { getDamageEffectiveness } from '../types/Weapon';
+import { resolveWeaponFormula } from '../lib/weaponFormulaResolver';
 import type { StatusEffect, StatusEffectType } from '../types/StatusEffect';
 import type { ConsumableEffect } from '../types/Consumable';
 import { getConsumableById } from '../data/consumables';
@@ -500,21 +501,27 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     let damageMultiplier = 1.0;
     if (hasStatusEffect(playerEffects, 'weaken')) damageMultiplier *= 0.75;
 
-    // ── 4. Enemy defense — reduced by armorPierce (STR) ──
-    const effectiveEnemyDef = Math.max(0, monster.defense - derived.armorPierce);
+    // ── 4. Enemy defense — formula resolver routes by category + damage type ──
+    const equippedWeapon = useCharacterStore.getState().character?.equipment.weapon;
+    const equippedWeaponCategory = equippedWeapon?.base?.category ?? '';
+    const primaryDamageType = equippedWeapon?.base?.damageTypes?.[0];
+    const formula = resolveWeaponFormula(equippedWeaponCategory, primaryDamageType);
+    const rawEnemyDef = formula.defenseTarget === 'magDef' ? (monster.magicDefense ?? 0) : monster.defense;
+    const effectiveEnemyDef = Math.max(0,
+      rawEnemyDef - (formula.pierceType === 'spellPierce' ? (derived.spellPierce ?? 0) : derived.armorPierce)
+    );
     const defenseReduction = effectiveEnemyDef / (effectiveEnemyDef + 100);
 
-    // ── 5. Base damage — route by weapon category ──
-    const equippedWeaponCategory = useCharacterStore.getState().character?.equipment.weapon?.base?.category;
+    // ── 5. Base damage — route by weapon formula profile ──
     const baseAttackStat =
-      equippedWeaponCategory === 'LCK' ? (derived.luckAttack ?? 0)
-      : (equippedWeaponCategory === 'INT' || equippedWeaponCategory === 'WIS') ? (derived.magicAttack ?? derived.physicalAttack)
-      : derived.physicalAttack;
+      formula.attackPool === 'luck'    ? (derived.luckAttack ?? 0) :
+      formula.attackPool === 'magical' ? (derived.magicAttack ?? derived.physicalAttack) :
+      formula.attackPool === 'hybrid'  ? (derived.physicalAttack + derived.magicAttack) :
+      derived.physicalAttack;
     let rawDamage = Math.max(1, baseAttackStat * (1 - defenseReduction));
 
     // ── 5b. Weapon Triangle — damage type vs monster armor type ──
-    const equippedWeapon = useCharacterStore.getState().character?.equipment.weapon;
-    const weaponDamageType = equippedWeapon?.base?.damageTypes?.[0];
+    const weaponDamageType = primaryDamageType;
     let triangleMultiplier = 1.0;
     if (weaponDamageType) {
       const armor = monster.base.armorType;
@@ -535,7 +542,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
         soul.incrementBehavement('phys_crits_25', 1);
         soul.incrementBehavement('phys_crits_100', 1);
       }
-      if (equippedWeaponCategory === 'INT' || equippedWeaponCategory === 'WIS') {
+      if (formula.attackPool === 'magical' || formula.attackPool === 'hybrid') {
         soul.incrementBehavement('magic_attacks_100', 1);
         soul.incrementBehavement('magic_attacks_500', 1);
       }
@@ -656,9 +663,15 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       return { hit: false, damage: 0 };
     }
 
-    const effectiveEnemyDef = Math.max(0, monster.defense - derived.armorPierce);
+    const qsWeapon = useCharacterStore.getState().character?.equipment.weapon;
+    const qsCategory = qsWeapon?.base?.category ?? '';
+    const qsPrimaryDmgType = qsWeapon?.base?.damageTypes?.[0];
+    const qsFormula = resolveWeaponFormula(qsCategory, qsPrimaryDmgType);
+    const qsRawDef = qsFormula.defenseTarget === 'magDef' ? (monster.magicDefense ?? 0) : monster.defense;
+    const effectiveEnemyDef = Math.max(0, qsRawDef - (qsFormula.pierceType === 'spellPierce' ? (derived.spellPierce ?? 0) : derived.armorPierce));
     const defenseReduction = effectiveEnemyDef / (effectiveEnemyDef + 100);
-    const rawDamage = Math.max(1, derived.physicalAttack * 0.5 * (1 - defenseReduction));
+    const qsBase = qsFormula.attackPool === 'magical' ? derived.magicAttack : derived.physicalAttack;
+    const rawDamage = Math.max(1, qsBase * 0.5 * (1 - defenseReduction));
     const varianceFactor = 0.85 + Math.random() * 0.30;
     const damage = Math.floor(rawDamage * varianceFactor);
 

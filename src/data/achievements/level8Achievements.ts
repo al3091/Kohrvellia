@@ -209,6 +209,25 @@ export const LEVEL_8_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Ultimate',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 65 — Skaer'fuur) =====
+  // Fragment of a god — the one that remembers its original name
+  {
+    id: 'skaer_fuur_remembered',
+    name: 'The Fragment Named',
+    description: "Name what Skaer'fuur was before the Shattering. It has waited for someone to remember.",
+    tier: 'heroic',
+    targetLevel: 9,
+    requirements: [
+      { type: 'custom', value: 1, description: "Name Skaer'fuur's divine origin" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: "It was a god once. You saw what remained.",
+    bonusStatPoints: 2,
+    gloryPoints: 5,
+    titleModifier: 'the Remembering',
+  },
 ];
 
 export function getLevel8AchievementsByTier(tier: Achievement['tier']): Achievement[] {

@@ -191,11 +191,11 @@ export default function LevelUpScreen() {
     }
 
     // Apply stacking bonuses
-    if (selectedForLevelUp.length >= 2) {
+    const stackCount = selectedForLevelUp.length;
+    if (stackCount >= 3) {
+      bonusPoints = Math.floor(bonusPoints * 1.5);
+    } else if (stackCount >= 2) {
       bonusPoints = Math.floor(bonusPoints * 1.25);
-    }
-    if (selectedForLevelUp.length >= 3) {
-      bonusPoints = Math.floor(bonusPoints * 1.2);
     }
 
     return { bonusPoints, gloryPoints, titles };
@@ -313,6 +313,15 @@ export default function LevelUpScreen() {
           const { useJobStore } = require('../../src/stores/useJobStore') as typeof import('../../src/stores/useJobStore');
           if (!useJobStore.getState().hasSelectedJob) {
             router.replace('/dungeon/job-select');
+          } else {
+            router.back();
+          }
+        } else if (newLevel === 5) {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { useJobStore } = require('../../src/stores/useJobStore') as typeof import('../../src/stores/useJobStore');
+          const jobStore = useJobStore.getState();
+          if (jobStore.hasSelectedJob && !jobStore.currentSpecializationId) {
+            router.replace('/dungeon/job-select?mode=specialization');
           } else {
             router.back();
           }

@@ -32,6 +32,13 @@ export const FAVOR_STATUS = {
   FAVOURED_CHILD: { min: 91, max: 100, label: 'Favoured Child', multiplier: 2.0 },
 } as const;
 
+export const EVICTION_MESSAGES = {
+  abandoned: (deityName: string) =>
+    `${deityName} has gone silent. The mark on your back grows cold — then fades. They did not say goodbye. Gods who speak at the end leave evidence.`,
+  disfavored: (deityName: string) =>
+    `${deityName} watches, but from further away now. The thread is thin.`,
+} as const;
+
 type FavorStatus = keyof typeof FAVOR_STATUS;
 
 interface DeityState {

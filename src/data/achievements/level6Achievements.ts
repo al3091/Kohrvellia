@@ -209,6 +209,40 @@ export const LEVEL_6_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Immaculate',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENTS (Floors 30–35) =====
+  // BUG-034 continuation: boss outcome achievements for Johr'ulf zone bosses
+  {
+    id: 'ulfbiik_pack_broken',
+    name: 'The Wolf Pack Unmade',
+    description: "Unmake the construct Fenrir built — expose the flaw in its bond before combat.",
+    tier: 'challenging',
+    targetLevel: 7,
+    requirements: [
+      { type: 'custom', value: 1, description: "Reveal Ulfbiik's pack weakness via dialogue" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: "Fenrir's construct patrolled this threshold since the 1st Coronation. It will not again.",
+    bonusStatPoints: 1,
+    gloryPoints: 4,
+    titleModifier: 'Pack Breaker',
+  },
+  {
+    id: 'naa_haitt_unplagued',
+    name: 'The Plague Denied',
+    description: "Prove to Naa'Haitt that you are nekl'ych'e — one who cannot be claimed.",
+    tier: 'challenging',
+    targetLevel: 7,
+    requirements: [
+      { type: 'custom', value: 1, description: "Resist Naa'Haitt's plague through dialogue" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: "She called you nekl'ych'e. You proved her wrong.",
+    bonusStatPoints: 1,
+    gloryPoints: 4,
+  },
 ];
 
 export function getLevel6AchievementsByTier(tier: Achievement['tier']): Achievement[] {

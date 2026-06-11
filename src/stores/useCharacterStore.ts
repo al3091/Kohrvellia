@@ -39,7 +39,7 @@ import {
 import { calculateTotalDefense, calculateTotalMagicDefense } from '../types/Armor';
 import { getAccessoryStatBonuses, getArmorStatBonuses } from '../lib/sacredItemConversion';
 import { getBlessingMultiplier } from '../types/Deity';
-import { QUALITY_OUTPUT_CAP_MULTIPLIER } from '../types/Weapon';
+import { QUALITY_OUTPUT_CAP_MULTIPLIER, MAGICAL_WEAPON_CATEGORIES, HYBRID_MIXED_CATEGORIES } from '../types/Weapon';
 import type { QualityTier } from '../types/Weapon';
 import { useAchievementStore } from './useAchievementStore';
 import { useSoulStore } from './useSoulStore';
@@ -177,12 +177,17 @@ function computeMaxResources(
   deityFavor: number
 ): { maxHP: number; maxSP: number } {
   const blessingMult = getBlessingMultiplier(deityFavor ?? 50);
-  const weaponCategory = equipment.weapon?.base?.category;
+  const weaponCategory = equipment.weapon?.base?.category ?? '';
+  const primaryStats = equipment.weapon?.base?.primaryStats;
   const isLuckWeapon = weaponCategory === 'LCK';
-  const isMagicWeapon = equipment.weapon?.base?.damageTypes?.includes('magic') && !isLuckWeapon;
+  const isMagicWeapon = !isLuckWeapon && MAGICAL_WEAPON_CATEGORIES.has(weaponCategory);
+  const isHybridMixed = !isLuckWeapon && !isMagicWeapon && HYBRID_MIXED_CATEGORIES.has(weaponCategory);
   const rawDamage = equipment.weapon?.finalDamage ?? 0;
-  const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
-  const weaponMagic = isMagicWeapon ? rawDamage : 0;
+  const physRatio = (isHybridMixed && primaryStats)
+    ? primaryStats.filter((s) => !MAGICAL_WEAPON_CATEGORIES.has(s) && s !== 'LCK').length / primaryStats.length
+    : 1;
+  const weaponDamage = isLuckWeapon ? 0 : (isMagicWeapon ? 0 : Math.round(rawDamage * physRatio));
+  const weaponMagic = isLuckWeapon ? 0 : (isMagicWeapon ? rawDamage : Math.round(rawDamage * (1 - physRatio)));
   const weaponLuck = isLuckWeapon ? rawDamage : 0;
   const weaponCritChance = equipment.weapon?.finalCritChance ?? 0;
   const armorDefense = calculateTotalDefense(equipment);
@@ -200,7 +205,7 @@ function computeMaxResources(
     mergedCarry[stat as import('../types/Stats').StatName] = (mergedCarry[stat as import('../types/Stats').StatName] ?? 0) + (val as number);
   }
   const derived = calculateDerivedStats(
-    level, stats, mergedCarry, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance
+    level, stats, mergedCarry, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance, weaponCategory
   );
   return { maxHP: derived.maxHP, maxSP: derived.maxSP };
 }
@@ -1224,12 +1229,17 @@ export const useCharacterStore = create<CharacterState>()(
 
         const carryStats = computeCarryStats(character.levelHistory);
         const equippedWeapon = character.equipment.weapon;
-        const weaponCategory = equippedWeapon?.base?.category;
-        const isMagicWeapon = equippedWeapon?.base?.damageTypes?.includes('magic') && weaponCategory !== 'LCK';
+        const weaponCategory = equippedWeapon?.base?.category ?? '';
+        const primaryStats = equippedWeapon?.base?.primaryStats;
         const isLuckWeapon = weaponCategory === 'LCK';
+        const isMagicWeapon = !isLuckWeapon && MAGICAL_WEAPON_CATEGORIES.has(weaponCategory);
+        const isHybridMixed = !isLuckWeapon && !isMagicWeapon && HYBRID_MIXED_CATEGORIES.has(weaponCategory);
         const rawDamage = equippedWeapon?.finalDamage ?? 0;
-        const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
-        const weaponMagic = isMagicWeapon ? rawDamage : 0;
+        const physRatio = (isHybridMixed && primaryStats)
+          ? primaryStats.filter((s) => !MAGICAL_WEAPON_CATEGORIES.has(s) && s !== 'LCK').length / primaryStats.length
+          : 1;
+        const weaponDamage = isLuckWeapon ? 0 : (isMagicWeapon ? 0 : Math.round(rawDamage * physRatio));
+        const weaponMagic = isLuckWeapon ? 0 : (isMagicWeapon ? rawDamage : Math.round(rawDamage * (1 - physRatio)));
         const weaponLuck = isLuckWeapon ? rawDamage : 0;
         const weaponCritChance = equippedWeapon?.finalCritChance ?? 0;
         const armorDefense = calculateTotalDefense(character.equipment);
@@ -1252,7 +1262,8 @@ export const useCharacterStore = create<CharacterState>()(
           1.0,
           weaponOutputCap,
           weaponLuck,
-          weaponCritChance
+          weaponCritChance,
+          weaponCategory
         );
       },
 
@@ -1274,12 +1285,17 @@ export const useCharacterStore = create<CharacterState>()(
 
         const carryStats = computeCarryStats(character.levelHistory);
         const equippedWeapon = character.equipment.weapon;
-        const weaponCategory = equippedWeapon?.base?.category;
-        const isMagicWeapon = equippedWeapon?.base?.damageTypes?.includes('magic') && weaponCategory !== 'LCK';
+        const weaponCategory = equippedWeapon?.base?.category ?? '';
+        const primaryStats = equippedWeapon?.base?.primaryStats;
         const isLuckWeapon = weaponCategory === 'LCK';
+        const isMagicWeapon = !isLuckWeapon && MAGICAL_WEAPON_CATEGORIES.has(weaponCategory);
+        const isHybridMixed = !isLuckWeapon && !isMagicWeapon && HYBRID_MIXED_CATEGORIES.has(weaponCategory);
         const rawDamage = equippedWeapon?.finalDamage ?? 0;
-        const weaponDamage = (isMagicWeapon || isLuckWeapon) ? 0 : rawDamage;
-        const weaponMagic = isMagicWeapon ? rawDamage : 0;
+        const physRatio = (isHybridMixed && primaryStats)
+          ? primaryStats.filter((s) => !MAGICAL_WEAPON_CATEGORIES.has(s) && s !== 'LCK').length / primaryStats.length
+          : 1;
+        const weaponDamage = isLuckWeapon ? 0 : (isMagicWeapon ? 0 : Math.round(rawDamage * physRatio));
+        const weaponMagic = isLuckWeapon ? 0 : (isMagicWeapon ? rawDamage : Math.round(rawDamage * (1 - physRatio)));
         const weaponLuck = isLuckWeapon ? rawDamage : 0;
         const weaponCritChance = equippedWeapon?.finalCritChance ?? 0;
         const armorDefense = calculateTotalDefense(character.equipment);
@@ -1302,7 +1318,8 @@ export const useCharacterStore = create<CharacterState>()(
           blessingMult,
           weaponOutputCap,
           weaponLuck,
-          weaponCritChance
+          weaponCritChance,
+          weaponCategory
         );
 
         // Apply Paragon title buffs if character has reached Level 10 Denatus

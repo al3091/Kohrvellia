@@ -19,6 +19,26 @@ import {
   formatRamificationEffect,
 } from '../../src/data/ramifications';
 import type { Ramification } from '../../src/types/Dungeon';
+import { ZONE_NAMES } from '../../src/constants/GameConstants';
+
+const ZONE_THRESHOLDS: Array<{ floor: number; name: string }> = [
+  { floor: 1,   name: ZONE_NAMES.FLOOR_1_10 },
+  { floor: 11,  name: ZONE_NAMES.FLOOR_11_25 },
+  { floor: 26,  name: ZONE_NAMES.FLOOR_26_40 },
+  { floor: 41,  name: ZONE_NAMES.FLOOR_41_60 },
+  { floor: 61,  name: ZONE_NAMES.FLOOR_61_80 },
+  { floor: 81,  name: ZONE_NAMES.FLOOR_81_99 },
+  { floor: 100, name: ZONE_NAMES.FLOOR_100 },
+];
+
+function getZoneForFloor(floor: number): { name: string; isEntry: boolean } {
+  let current = ZONE_THRESHOLDS[0];
+  for (const threshold of ZONE_THRESHOLDS) {
+    if (floor >= threshold.floor) current = threshold;
+  }
+  const isEntry = ZONE_THRESHOLDS.some(t => t.floor === floor && floor > 1);
+  return { name: current.name, isEntry };
+}
 
 export default function TravelScreen() {
   const router = useRouter();
@@ -100,6 +120,8 @@ export default function TravelScreen() {
     }
   };
 
+  const zone = currentRun ? getZoneForFloor(currentRun.currentFloor) : null;
+
   if (!map || !currentRun || !character) {
     return (
       <SafeAreaView style={styles.container}>
@@ -124,7 +146,17 @@ export default function TravelScreen() {
         <Text style={styles.stepInfo}>
           Step {map.stepsTaken}/{map.totalSteps}
         </Text>
+        {zone && (
+          <Text style={styles.zoneLabel}>{zone.name}</Text>
+        )}
       </View>
+
+      {/* Zone entry banner — shown only when entering a new zone for the first time */}
+      {zone?.isEntry && (
+        <View style={styles.zoneEntryBanner}>
+          <Text style={styles.zoneEntryText}>— {zone.name} —</Text>
+        </View>
+      )}
 
       {/* Destination Info */}
       {currentNode && (
@@ -298,6 +330,26 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.text.muted,
     marginTop: Spacing.xs,
+  },
+  zoneLabel: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    marginTop: Spacing.xs,
+    letterSpacing: 1,
+    fontStyle: 'italic',
+  },
+  zoneEntryBanner: {
+    backgroundColor: Colors.background.tertiary,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderBottomWidth: BorderWidth.thin,
+    borderBottomColor: Colors.border.accent,
+  },
+  zoneEntryText: {
+    ...Typography.h5,
+    color: Colors.text.accent,
+    letterSpacing: 3,
+    textAlign: 'center',
   },
   destinationContainer: {
     paddingHorizontal: Padding.screen.horizontal,

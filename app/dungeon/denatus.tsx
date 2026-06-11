@@ -13,6 +13,7 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useSoulStore } from '../../src/stores/useSoulStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { DENATUS_WILAK_ALIGNMENT } from '../../src/constants/GameConstants';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { CeremonialDivider } from '../../src/components/ui/CeremonialDivider';
@@ -258,6 +259,7 @@ export default function DenatusScreen() {
               <Animated.View style={[styles.fullTitleBox, { opacity: glowOpacity }]}>
                 <Text style={styles.fullTitleLabel}>PARAGON TITLE</Text>
                 <Text style={[styles.fullTitle, { color: crColor }]}>{title.fullTitle}</Text>
+                <Text style={styles.alignmentLabel}>{DENATUS_WILAK_ALIGNMENT}</Text>
               </Animated.View>
             )}
           </View>
@@ -461,6 +463,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     letterSpacing: 1,
+  },
+  alignmentLabel: {
+    ...Typography.caption,
+    color: Colors.text.muted,
+    fontStyle: 'italic',
+    letterSpacing: 2,
+    marginTop: Spacing.xs,
   },
 
   // Buffs phase

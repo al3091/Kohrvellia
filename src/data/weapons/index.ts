@@ -72,7 +72,7 @@ export function generateLeveledWeaponDrop(
   characterLevel: number,
   categoryFilter?: WeaponCategory[]
 ): import('../../types/Weapon').Weapon {
-  const { MATERIALS, QUALITIES, ENCHANTMENTS, createWeaponInstance } = require('./baseWeapons');
+  const { MATERIALS, QUALITIES, ENCHANTMENTS, createWeaponInstance, weightedRandomQuality } = require('./baseWeapons');
 
   const pool = getWeaponsByLevel(characterLevel, categoryFilter);
   const safePool = pool.length > 0 ? pool : ALL_WEAPONS.filter(w => !w.isUnique);
@@ -82,7 +82,7 @@ export function generateLeveledWeaponDrop(
   const material = availableMaterials[Math.floor(Math.random() * availableMaterials.length)];
 
   const availableQualities = QUALITIES.filter((q: { minFloor: number }) => q.minFloor <= floorNumber);
-  const quality = availableQualities[Math.floor(Math.random() * availableQualities.length)];
+  const quality = weightedRandomQuality(availableQualities);
 
   let enchantment: import('../../types/Weapon').WeaponEnchantment | undefined;
   if (Math.random() < 0.2) {

@@ -531,12 +531,18 @@ export const useShopStore = create<ShopStoreState>()(
 
       // Add reputation
       addReputation: (shopType, amount) => {
+        const currentRep = get().npcReputation[shopType];
+        const newRep = Math.max(-20, Math.min(20, currentRep + amount));
         set((state) => ({
           npcReputation: {
             ...state.npcReputation,
-            [shopType]: Math.max(-20, Math.min(20, state.npcReputation[shopType] + amount)),
+            [shopType]: newRep,
           },
         }));
+        if (amount > 0) {
+          const { useAchievementStore } = require('./useAchievementStore') as typeof import('./useAchievementStore');
+          useAchievementStore.getState().checkReputationDiscovery(newRep);
+        }
       },
 
       // Reset reputation to default (called on new character creation)
