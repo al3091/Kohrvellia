@@ -81,7 +81,7 @@ function AnimatedEntry({ entry, isLatest, onComplete }: AnimatedEntryProps) {
   const [isComplete, setIsComplete] = useState(!isLatest);
   const opacity = useRef(new Animated.Value(isLatest ? 0 : 0.6)).current;
   const indexRef = useRef(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { color, prefix } = getEntryStyle(entry.type);
   const narrativeMessage = formatNarrativeMessage(entry.message, entry.type);

@@ -60,7 +60,7 @@ export function SneakRollAnimation({
   // Animation sequence
   useEffect(() => {
     // Phase 1: Rolling numbers rapidly
-    let rollInterval: NodeJS.Timeout;
+    let rollInterval: ReturnType<typeof setInterval>;
     let currentNumber = 1;
 
     // Start with fade in
@@ -83,8 +83,8 @@ export function SneakRollAnimation({
     }, 80);
 
     // After cycling, slow down and land on actual roll
-    let slowdownTimer: NodeJS.Timeout | null = null;
-    let slowInterval: NodeJS.Timeout | null = null;
+    let slowdownTimer: ReturnType<typeof setTimeout> | null = null;
+    let slowInterval: ReturnType<typeof setInterval> | null = null;
 
     slowdownTimer = setTimeout(() => {
       clearInterval(rollInterval);

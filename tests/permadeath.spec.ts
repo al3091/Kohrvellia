@@ -120,7 +120,7 @@ describe('KV-AUD-124 — deity reset is complete', () => {
 describe('KV-AUD-002 — clearAllStores wires the new resets (source smoke)', () => {
   it('calls both resetForNewCharacter functions', () => {
     const src = fs.readFileSync(
-      fileURLToPath(new URL('../src/lib/clearAllStores.ts', import.meta.url)),
+      fileURLToPath(new URL('../src/lib/clearAllStores.ts', import.meta.url).href),
       'utf8'
     );
     expect(src).toContain('useShopStore.getState().resetForNewCharacter()');

@@ -59,7 +59,7 @@ export function TypewriterText({
   const [isComplete, setIsComplete] = useState(instant);
   const [showCursor, setShowCursor] = useState(!instant && cursor);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorAnimRef = useRef<Animated.CompositeAnimation | null>(null);
   const indexRef = useRef(0);
   const speedMultiplier = SPEED_MULTIPLIERS[speed];
