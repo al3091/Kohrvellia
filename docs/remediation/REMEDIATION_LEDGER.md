@@ -11,8 +11,9 @@
 
 - **Phase:** ★ **EXECUTION — WAVE 0** *(GATE G1 SIGNED by the owner 2026-06-10)*
 - **G1 decisions (authority):** Part 1 approved in full · **D1** Lycagon bands (player-scaled monsters clamped to per-floor min/max) · **D2** BUILD durability+repair (FE-style; broken-until-repaired proposed) · **D3** DELETE the dungeon merchant + doc · **D4** WIRE ALL biomes (soft-preference weighting) · **D5** stealth = sneak (+Ambush proposal) · **D6** %-growth modifiers replace flat deity/backstory stats (+15/−10 deity, +10/−10 backstory, clamp ±25%; closes 364) · **D7** author ALL ~70 missing jobs (no fallback; 5 sub-batches, owner voice-review)
-- **Current batch:** B-01 (track the S0 files + baseline the audited tree) — **WIP** · then B-02 (CI gates) · then B-03 → B-04 → B-05
-- **Game-code edits:** begin this session (per-batch, IDs in commits, guards + `13` entries mandatory)
+- **Current batch:** B-03 (permadeath integrity — incl. vitest setup for the first guard suite) — **TODO** · then B-04 (farm) → B-05 (event single-owner) · W0 closes
+- **DONE:** ✅ **B-01** @ `675e7fd` (**KV-AUD-001 CLOSED** — S0 recipe returns empty; master == the audited tree) · ✅ **B-02** @ `5aaa474` (4 CI gates, all locally green at the audit's exact numbers; ratchets armed; eslint rules deferred to B-08 by design)
+- **Game-code edits:** ACTIVE (per-batch, IDs in commits, guards + `13` entries mandatory)
 - *(Analysis-phase pointer preserved below for the record)*
 - **The G1 package:** this ledger (371 rows, all statuses graph-resolved + HEAD-verified) · `09_TRIAGE_REPORT.md` · `10_ROOT_CAUSE_LEDGER.md` · `11_UNWIRED_REGISTRY.md` · `12_SURGICAL_PLAN.md` (33 batches, W0–W5 + 4 quarantine; **unsigned sign-off block at its end**) · `13_VERIFICATION_LOG.md` (baselines locked)
 - **Decisions requested at G1:** Q-2 scaling fork · Q-1's four design-vs-code quarantines · G-5 displayed-costs · B-20 jobs pacing (defaults marked in 12)
