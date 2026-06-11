@@ -1,0 +1,5 @@
+{
+  "entry": ["app/**/*.{ts,tsx}", "babel.config.js", "app.json"],
+  "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+  "ignore": ["node_modules/**", "dist/**", ".expo/**", "audit/**", ".audit_tmp/**"]
+}

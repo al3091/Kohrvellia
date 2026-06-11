@@ -105,29 +105,38 @@ export const useAchievementStore = create<AchievementState>()(
           if (!achievementProgress || achievementProgress.isCompleted) continue;
           if (achievementProgress.discoveryState === 'hidden') continue;
 
-          // Update each matching requirement
+          let modified = false;
+          const newReqProgress = [...achievementProgress.requirementProgress];
+
           for (let i = 0; i < achievement.requirements.length; i++) {
             const req = achievement.requirements[i];
             if (req.type !== type) continue;
             if (req.targetType && req.targetType !== targetType) continue;
 
-            const reqProgress = achievementProgress.requirementProgress[i];
-            if (!reqProgress) continue;
+            const rp = newReqProgress[i];
+            if (!rp) continue;
 
-            // Set the value (for absolute tracking like floor_reach)
-            reqProgress.current = Math.max(reqProgress.current, value);
-            reqProgress.completed = isRequirementMet(req, reqProgress.current);
+            const newCurrent = Math.max(rp.current, value);
+            const newCompleted = isRequirementMet(req, newCurrent);
+            if (newCurrent !== rp.current || newCompleted !== rp.completed) {
+              newReqProgress[i] = { ...rp, current: newCurrent, completed: newCompleted };
+              modified = true;
+            }
           }
 
-          // Check if achievement is now complete
+          if (!modified) continue;
+
           const allComplete = achievement.requireAll
-            ? achievementProgress.requirementProgress.every(r => r.completed)
-            : achievementProgress.requirementProgress.some(r => r.completed);
+            ? newReqProgress.every(r => r.completed)
+            : newReqProgress.some(r => r.completed);
 
-          if (allComplete && !achievementProgress.isCompleted) {
-            achievementProgress.isCompleted = true;
-            achievementProgress.completedAt = Date.now();
-          }
+          updatedProgress[achievement.id] = {
+            ...achievementProgress,
+            requirementProgress: newReqProgress,
+            ...(allComplete && !achievementProgress.isCompleted
+              ? { isCompleted: true, completedAt: Date.now() }
+              : {}),
+          };
         }
 
         set({ progress: updatedProgress });
@@ -142,29 +151,36 @@ export const useAchievementStore = create<AchievementState>()(
           if (!achievementProgress || achievementProgress.isCompleted) continue;
           if (achievementProgress.discoveryState === 'hidden') continue;
 
-          // Update each matching requirement
+          let modified = false;
+          const newReqProgress = [...achievementProgress.requirementProgress];
+
           for (let i = 0; i < achievement.requirements.length; i++) {
             const req = achievement.requirements[i];
             if (req.type !== type) continue;
             if (req.targetType && req.targetType !== targetType) continue;
 
-            const reqProgress = achievementProgress.requirementProgress[i];
-            if (!reqProgress) continue;
+            const rp = newReqProgress[i];
+            if (!rp) continue;
 
-            // Increment the value (for cumulative tracking like kill_count)
-            reqProgress.current += amount;
-            reqProgress.completed = isRequirementMet(req, reqProgress.current);
+            const newCurrent = rp.current + amount;
+            const newCompleted = isRequirementMet(req, newCurrent);
+            newReqProgress[i] = { ...rp, current: newCurrent, completed: newCompleted };
+            modified = true;
           }
 
-          // Check if achievement is now complete
+          if (!modified) continue;
+
           const allComplete = achievement.requireAll
-            ? achievementProgress.requirementProgress.every(r => r.completed)
-            : achievementProgress.requirementProgress.some(r => r.completed);
+            ? newReqProgress.every(r => r.completed)
+            : newReqProgress.some(r => r.completed);
 
-          if (allComplete && !achievementProgress.isCompleted) {
-            achievementProgress.isCompleted = true;
-            achievementProgress.completedAt = Date.now();
-          }
+          updatedProgress[achievement.id] = {
+            ...achievementProgress,
+            requirementProgress: newReqProgress,
+            ...(allComplete && !achievementProgress.isCompleted
+              ? { isCompleted: true, completedAt: Date.now() }
+              : {}),
+          };
         }
 
         set({ progress: updatedProgress });
@@ -302,11 +318,11 @@ export const useAchievementStore = create<AchievementState>()(
         }
 
         // Apply stacking bonus for multiple achievements
-        if (selectedForLevelUp.length >= 2) {
+        const stackCount = selectedForLevelUp.length;
+        if (stackCount >= 3) {
+          bonusPoints = Math.floor(bonusPoints * 1.5);
+        } else if (stackCount >= 2) {
           bonusPoints = Math.floor(bonusPoints * 1.25);
-        }
-        if (selectedForLevelUp.length >= 3) {
-          bonusPoints = Math.floor(bonusPoints * 1.2); // Additional 20%
         }
 
         set({

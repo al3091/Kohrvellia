@@ -13,6 +13,8 @@
 
 import type { PlayerSnapshot } from '../../types/PlayerSnapshot';
 import type { StatName } from '../../types/Stats';
+import { BOSSES_30_TO_60 } from './milestoneBossesFloors30to60';
+import { BOSSES_65_TO_100 } from './milestoneBossesFloors65to100';
 
 // ===== TYPES =====
 
@@ -886,7 +888,7 @@ const MALIK: MilestoneBoss = {
 };
 
 // ──────────────────────────────────────────────────────────
-// ALL DEFINED BOSSES (MVP: floors 5-25)
+// ALL DEFINED BOSSES (floors 5-100)
 // ──────────────────────────────────────────────────────────
 export const MILESTONE_BOSSES: MilestoneBoss[] = [
   VANYA,
@@ -894,9 +896,8 @@ export const MILESTONE_BOSSES: MilestoneBoss[] = [
   KUTCHER,
   KALINDI,
   MALIK,
-  // Floors 30-100: Sekhmet, Ahab, Ignis, Morgaine, Tyrael, Jormungandr,
-  // Nemesis, Apep, Ashur, Sedna, Yaotzin, Thoth, Hades, Brahman, Valdris
-  // — to be implemented in subsequent sprint
+  ...BOSSES_30_TO_60,
+  ...BOSSES_65_TO_100,
 ];
 
 export function getMilestoneBoss(floor: number): MilestoneBoss | null {

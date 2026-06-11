@@ -213,6 +213,67 @@ export const LEVEL_9_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Paragon',
   },
+
+  // ===== BOSS DIALOGUE / DEEP TOWER ACHIEVEMENTS (Floors 95-100) =====
+  // These are the final hidden achievements of Johrvellia Tower
+
+  // Floor 95 — The Mirror: meeting the Wilak who came before
+  {
+    id: 'kohr_ilskae_mirror',
+    name: 'The Mirror Faced',
+    description: "Meet Kohr'ilskae — the Wilak adventurer whose Falna went cold on Floor 95. Acknowledge what you see.",
+    tier: 'legendary',
+    targetLevel: 10,
+    requirements: [
+      { type: 'floor_reach', value: 95, description: 'Reach Floor 95' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: 'You met the Wilak who came before you. The Falna on their back had gone cold.',
+    bonusStatPoints: 3,
+    gloryPoints: 7,
+    titleModifier: 'the Mirror',
+  },
+
+  // Floor 100 — Skaervox: the anomaly that should not exist
+  {
+    id: 'skaervox_anomaly',
+    name: 'The Anomaly Noted',
+    description: 'Reach Floor 100 and stand before Skaervox — the being who wrote the law that made you impossible.',
+    tier: 'mythic',
+    targetLevel: 10,
+    requirements: [
+      { type: 'floor_reach', value: 100, description: 'Reach Floor 100' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: 'Skaervox wrote the law that made you impossible. You stood there anyway.',
+    bonusStatPoints: 5,
+    gloryPoints: 15,
+    titleModifier: 'the Anomaly',
+  },
+
+  // GLORY-10 — Skaer'kohr'wilak: the title the divine record refuses to write
+  // Awarded for achieving perfect GLORY (all 9 hard-path glory behavements completed)
+  // Uses 'custom' type as 'glory_perfect' is not a built-in RequirementType.
+  // The check condition is: all GLORY vector behavements completed (glory_level_10 excluded
+  // from the 9 counted, as reaching Level 10 is the gate, not the content).
+  {
+    id: 'skaer_kohr_wilak',
+    name: "Skaer'kohr'wilak",
+    description: "Complete all nine GLORY behavements in the soul record — walk every hard path the Tower offers.",
+    tier: 'mythic',
+    targetLevel: 10,
+    requirements: [
+      { type: 'custom', value: 9, description: 'Complete 9 GLORY behavements (perfect glory record)' },
+    ],
+    requireAll: true,
+    discoverySource: 'undiscovered',
+    hint: "The title the divine record refuses to write. The grammar is valid. The world is not.",
+    bonusStatPoints: 5,
+    gloryPoints: 15,
+    titleModifier: "Skaer'kohr'wilak",
+  },
 ];
 
 export function getLevel9AchievementsByTier(tier: Achievement['tier']): Achievement[] {

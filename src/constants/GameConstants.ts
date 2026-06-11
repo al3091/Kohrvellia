@@ -282,6 +282,29 @@ export const DUNGEON_FLAGS = {
 
   // Trap tracking (cleared per floor)
   TRIGGERED_TRAP: 'triggeredTrap',
+
+  // Anomaly / special NPC flags
+  ANOMALY_REGISTERED: 'anomalyRegistered',
+  NOLUEITLA_ACTIVE: 'nolueitlaActive',
+  SKAERVOX_CONTACTED: 'skaervoxContacted',
 } as const;
 
 export type DungeonFlag = typeof DUNGEON_FLAGS[keyof typeof DUNGEON_FLAGS];
+
+// ===== ZONE NAMES =====
+// Display names for each floor range of Johrvellia Tower.
+export const ZONE_NAMES = {
+  FLOOR_1_10: 'The Threshold',
+  FLOOR_11_25: "Johr'ulf — The Wolf Continent",
+  FLOOR_26_40: "Johr'ubi — The Bird Continent",
+  FLOOR_41_60: "Johr'biike — The Bone Continent",
+  FLOOR_61_80: "Johr'kuun — The Serpent Continent",
+  FLOOR_81_99: "The Rutkean'i Core",
+  FLOOR_100: 'Skaervox',
+} as const;
+
+// ===== DENATUS LEVEL 10 ALIGNMENT =====
+// Alignment descriptor for Wilak (human) characters at Level 10 Denatus.
+// Displayed in a muted color style — see the Denatus ceremony component for rendering.
+// All player characters are Wilak, so this applies universally.
+export const DENATUS_WILAK_ALIGNMENT = "kohr'feli—";  // Level 10 alignment label — muted color

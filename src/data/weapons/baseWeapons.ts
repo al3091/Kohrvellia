@@ -575,6 +575,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0,
     damageModifier: -0.1,
     minFloor: 1,
+    weight: 20,
   },
   {
     id: 'standard',
@@ -584,6 +585,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0,
     damageModifier: 0,
     minFloor: 1,
+    weight: 40,
   },
   {
     id: 'fine',
@@ -593,6 +595,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0.05,
     damageModifier: 0,
     minFloor: 5,
+    weight: 20,
   },
   {
     id: 'superior',
@@ -602,6 +605,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0.1,
     damageModifier: 0.05,
     minFloor: 10,
+    weight: 12,
   },
   {
     id: 'masterwork',
@@ -611,6 +615,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0.15,
     damageModifier: 0.1,
     minFloor: 20,
+    weight: 6,
   },
   {
     id: 'legendary',
@@ -620,6 +625,7 @@ export const QUALITIES: WeaponQuality[] = [
     critModifier: 0.25,
     damageModifier: 0.2,
     minFloor: 35,
+    weight: 2,
   },
 ];
 
@@ -771,6 +777,18 @@ export function createStarterWeapon(highestStat: string): import('../../types/We
   return createWeaponInstance(baseWeapon, material, quality, undefined, 0);
 }
 
+function weightedRandomQuality(pool: import('../../types/Weapon').WeaponQuality[]): import('../../types/Weapon').WeaponQuality {
+  const total = pool.reduce((sum, q) => sum + q.weight, 0);
+  let roll = Math.random() * total;
+  for (const q of pool) {
+    roll -= q.weight;
+    if (roll <= 0) return q;
+  }
+  return pool[pool.length - 1];
+}
+
+export { weightedRandomQuality };
+
 /**
  * Generate a random weapon drop for a floor from the legacy base weapon pool.
  * For drops using the full expanded pool (level-gated), use generateLeveledWeaponDrop from index.ts.
@@ -796,9 +814,9 @@ export function generateRandomWeapon(
   const availableMaterials = MATERIALS.filter((m) => m.minFloor <= floorNumber);
   const material = availableMaterials[Math.floor(Math.random() * availableMaterials.length)];
 
-  // Select quality based on floor
+  // Select quality based on floor (weighted — legendary is rare)
   const availableQualities = QUALITIES.filter((q) => q.minFloor <= floorNumber);
-  const quality = availableQualities[Math.floor(Math.random() * availableQualities.length)];
+  const quality = weightedRandomQuality(availableQualities);
 
   // Maybe add enchantment (20% chance, based on floor)
   let enchantment: WeaponEnchantment | undefined;

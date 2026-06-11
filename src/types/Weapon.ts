@@ -18,6 +18,16 @@ export type HybridCategory =
 
 export type AnyWeaponCategory = WeaponCategory | HybridCategory;
 
+// Weapon category classification sets — shared by damage routing logic in stores
+export const MAGICAL_WEAPON_CATEGORIES = new Set<string>([
+  'INT', 'WIS', 'INT_WIS',
+]);
+
+export const HYBRID_MIXED_CATEGORIES = new Set<string>([
+  'STR_INT', 'AGI_INT', 'INT_CHA', 'INT_PER', 'INT_LCK',
+  'WIS_CHA', 'WIS_END', 'WIS_PER', 'WIS_LCK', 'CHA_WIS',
+]);
+
 // Weapon category descriptions for UI
 export const WEAPON_CATEGORY_INFO: Record<WeaponCategory, { name: string; description: string }> = {
   STR: { name: 'Power', description: 'Heavy weapons that deal massive damage through raw strength.' },
@@ -102,6 +112,7 @@ export interface WeaponQuality {
   critModifier: number; // 0% to +25%
   damageModifier: number; // -10% to +20%
   minFloor: number;
+  weight: number; // Relative drop weight — higher = more common
 }
 
 // Enchantment adds special effects

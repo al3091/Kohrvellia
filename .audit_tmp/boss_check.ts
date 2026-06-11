@@ -1,0 +1,15 @@
+import { getMilestoneBoss } from '../src/data/bosses/milestoneBosses';
+const floors:number[]=[]; for(let f=5;f<=100;f+=5) floors.push(f);
+const bosses = floors.map(f=>({f, b:getMilestoneBoss(f)}));
+const found = bosses.filter(x=>x.b);
+console.log(`milestone floors 5..100 step5: ${floors.length}; bosses returned: ${found.length}`);
+const missing = bosses.filter(x=>!x.b).map(x=>x.f);
+console.log(`floors with NO boss: ${missing.length?missing.join(','):'none'}`);
+const ids = found.map(x=>x.b!.id);
+const dup = ids.filter((id,i)=>ids.indexOf(id)!==i);
+console.log(`duplicate boss ids: ${dup.length?[...new Set(dup)].join(','):'none'}`);
+const floorMismatch = found.filter(x=>x.b!.floor!==x.f).map(x=>`${x.b!.id}(decl ${x.b!.floor}@lookup ${x.f})`);
+console.log(`boss.floor != lookup floor: ${floorMismatch.length?floorMismatch.join(','):'none'}`);
+console.log(`pantheons: ${[...new Set(found.map(x=>x.b!.pantheon))].sort().join(', ')}`);
+console.log(`each has mechanic.name: ${found.every(x=>!!x.b!.mechanic?.name)}; conversation: ${found.every(x=>!!x.b!.conversation)}`);
+console.log('roster:', found.map(x=>`${x.f}:${x.b!.name}`).join('  '));

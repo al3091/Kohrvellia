@@ -399,6 +399,7 @@ function getQualityData(tier: QualityTier): WeaponQuality {
     critModifier: tierData.crit,
     damageModifier: tierData.damage,
     minFloor: tierData.minFloor,
+    weight: 1,
   };
 }
 

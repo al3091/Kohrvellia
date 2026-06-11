@@ -9,6 +9,7 @@ import {
   MATERIALS,
   QUALITIES,
   ENCHANTMENTS,
+  weightedRandomQuality,
 } from '../weapons/baseWeapons';
 import type { WeaponMaterial, WeaponQuality, WeaponEnchantment } from '../../types/Weapon';
 
@@ -278,9 +279,9 @@ export function generateRandomArmor(floorNumber: number): Armor {
   const availableMaterials = MATERIALS.filter((m) => m.minFloor <= floorNumber);
   const material = availableMaterials[Math.floor(Math.random() * availableMaterials.length)];
 
-  // Floor-scaled quality
+  // Floor-scaled quality (weighted — legendary is rare)
   const availableQualities = QUALITIES.filter((q) => q.minFloor <= floorNumber);
-  const quality = availableQualities[Math.floor(Math.random() * availableQualities.length)];
+  const quality = weightedRandomQuality(availableQualities);
 
   // 20% enchantment chance
   let enchantment: WeaponEnchantment | undefined;

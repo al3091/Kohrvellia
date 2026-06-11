@@ -139,8 +139,8 @@ function SalvageCard({ item, yieldData, onSelect }: SalvageCardProps) {
       <View style={styles.yieldPreview}>
         <Text style={styles.yieldLabel}>Yields:</Text>
         <View style={styles.yieldItems}>
-          {yieldData.materials.map((m) => (
-            <View key={m.materialId} style={styles.yieldChip}>
+          {yieldData.materials.map((m, index) => (
+            <View key={`${m.materialId}-${index}`} style={styles.yieldChip}>
               <Text style={styles.yieldChipText}>
                 {m.material?.icon ?? '🔩'} {m.material?.name ?? m.materialId} ×{m.quantity}
               </Text>

@@ -1,0 +1,18 @@
+import { MONSTER_LOOT_POOLS } from '../src/data/loot/lootPools';
+import * as MT from '../src/data/materials';
+import * as CN from '../src/data/consumables';
+const mats = (Object.values(MT).find(Array.isArray) as any[])||[];
+const cons = (Object.values(CN).find(Array.isArray) as any[])||[];
+const matIds = new Set(mats.map((m:any)=>m.id));
+const conIds = new Set(cons.map((c:any)=>c.id));
+console.log(`materials.ts ids (${matIds.size}): ${[...matIds].join(', ')}`);
+console.log(`consumables.ts ids (${conIds.size}): ${[...conIds].join(', ')}`);
+const pools = MONSTER_LOOT_POOLS as any;
+const refMats = new Set<string>(); const refCons = new Set<string>();
+Object.values(pools).forEach((p:any)=>{ (p.materials||[]).forEach((m:string)=>refMats.add(m)); (p.consumables||[]).forEach((c:string)=>refCons.add(c)); });
+const badMat = [...refMats].filter(m=>!matIds.has(m));
+const badCon = [...refCons].filter(c=>!conIds.has(c));
+console.log(`\n[loot refint] pool material refs (${refMats.size}): ${[...refMats].join(', ')}`);
+console.log(`  → materials NOT in materials.ts: ${badMat.length?badMat.join(', '):'none ✓'}`);
+console.log(`[loot refint] pool consumable refs (${refCons.size}): ${[...refCons].join(', ')}`);
+console.log(`  → consumables NOT in consumables.ts: ${badCon.length?badCon.join(', '):'none ✓'}`);

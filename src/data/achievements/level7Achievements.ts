@@ -210,6 +210,25 @@ export const LEVEL_7_ACHIEVEMENTS: Achievement[] = [
     gloryPoints: 15,
     titleModifier: 'the Deathless',
   },
+
+  // ===== BOSS DIALOGUE ACHIEVEMENT (Floor 50 — Drapk'agla) =====
+  // Floor 50 boss: knowledge of ch'inollu's domain is the key
+  {
+    id: 'drapk_agla_ch_invoked',
+    name: 'The Name Spoken',
+    description: "Invoke ch'inollu's domain correctly — prove you understand what Drapk'agla guards.",
+    tier: 'heroic',
+    targetLevel: 8,
+    requirements: [
+      { type: 'custom', value: 1, description: "Invoke ch'inollu's domain in Drapk'agla's dialogue" },
+    ],
+    requireAll: true,
+    discoverySource: 'boss_dialogue',
+    hint: "ch'inollu's domain was invoked. Knowledge has a price. You paid it.",
+    bonusStatPoints: 2,
+    gloryPoints: 5,
+    titleModifier: 'the Named',
+  },
 ];
 
 export function getLevel7AchievementsByTier(tier: Achievement['tier']): Achievement[] {
