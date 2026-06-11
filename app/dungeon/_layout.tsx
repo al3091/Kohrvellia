@@ -21,7 +21,10 @@ export default function DungeonLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    // KV-AUD-264 (B-03): the dungeon is forward-only by design — disabling the iOS
+    // edge-swipe-back closes the nav-integrity holes (flee-dupe, reward re-farm,
+    // mid-run escape) that hardware-back guards alone couldn't.
+    <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
       <Stack.Screen name="floor" />
       <Stack.Screen name="room" />
       <Stack.Screen name="encounter" />

@@ -8,12 +8,14 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { BAG_CAPACITY } from '../types/Character';
 import type { InventoryItem } from '../types/Character';
 import type { Consumable, ConsumableEffect } from '../types/Consumable';
 import { useCharacterStore } from './useCharacterStore';
 
-// Max inventory slots before overflow
-const MAX_INVENTORY_SLOTS = 50;
+// KV-AUD-113 (B-03): this store previously enforced its own MAX_INVENTORY_SLOTS = 50
+// while the character store enforced BAG_CAPACITY = 20 — the gap let shops charge gold
+// for items that were silently dropped. One capacity, one source of truth.
 
 // Consumable data registry (populated by data files)
 const consumableRegistry: Map<string, Consumable> = new Map();
@@ -163,22 +165,10 @@ export const useInventoryStore = create<InventoryState>()(
         const character = useCharacterStore.getState().character;
         if (!character) return false;
 
-        // Check capacity (unless stackable and already exists)
-        if (item.stackable) {
-          const existing = character.inventory.find((i) => i.id === item.id);
-          if (existing) {
-            useCharacterStore.getState().addToInventory(item);
-            return true;
-          }
-        }
-
-        // Check slots
-        if (character.inventory.length >= MAX_INVENTORY_SLOTS) {
-          return false;
-        }
-
-        useCharacterStore.getState().addToInventory(item);
-        return true;
+        // KV-AUD-113 (B-03): delegate fully — addToInventory already handles stacking,
+        // enforces BAG_CAPACITY, and returns the REAL result. The old local pre-check
+        // used a divergent cap and ignored the actual outcome.
+        return useCharacterStore.getState().addToInventory(item);
       },
 
       removeItem: (itemId, quantity = 1) => {
@@ -207,7 +197,7 @@ export const useInventoryStore = create<InventoryState>()(
       canAddItem: () => {
         const character = useCharacterStore.getState().character;
         if (!character) return false;
-        return character.inventory.length < MAX_INVENTORY_SLOTS;
+        return character.inventory.length < BAG_CAPACITY;
       },
 
       // Materials

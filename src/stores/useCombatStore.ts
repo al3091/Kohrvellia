@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { useGameStore } from './useGameStore';
+import { isFirstCombatForCharacter } from '../lib/combatSafety';
 import type { Monster } from '../types/Monster';
 import { createMonsterInstance } from '../types/Monster';
 import type { DerivedStats } from '../types/Stats';
@@ -139,7 +140,6 @@ interface CombatState {
   } | null;
 
   // Actions
-  startCombat: (floorNumber: number, isBoss?: boolean) => void;
   prepareEncounter: (floorNumber: number, isBoss?: boolean, isElite?: boolean) => void;
   startCombatWithMonster: (monster: Monster) => void;
   endCombat: () => void;
@@ -264,49 +264,16 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   log: [],
   rewards: null,
 
-  startCombat: (floorNumber, isBoss = false) => {
-    // Generate monster
-    const baseMonster = getRandomMonsterForFloor(floorNumber);
-    const prefix = isBoss ? getRandomPrefixForFloor(floorNumber + 10) : getRandomPrefixForFloor(floorNumber);
-    const suffix = isBoss ? getRandomSuffixForFloor(floorNumber + 10) : getRandomSuffixForFloor(floorNumber);
-
-    // Pass floor number for proper monster scaling
-    const monster = createMonsterInstance(baseMonster, prefix, suffix, floorNumber);
-    if (isBoss) {
-      monster.isBoss = true;
-      monster.maxHP = Math.floor(monster.maxHP * 1.5);
-      monster.currentHP = monster.maxHP;
-    }
-
-    useGameStore.getState().recordMonsterEncounter(baseMonster.id);
-
-    set({
-      isInCombat: true,
-      phase: 'player_plan',
-      turn: 1,
-      monster,
-      playerDefending: false,
-      playerFledAttempts: 0,
-      monsterObserved: false,
-      monsterTaunted: false,
-      combatDynamic: { ...DEFAULT_COMBAT_DYNAMIC },
-      stagedPrimary: null,
-      stagedBonus: null,
-      bonusActionAvailable: false,
-      playerEffects: [],
-      monsterEffects: [],
-      log: [],
-      rewards: null,
-    });
-
-    get().addLogEntry(`A ${monster.displayName} appears!`, 'system');
-  },
+  // startCombat was deleted in remediation B-03 (KV-AUD-058): it was an orphaned
+  // duplicate of prepareEncounter that lacked the first-combat safety; the live
+  // entry path is prepareEncounter → startCombatWithMonster.
 
   prepareEncounter: (floorNumber, isBoss = false, isElite = false) => {
     // Generate monster and store it, but don't start combat yet
     // Used by room screen before navigating to encounter screen
-    const gameState = useGameStore.getState();
-    const isFirstCombatEver = gameState.totalRuns === 0 && !gameState.hasHadFirstCombat;
+    // KV-AUD-138 (B-03): first-combat safety is per-CHARACTER, not device-meta —
+    // every fresh character gets a safe first encounter, not just the first ever.
+    const isFirstCombatEver = isFirstCombatForCharacter(useCharacterStore.getState().character);
 
     // Force normal encounter on first ever combat — prevents instant-death elite/boss
     const effectiveBoss = isFirstCombatEver ? false : isBoss;

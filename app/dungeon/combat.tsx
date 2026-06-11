@@ -140,12 +140,34 @@ export default function CombatScreen() {
   const { completeNode, getCurrentNode, endRun, currentRun, markNodeAvoided } = useDungeonStore();
   const { incrementProgress, updateProgress } = useAchievementStore();
 
-  // Check if player died
+  // Check if player died — and commit permadeath the moment defeat is reached
+  // (KV-AUD-227, B-03): a force-close on the FALLEN screen can no longer dodge death.
+  // Never overrides a same-tick victory (KV-AUD-231). The epitaph data is snapshotted
+  // here, before the run is ended.
+  const deathInfoRef = useRef<Record<string, string> | null>(null);
   useEffect(() => {
-    if (character && character.currentHP <= 0 && phase !== 'defeat' && phase !== 'fled') {
+    if (
+      character &&
+      character.currentHP <= 0 &&
+      phase !== 'defeat' &&
+      phase !== 'fled' &&
+      phase !== 'victory'
+    ) {
+      deathInfoRef.current = {
+        characterName: character.name,
+        epithet: character.epithet,
+        level: String(character.level),
+        floor: String(currentRun?.currentFloor ?? character.runStats?.deepestFloor ?? 1),
+        killedBy: monster?.displayName ?? 'the dungeon',
+        monstersKilled: String(character.runStats?.monstersKilled ?? 0),
+        goldEarned: String(character.runStats?.goldEarned ?? 0),
+      };
       setPhase('defeat');
+      endRun('death');
+      discardExcelia();
+      killCharacter();
     }
-  }, [character, phase, setPhase]);
+  }, [character, phase, setPhase, currentRun, monster, endRun, discardExcelia, killCharacter]);
 
   // Kairos: set initial bonus action availability on combat start
   useEffect(() => {
@@ -1157,42 +1179,32 @@ export default function CombatScreen() {
     router.back();
   };
 
-  // Handle defeat (permadeath)
+  // Handle defeat (permadeath) — death itself was already committed by the defeat
+  // effect above (KV-AUD-227); this handler only confirms and navigates. The guarded
+  // fallback covers any path that reaches 'defeat' without the effect having run.
   const handleDefeat = () => {
     haptics.error();
+
+    if (!useCharacterStore.getState().character?.isDead) {
+      endRun('death');
+      discardExcelia();
+      killCharacter();
+    }
+
+    const params = deathInfoRef.current ?? {
+      characterName: character?.name ?? 'Unknown',
+      epithet: character?.epithet ?? '',
+      level: String(character?.level ?? 1),
+      floor: String(currentRun?.currentFloor ?? character?.runStats?.deepestFloor ?? 1),
+      killedBy: monster?.displayName ?? 'the dungeon',
+      monstersKilled: String(character?.runStats?.monstersKilled ?? 0),
+      goldEarned: String(character?.runStats?.goldEarned ?? 0),
+    };
+
     endCombat();
 
-    // Snapshot stats before stores are cleared
-    const snapshotName = character?.name ?? 'Unknown';
-    const snapshotEpithet = character?.epithet ?? '';
-    const snapshotLevel = String(character?.level ?? 1);
-    const snapshotFloor = String(currentRun?.currentFloor ?? character?.runStats?.deepestFloor ?? 1);
-    const snapshotKilledBy = monster?.displayName ?? 'the dungeon';
-    const snapshotMonstersKilled = String(character?.runStats?.monstersKilled ?? 0);
-    const snapshotGoldEarned = String(character?.runStats?.goldEarned ?? 0);
-
-    // Sync run stats to character store before clearing (fixes depth tracking)
-    endRun('death');
-
-    // Discard all pending excelia (lost forever)
-    discardExcelia();
-
-    // Mark character as dead (permadeath)
-    killCharacter();
-
     // Navigate to epitaph screen with run summary
-    router.replace({
-      pathname: '/dungeon/epitaph',
-      params: {
-        characterName: snapshotName,
-        epithet: snapshotEpithet,
-        level: snapshotLevel,
-        floor: snapshotFloor,
-        killedBy: snapshotKilledBy,
-        monstersKilled: snapshotMonstersKilled,
-        goldEarned: snapshotGoldEarned,
-      },
-    });
+    router.replace({ pathname: '/dungeon/epitaph', params });
   };
 
   if (!isInCombat || !monster || !character) {

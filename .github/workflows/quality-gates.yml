@@ -26,6 +26,9 @@ jobs:
       - name: Type check — a clean checkout must compile (KV-AUD-001/352)
         run: npx tsc --noEmit
 
+      - name: Regression guards (vitest — B-03+ batch suites)
+        run: npm test
+
       - name: Install (walled-off audit harness — pinned tools)
         run: npm --prefix audit ci
 

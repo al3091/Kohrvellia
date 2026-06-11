@@ -117,7 +117,14 @@ export const useDeityStore = create<DeityState>()(
       },
 
       reset: () => {
-        set({ relationship: null, completedChallengeIds: [] });
+        // KV-AUD-124 (B-03): a new character must not inherit a dead one's stale
+        // eviction flag or pending challenge-reward popup.
+        set({
+          relationship: null,
+          completedChallengeIds: [],
+          pendingChallengeReward: null,
+          isPatronEvicted: false,
+        });
       },
 
       // Favor

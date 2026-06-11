@@ -464,6 +464,14 @@ export default function RoomScreen() {
     // Blood offering costs 10% max HP upfront (risk/reward)
     if (offering === 'blood') {
       const cost = Math.floor(character.maxHP * 0.10);
+      // KV-AUD-248 (B-03): the altar will not take the last of you — a lethal offering
+      // is refused rather than silently killing outside the death flow.
+      if (character.currentHP <= cost) {
+        haptics.error();
+        Alert.alert('The Altar Refuses', 'You have too little blood left to give.');
+        setShrineOfferingChoice(null);
+        return;
+      }
       modifyHP(-cost);
     }
 

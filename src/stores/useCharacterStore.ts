@@ -530,6 +530,9 @@ export const useCharacterStore = create<CharacterState>()(
         set((state) => {
           if (!state.character) return state;
 
+          // KV-AUD-069 (B-03): a corpse cannot be healed back to life — permadeath is final.
+          if (state.character.isDead && amount > 0) return state;
+
           const newHP = Math.max(0, Math.min(state.character.maxHP, state.character.currentHP + amount));
           const isDead = newHP <= 0;
 
@@ -706,8 +709,10 @@ export const useCharacterStore = create<CharacterState>()(
           const oldArmor = state.character.equipment[slot] as Armor | null;
           let newInventory = [...state.character.inventory];
 
-          // If there's old armor in this slot, store it in inventory
-          if (oldArmor) {
+          // Only add old armor to inventory if there's room — same overflow contract as
+          // equipWeapon (KV-AUD-070, B-03); if the bag is full the piece is discarded
+          // (caller must show confirmation first).
+          if (oldArmor && newInventory.length < BAG_CAPACITY) {
             const inventoryItem: InventoryItem = {
               id: oldArmor.id,
               type: 'armor',
@@ -740,8 +745,9 @@ export const useCharacterStore = create<CharacterState>()(
           const oldAccessory = state.character.equipment[slot] as Accessory | null;
           let newInventory = [...state.character.inventory];
 
-          // If there's an old accessory in this slot, store it in inventory
-          if (oldAccessory) {
+          // Only add the old accessory if there's room — same overflow contract as
+          // equipWeapon (KV-AUD-070, B-03).
+          if (oldAccessory && newInventory.length < BAG_CAPACITY) {
             const inventoryItem: InventoryItem = {
               id: oldAccessory.id,
               type: 'accessory',

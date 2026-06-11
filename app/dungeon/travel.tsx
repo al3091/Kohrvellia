@@ -12,6 +12,7 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { commitDeathOutOfCombat } from '../../src/lib/deathFlow';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { getNodeIcon, getNodeDisplayName } from '../../src/types/Dungeon';
 import {
@@ -66,6 +67,16 @@ export default function TravelScreen() {
     // Apply effects
     for (const ram of lastRamifications.ramifications) {
       applyRamificationEffect(ram);
+    }
+
+    // KV-AUD-268 (B-03): a ramification can kill — commit the death instead of leaving
+    // a dead character standing in the corridor.
+    if (useCharacterStore.getState().character?.isDead) {
+      const fatal = lastRamifications.ramifications.find(
+        (r) => r.effect.type === 'hp' && (r.effect.value ?? 0) < 0
+      );
+      commitDeathOutOfCombat(fatal?.name ?? 'the dungeon');
+      return;
     }
 
     // Haptic feedback based on severity

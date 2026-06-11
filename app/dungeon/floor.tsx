@@ -12,6 +12,7 @@ import { Typography } from '../../src/constants/Typography';
 import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants/Spacing';
 import { useDungeonStore } from '../../src/stores/useDungeonStore';
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
+import { commitDeathOutOfCombat } from '../../src/lib/deathFlow';
 import { useGameStore } from '../../src/stores/useGameStore';
 import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
@@ -292,6 +293,12 @@ export default function FloorScreen() {
     // Starvation damage on every step when famine
     if (hungerState === 'famine' && Math.random() < 0.3) {
       modifyHP(-8);
+      // KV-AUD-254/268 (B-03): starvation can kill — commit the death properly instead
+      // of leaving a dead character standing on the floor map.
+      if (useCharacterStore.getState().character?.isDead) {
+        commitDeathOutOfCombat('Starvation');
+        return;
+      }
     }
 
     // Navigate to travel screen to show ramifications

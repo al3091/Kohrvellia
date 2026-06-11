@@ -116,6 +116,7 @@ interface SacredItemActions {
 
   // ── Run lifecycle ──
   resetRunMetrics(): void;
+  resetForNewCharacter(): void;
 
   // ── Acquisition checking ──
   checkAndUnlock(): void;
@@ -524,6 +525,37 @@ export const useSacredItemStore = create<SacredItemState & SacredItemActions>()(
             run_boss_nodamage: false,
             run_taunt_successful: 0,
             run_items_destroyed: 0,
+          },
+        }));
+      },
+
+      // Per-character reset (remediation B-03; KV-AUD-098/002).
+      // Clears earned items + character-scope and run-scope metrics + the active-character
+      // reveal queues. LIFETIME metrics (account-wide acquisition scopes) survive by design,
+      // as does deities_revealed (the player's knowledge of already-shown relic texts).
+      resetForNewCharacter() {
+        set(s => ({
+          acquired: [],
+          metrics: {
+            ...s.metrics,
+            character_boss_bypass: 0,
+            character_boss_kills_unique: {},
+            run_kills: 0,
+            run_boss_kills: 0,
+            run_boss_kills_by_type: {},
+            run_boss_bypass: 0,
+            run_flee: 0,
+            run_skill_uses: 0,
+            run_skill_sp_spent: 0,
+            run_damage_taken: 0,
+            run_status_received: 0,
+            run_observe: 0,
+            run_floors_reached: 0,
+            run_boss_nodamage: false,
+            run_taunt_successful: 0,
+            run_items_destroyed: 0,
+            deities_at_max_favor: [],
+            pending_relic_reveals: [],
           },
         }));
       },

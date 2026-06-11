@@ -81,6 +81,7 @@ interface ShopStoreState extends ShopState {
   getReputation: (shopType: 'general' | 'equipment' | 'blacksmith') => number;
   addReputation: (shopType: 'general' | 'equipment' | 'blacksmith', amount: number) => void;
   resetReputation: () => void;
+  resetForNewCharacter: () => void;
 
   // Actions - Utilities
   getAvailableStock: () => ConsumableStock[];
@@ -548,6 +549,19 @@ export const useShopStore = create<ShopStoreState>()(
       // Reset reputation to default (called on new character creation)
       resetReputation: () => {
         set({ npcReputation: DEFAULT_NPC_REPUTATION });
+      },
+
+      // Full per-character reset (remediation B-03; KV-AUD-104/002).
+      // resetReputation() alone left the merchant memory behind: a dead character's
+      // lifetimeGoldSpent kept punishing the next one through calcExpectedSpend.
+      resetForNewCharacter: () => {
+        set({
+          npcReputation: DEFAULT_NPC_REPUTATION,
+          lifetimeGoldSpent: { general: 0, equipment: 0 },
+          belowExpectationScore: { general: 0, equipment: 0 },
+          sessionPurchaseCounts: {},
+          sessionHaggleCount: { general: 0, equipment: 0 },
+        });
       },
 
       // Get available consumable stock
