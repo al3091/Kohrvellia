@@ -24,4 +24,13 @@
 - Deferred to B-08 (by design): the eslint custom rules (ban `as any` / balance literals / hex) — they land with the union refactor that makes them pass-able
 - Residual risk: the workflow's first CI execution happens on the owner's next push (gates are locally proven; CI run pending)
 
+## 2026-06-11 · B-03 — permadeath integrity
+- Commits: `4894974` (the surgery) + `03cdf9d` (type-environment fix-forward)
+- **Closes: KV-AUD-002 · 069 · 070 · 098 · 104 · 113/282 · 124 · 138 (+deletes 058) · 227 · 231(guard) · 248 · 254(b) · 264 · 268(deaths).**
+- Surgery: per-character resets (`resetForNewCharacter` on shop+sacred; complete deity reset) wired into `clearAllStores` · `modifyHP` corpse-heal guard · permadeath commits on the defeat phase (force-close can't dodge it) with a same-tick-victory exclusion · dungeon stack `gestureEnabled:false` · first-combat protection per-character (`src/lib/combatSafety.ts`); orphan `startCombat` deleted · out-of-combat deaths route via `src/lib/deathFlow.ts` (starvation, ramifications) · lethal blood offering refused in-voice · armor/accessory swaps honor `BAG_CAPACITY` · one capacity + honest `addItem` (the 50-vs-20 schism deleted)
+- Guard: NEW vitest harness (`vitest.config.ts`, AsyncStorage shim) + `tests/permadeath.spec.ts` — **11/11 green**; `npm test` added to CI. Gates: tsc 0 · refint PASS · knip PASS. Test-scope note: paths crossing the inline-`require` cycle-dodges deferred to post-B-23 (documented in the spec header).
+- **Surfaced-by-tooling rows (per the standing rule):** installing vitest brought `@types/node` into the type-space and exposed **5 latent `NodeJS.Timeout` declarations** in pre-existing components (NarrativeLog ×1, SneakRollAnimation ×3, TypewriterText ×1) → fixed with `ReturnType<typeof setTimeout/setInterval>` in `03cdf9d`. This is the B-08 conflict-scan class arriving early — expect more at the union batch.
+- **Process correction (honest):** `4894974` was committed while tsc was red, because the gate sweep was chained into the same shell command as the commit. Caught in-session; fixed forward in `03cdf9d`. **New rule: gates run as a separate command; the commit only follows an inspected green.**
+- Design notes for the owner: blood offerings are now *refused* when lethal (alternative was death-flow routing — flag if you prefer the crueler version); first-combat protection = level 1 + zero kills this run (protective-bias on multi-run level-1 characters).
+
 *(entries follow)*
