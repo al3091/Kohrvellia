@@ -1,0 +1,31 @@
+{
+  // Dead-code gate (KV-AUD-354/013 · remediation batch B-02).
+  // CI runs `knip --include files`: any file unreachable from the app entries fails the build.
+  // The ignore list below is the RATCHET — today's known-dead roster (audit KV-AUD-354, registry 11 Cohort 4).
+  // Rule: entries may only ever be REMOVED (when B-21 wires maya/inca, when B-22 deletes the orphans).
+  // Adding a new ignore entry requires a remediation-ledger row.
+  "entry": ["app/**/*.{ts,tsx}", "babel.config.js", "app.json"],
+  "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+  "ignore": [
+    "node_modules/**",
+    "dist/**",
+    ".expo/**",
+    "audit/**",
+    ".audit_tmp/**",
+    // — the ratchet (known-dead, scheduled): —
+    "src/components/character-creation/DeityFilters.tsx", // KV-AUD-354/358 → B-22 delete
+    "src/components/character-creation/index.ts",         // KV-AUD-354 → B-22 delete
+    "src/components/combat/ActionModal.tsx",               // KV-AUD-354/358 (Kairos refactor-orphan) → B-22 delete
+    "src/components/text/EmphasisText.tsx",                // KV-AUD-354/358 → B-22 delete
+    "src/components/text/index.ts",                        // KV-AUD-354 → B-22 delete
+    "src/components/TowerWarningModal.tsx",                // KV-AUD-354/358 → B-22 delete
+    "src/components/ui/StatTooltip.tsx",                   // KV-AUD-354/358 → B-22 delete
+    "src/data/items/index.ts",                             // KV-AUD-354 → B-22 delete
+    "src/data/pantheons/inca.ts",                          // KV-AUD-347 → B-21 WIRE (remove this line when wired)
+    "src/data/pantheons/maya.ts",                          // KV-AUD-347 → B-21 WIRE (remove this line when wired)
+    "src/data/skills/index.ts",                            // KV-AUD-354 → B-22 delete
+    "src/data/skills/starterSkills.ts",                    // KV-AUD-354/342 → B-22 delete
+    "src/stores/index.ts",                                 // KV-AUD-140 → B-22 delete (deep-import convention)
+    "src/types/index.ts"                                   // KV-AUD-217 → B-22 delete
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "comment": "Ratcheted CI baselines (remediation B-02). Numbers may only improve; loosening one requires a remediation-ledger row. Sources: audit KV-AUD-001..371 + the Phase-B HEAD verification (docs/remediation/09).",
+  "circularDepsMax": 23,
+  "achievementsFiredTypes": ["custom", "floor_reach", "stat_reach", "kill_count", "damage_taken", "damage_dealt", "shrine_blessing", "gold_earn", "elite_kill", "boss_kill"],
+  "achievements": { "totalMin": 123, "dupIdsMax": 0, "uncompletableMax": 20, "bossOutcomeIdsPresentMin": 12 },
+  "relics": { "itemsMin": 588, "dupIdsMax": 0, "deityRefsResolvedMin": 240, "nonCanonicalDamageTypeMax": 107 },
+  "jobs": { "baseMin": 51, "dupIdsMax": 6, "triplesCoveredMin": 21 },
+  "weapons": { "totalMin": 338, "dupIdsMax": 0, "nonCanonicalDamageTypeMax": 0 },
+  "monsters": { "totalMin": 36, "artCoveredMin": 24, "weakImmuneContradictionsMax": 1 },
+  "deities": { "totalMin": 310, "dupIdsMax": 4 }
+}

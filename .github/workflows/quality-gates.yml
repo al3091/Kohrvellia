@@ -1,0 +1,41 @@
+# Quality gates (remediation B-02 — KV-AUD-013/352/353/354).
+# Converts the audit's dead-code / build-break / refint classes from "found by reading" to "blocked on push."
+# All gates are RATCHETED via audit/integration/baselines.json + knip.jsonc's ignore list:
+# numbers may only improve; loosening requires a remediation-ledger row.
+name: Quality Gates
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install (game)
+        run: npm ci --legacy-peer-deps
+
+      - name: Type check — a clean checkout must compile (KV-AUD-001/352)
+        run: npx tsc --noEmit
+
+      - name: Install (walled-off audit harness — pinned tools)
+        run: npm --prefix audit ci
+
+      - name: Referential-integrity gates (KV-AUD-321/337/344/348 classes, ratcheted)
+        run: ./audit/node_modules/.bin/tsx audit/integration/refint_gates.ts
+
+      - name: Dead-file gate (knip, ratcheted ignore list — KV-AUD-354)
+        run: ./audit/node_modules/.bin/knip --include files
+
+      - name: Circular-dependency ratchet (KV-AUD-353)
+        run: |
+          ./audit/node_modules/.bin/madge --circular --extensions ts,tsx app src --json > madge-report.json || true
+          node audit/integration/madge_gate.js
