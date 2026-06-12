@@ -25,6 +25,7 @@ const makeMap = (over: Record<string, unknown> = {}): FloorMap =>
       node('S', 'start', { isCompleted: true }),
       node('A', 'combat', { isCurrent: true, isCompleted: true }), // cleared, standing on it
       node('B', 'combat'),
+      node('X', 'combat'), // unconnected — teleport target for the validation test
     ],
     connections: [
       { fromId: 'S', toId: 'A' },
@@ -80,21 +81,30 @@ describe('KV-AUD-080 — cleared means cleared', () => {
   });
 });
 
-describe('KV-AUD-080/251 — path options are forward-only', () => {
-  it('offers only forward connections, never the node behind you', () => {
+describe('B-04b — traversal is two-way (the exit path), never a teleport', () => {
+  it('offers forward AND backward connections — the way out exists', () => {
     useDungeonStore.setState({ currentRun: makeRun() });
     const ids = useDungeonStore
       .getState()
       .getCurrentPathOptions()
-      .map((n) => n.id);
-    expect(ids).toEqual(['B']); // not S
+      .map((n) => n.id)
+      .sort();
+    expect(ids).toEqual(['B', 'S']); // deeper or back toward the entrance — never X
+  });
+
+  it('walking back to the entrance works and cleared nodes stay cleared', () => {
+    useDungeonStore.setState({ currentRun: makeRun() });
+    useDungeonStore.getState().moveToNode('S'); // backward, along a real edge
+    const run = useDungeonStore.getState().currentRun!;
+    expect(run.currentMap!.currentNodeId).toBe('S'); // standing at the exit/ascend node
+    expect(run.currentMap!.nodes.find((n) => n.id === 'A')!.isCompleted).toBe(true);
   });
 });
 
 describe('KV-AUD-081 — moveToNode validates the target', () => {
-  it('rejects a backward/unconnected move', () => {
+  it('rejects a teleport to an unconnected node', () => {
     useDungeonStore.setState({ currentRun: makeRun() });
-    useDungeonStore.getState().moveToNode('S'); // backward — must be refused
+    useDungeonStore.getState().moveToNode('X'); // no edge in either direction
     expect(useDungeonStore.getState().currentRun!.currentMap!.currentNodeId).toBe('A');
   });
 });

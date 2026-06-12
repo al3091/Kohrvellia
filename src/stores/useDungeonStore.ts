@@ -618,11 +618,13 @@ export const useDungeonStore = create<DungeonState>()(
           };
         }
 
-        // B-04 (KV-AUD-081): only forward-connected nodes are reachable — defense in
-        // depth against stale buttons or direct calls (the UI gate alone was the farm's
-        // backward step).
+        // B-04/B-04b (KV-AUD-081): a move must follow an existing edge in EITHER
+        // direction — two-way traversal is the designed exit path — but never a
+        // teleport to an unconnected node.
         const reachable = map.connections.some(
-          c => c.fromId === map.currentNodeId && c.toId === nodeId
+          c =>
+            (c.fromId === map.currentNodeId && c.toId === nodeId) ||
+            (c.toId === map.currentNodeId && c.fromId === nodeId)
         );
         if (!reachable) {
           return {
@@ -733,10 +735,21 @@ export const useDungeonStore = create<DungeonState>()(
         const { currentRun } = get();
         if (!currentRun || !currentRun.currentMap) return [];
 
-        // B-04 (KV-AUD-080/251): descent is forward-only — backward edges were the
-        // other half of the re-fight farm. Wires the previously-dead forward-only
-        // primitive (KV-AUD-175).
-        return getAdjacentNodes(currentRun.currentMap, currentRun.currentMap.currentNodeId);
+        const map = currentRun.currentMap;
+        const currentId = map.currentNodeId;
+
+        // B-04b: traversal is TWO-WAY by design — the exit/ascend flow requires walking
+        // back to each floor's start node ("Return is everything"). The farm stays dead
+        // independently of movement: nodes never re-arm, rewards complete at banking,
+        // and floors are cached. Forward half via the wired primitive (KV-AUD-175).
+        const forward = getAdjacentNodes(map, currentId);
+        const backwardIds = map.connections
+          .filter(c => c.toId === currentId)
+          .map(c => c.fromId);
+        const backward = map.nodes.filter(
+          n => backwardIds.includes(n.id) && !forward.some(f => f.id === n.id)
+        );
+        return [...forward, ...backward];
       },
 
       // Node state
