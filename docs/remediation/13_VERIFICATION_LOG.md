@@ -41,4 +41,11 @@
 - One surfaced fix in-flight: room.tsx had never imported `useEffect` bare — added with the BackHandler effect (caught by the pre-commit sweep, per the B-03 process rule)
 - Notes: `completeNode` is a pure flag-set for non-combat nodes → idempotent at the banking sites (Continue handlers left untouched; the exactly-once event work is B-05's). Floor-cache pruned to the 10 most recent floors (persisted-size discipline). The dungeon-shop `handleShopLeave` site was deliberately skipped (dead code; D3 = DELETE in B-22).
 
+## 2026-06-11 · B-04b — restore the way out (⚠ remediation-introduced regression, OWNER-caught)
+- Commit: `7aabc0f`
+- **What went wrong:** B-04's forward-only movement sealed the dungeon's only exit — `canExitDungeon` and `ascendFloor` both require reaching a floor's START node, which only backward walking can do. The audit's "forward-only DAG" recommendation was an overcorrection: the farm was the re-arm + re-bank, never the walking. **The owner caught it before any player did.**
+- **The fix:** two-way traversal restored (forward via the wired `getAdjacentNodes` + backward neighbors); `moveToNode` accepts either direction of a REAL edge, still rejects teleports (081 stands). The farm remains dead via B-04's other three mechanisms. The return trip is design-positive: ramifications + satiation still bite on every backward step ("Return is everything" — Poseidon's relic, the `floor_return` achievements).
+- Guard: anti-farm suite updated + extended (two-way options · exit-walk-with-completion-preserved · unconnected-teleport rejection) — **suite 17/17**; tsc 0 · refint PASS · sim baseline unchanged. The completed-node guard (`room.tsx:869`) verified: universal "This area has been cleared." render.
+- **Lesson logged:** anti-exploit fixes must be tested against the *legitimate* flows they share machinery with — the new exit-walk test now guards the door permanently.
+
 *(entries follow)*
