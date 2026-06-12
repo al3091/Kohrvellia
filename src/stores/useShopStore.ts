@@ -28,6 +28,7 @@ import { getAvailableConsumables, getConsumableById } from '../data/consumables'
 import { useInventoryStore } from './useInventoryStore';
 import { useGameStore } from './useGameStore';
 import { useCharacterStore } from './useCharacterStore';
+import { useSoulStore } from './useSoulStore';
 import { generateRandomWeapon } from '../data/weapons/baseWeapons';
 import { generateLeveledWeaponDrop } from '../data/weapons';
 import { registerWeapon } from '../data/weaponRegistry';
@@ -449,6 +450,10 @@ export const useShopStore = create<ShopStoreState>()(
         // Process sale
         inventoryStore.removeItem(itemId, quantity);
         inventoryStore.addGold(sellPrice);
+
+        // B-05 (KV-AUD-109): shop sales count toward the Merchant behavement too —
+        // previously only Guild Hall sales did.
+        useSoulStore.getState().incrementBehavement('resource_sell_items', quantity);
 
         return {
           success: true,

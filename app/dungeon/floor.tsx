@@ -314,6 +314,18 @@ export default function FloorScreen() {
 
     haptics.heavy();
 
+    // B-05 (KV-AUD-232/253): per-floor-conduct behavements evaluate on EVERY real
+    // descent — read the OUTGOING floor's context before enterFloor resets it.
+    // (Previously these only ever fired on the 5 boss floors, via combat's boss block.)
+    const fc = useDungeonStore.getState().floorContext;
+    if (fc) {
+      const soulPreDescend = useSoulStore.getState();
+      if (!fc.usedPhysicalAttack) soulPreDescend.setBehavementProgress('magic_no_physical', 1);
+      if (!fc.usedHealing) soulPreDescend.incrementBehavement('risk_no_heal_floor');
+      if (!fc.triggeredTrap) soulPreDescend.incrementBehavement('caution_no_traps');
+      if (!fc.tookDamageThisFloor) soulPreDescend.setBehavementProgress('glory_perfect_floor', 1);
+    }
+
     // Generate next floor
     const newFloor = map.floorNumber + 1;
     enterFloor(newFloor);

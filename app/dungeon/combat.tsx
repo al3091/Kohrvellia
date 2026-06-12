@@ -290,9 +290,8 @@ export default function CombatScreen() {
     const monsterHpBefore = useCombatStore.getState().monster?.currentHP ?? 0;
     lastAttackWasMagic.current = false;
     useDungeonStore.getState().setFloorFlag('usedPhysicalAttack');
-    if (character.currentHP < character.maxHP * 0.30) {
-      useSoulStore.getState().incrementBehavement('risk_low_hp_attacks');
-    }
+    // B-05 (KV-AUD-093/220): gameplay events fire ONCE, from the store —
+    // risk_low_hp_attacks is tracked inside playerAttack.
     const result = playerAttack(derived, character.currentHP, character.maxHP);
 
     if (result.hit) {
@@ -308,8 +307,6 @@ export default function CombatScreen() {
         haptics.heavy();
         addPendingExcelia('PER', 2);
         addPendingExcelia(scalingStat, 1);
-        useSoulStore.getState().incrementBehavement('phys_crits_25');
-        useSoulStore.getState().incrementBehavement('phys_crits_100');
       } else {
         addDamagePopup(result.damage, 'damage', 0);
         useSoundStore.getState().playSFX('hit');
@@ -327,23 +324,14 @@ export default function CombatScreen() {
       useSoundStore.getState().playSFX('miss');
     }
 
-    useSoulStore.getState().incrementBehavement('phys_attacks_100');
-    useSoulStore.getState().incrementBehavement('phys_attacks_500');
+    // B-05 (KV-AUD-093/220): phys attack/kill/weapon-kill counters fire in the store.
 
     // Track kills — phase flips to 'victory' synchronously inside playerAttack when monster dies
     if (useCombatStore.getState().phase === 'victory') {
       const soul = useSoulStore.getState();
-      soul.incrementBehavement('phys_kills_50');
-      soul.incrementBehavement('phys_kills_200');
       if (result.hit && result.damage >= monsterHpBefore * 3 && monsterHpBefore > 0) {
         soul.incrementBehavement('phys_overkill_10');
       }
-      if (scalingStat === 'STR') soul.incrementBehavement('phys_str_weapon_kills');
-      if (scalingStat === 'END') soul.incrementBehavement('tank_shield_kills');
-      if (scalingStat === 'AGI') soul.incrementBehavement('evade_dagger_kills');
-      if (scalingStat === 'CHA') soul.incrementBehavement('social_cha_weapon_kills');
-      if (scalingStat === 'PER') soul.incrementBehavement('explore_per_weapon_kills');
-      if (scalingStat === 'LCK') soul.incrementBehavement('risk_lck_weapon_use');
       soul.checkConsecutiveBehavement('phys_consecutive_kills', !tookDamageThisFight.current);
     }
   };
@@ -353,8 +341,6 @@ export default function CombatScreen() {
     useSoundStore.getState().playSFX('defend');
     playerDefend();
     addPendingExcelia('END', 1);
-    useSoulStore.getState().incrementBehavement('tank_blocks_50');
-    useSoulStore.getState().incrementBehavement('tank_blocks_200');
     useCombatStore.getState().updateCombatDynamic({ lastActionTag: 'WARD' });
   };
 
@@ -380,8 +366,6 @@ export default function CombatScreen() {
     haptics.medium();
     const result = playerTaunt(derived.intimidatePower);
     addPendingExcelia('CHA', 1);
-    useSoulStore.getState().incrementBehavement('social_taunts');
-    useSoulStore.getState().incrementBehavement('social_taunts_100');
     if (result.success) {
       haptics.success();
       addPendingExcelia('CHA', 2);
@@ -404,7 +388,6 @@ export default function CombatScreen() {
       modifyHP(healAmount);
       addDamagePopup(healAmount, 'heal', 0);
       useSoundStore.getState().playSFX('heal');
-      useSoulStore.getState().incrementBehavement('tank_heal_received', healAmount);
       useDungeonStore.getState().setFloorFlag('usedHealing');
       useDeityStore.getState().recordChallengeEvent('heal_self', healAmount);
     };
@@ -426,7 +409,7 @@ export default function CombatScreen() {
     const result = playerUseItem(itemId, onHeal, onHealSP, onRemoveItem);
 
     if (result.success) {
-      useSoulStore.getState().incrementBehavement('caution_consumable_use');
+      // B-05: caution_consumable_use fires in the store (playerUseItem).
       if (result.effect?.type === 'flee') {
         const fleeNode = getCurrentNode();
         if (fleeNode) markNodeAvoided(fleeNode.id);
@@ -466,17 +449,13 @@ export default function CombatScreen() {
       updateRunStats({ damageDealt: character.runStats.damageDealt + result.damage });
       if (skill.scalingStat === 'INT' || skill.scalingStat === 'WIS') {
         const soul = useSoulStore.getState();
-        soul.incrementBehavement('magic_attacks_100');
-        soul.incrementBehavement('magic_attacks_500');
+        // B-05 (KV-AUD-093/220): magic attack/kill counters fire in the store.
+        // KV-AUD-221: the copy-pasted phys_consecutive_kills call is gone — magic kills
+        // no longer pollute the COMBAT_PHYSICAL streak.
         soul.incrementBehavement('magic_sp_spent_1000', skill.spCost);
         lastAttackWasMagic.current = true;
         if (useCombatStore.getState().phase === 'victory') {
-          soul.incrementBehavement('magic_kills_50');
-          soul.incrementBehavement('magic_kills_200');
-          if (skill.scalingStat === 'INT') soul.incrementBehavement('magic_int_weapon_kills');
-          if (skill.scalingStat === 'WIS') soul.incrementBehavement('magic_wis_weapon_kills');
           if (useCombatStore.getState().monster?.isBoss) soul.incrementBehavement('magic_boss_spell');
-          soul.checkConsecutiveBehavement('phys_consecutive_kills', !tookDamageThisFight.current);
         }
       }
     }
@@ -509,17 +488,10 @@ export default function CombatScreen() {
     }
     useCombatStore.getState().updateCombatDynamic({ lastActionTag: 'STRIKE' });
     if (useCombatStore.getState().phase === 'victory') {
-      const soul = useSoulStore.getState();
-      const qsScalingStat = getWeaponScalingStat();
-      soul.incrementBehavement('phys_kills_50');
-      soul.incrementBehavement('phys_kills_200');
-      if (qsScalingStat === 'STR') soul.incrementBehavement('phys_str_weapon_kills');
-      if (qsScalingStat === 'END') soul.incrementBehavement('tank_shield_kills');
-      if (qsScalingStat === 'AGI') soul.incrementBehavement('evade_dagger_kills');
-      if (qsScalingStat === 'CHA') soul.incrementBehavement('social_cha_weapon_kills');
-      if (qsScalingStat === 'PER') soul.incrementBehavement('explore_per_weapon_kills');
-      if (qsScalingStat === 'LCK') soul.incrementBehavement('risk_lck_weapon_use');
-      soul.checkConsecutiveBehavement('phys_consecutive_kills', !tookDamageThisFight.current);
+      // B-05 (KV-AUD-093/220): kill/weapon-kill counters fire in the store.
+      useSoulStore
+        .getState()
+        .checkConsecutiveBehavement('phys_consecutive_kills', !tookDamageThisFight.current);
     }
   };
 
@@ -529,10 +501,7 @@ export default function CombatScreen() {
     const result = playerObserve();
     addPendingExcelia('WIS', result.alreadyObserved ? 0 : 2);
     observedThisFight.current = true;
-    if (!result.alreadyObserved) {
-      useSoulStore.getState().incrementBehavement('caution_observes');
-      useSoulStore.getState().incrementBehavement('caution_observes_200');
-    }
+    // B-05 (KV-AUD-093/220): caution_observes fires in the store (playerObserve).
   };
 
   // Execute a primary or bonus staged action
@@ -805,11 +774,10 @@ export default function CombatScreen() {
 
       if (result.hit) {
         if (result.damage > 0) {
-          useSoulStore.getState().incrementBehavement('tank_damage_taken_1000', result.damage);
-          useSoulStore.getState().incrementBehavement('tank_damage_taken_5000', result.damage);
+          // B-05 (KV-AUD-093/220): damage-taken counters + the dodge-streak reset fire
+          // in the store's damage path.
           tookDamageThisFight.current = true;
           useDungeonStore.getState().setFloorFlag('tookDamageThisFloor');
-          useSoulStore.getState().checkConsecutiveBehavement('evade_consecutive_dodges', false);
         }
         const currentHP = useCharacterStore.getState().character?.currentHP ?? 0;
         if (currentHP <= 0) {
@@ -829,14 +797,10 @@ export default function CombatScreen() {
         addDamagePopup(0, 'miss', 0);
         useSoundStore.getState().playSFX('miss');
         addPendingExcelia('LCK', 1);
-        // Dodge tracking
-        const soul = useSoulStore.getState();
-        soul.incrementBehavement('evade_dodges_50');
-        soul.incrementBehavement('evade_dodges_200');
-        soul.checkConsecutiveBehavement('evade_consecutive_dodges', true);
+        // B-05 (KV-AUD-093/220): dodge counters + the dodge streak fire in the store.
         const charStats = useCharacterStore.getState().character?.stats;
         if (charStats && charStats.LCK.points > 15) {
-          soul.incrementBehavement('evade_lucky_dodges');
+          useSoulStore.getState().incrementBehavement('evade_lucky_dodges');
         }
       }
 
@@ -979,7 +943,7 @@ export default function CombatScreen() {
     registerWeapon(rewards.weaponDrop);
     equipWeapon(rewards.weaponDrop);
     setWeaponEquipped(true);
-    useSoulStore.getState().incrementBehavement('resource_weapons_equip');
+    // B-05 (KV-AUD-093/220): resource_weapons_equip fires in the store (equipWeapon).
   };
 
   const handleEquipDropConfirmed = () => {
@@ -989,7 +953,7 @@ export default function CombatScreen() {
     registerWeapon(rewards.weaponDrop);
     equipWeapon(rewards.weaponDrop);
     setWeaponEquipped(true);
-    useSoulStore.getState().incrementBehavement('resource_weapons_equip');
+    // B-05 (KV-AUD-093/220): resource_weapons_equip fires in the store (equipWeapon).
   };
 
   // Handle adding dropped weapon to inventory bag
@@ -1069,54 +1033,31 @@ export default function CombatScreen() {
     updateProgress('damage_dealt', character.runStats.damageDealt);
     updateProgress('damage_taken', character.runStats.damageTaken);
 
-    // Soul system: room cleared
-    useSoulStore.getState().incrementBehavement('explore_rooms_100');
-    useSoulStore.getState().incrementBehavement('explore_rooms_500');
-    // Soul system: boss kills
-    if (monster.isBoss) {
-      if (!lastAttackWasMagic.current) {
-        useSoulStore.getState().incrementBehavement('phys_boss_melee');
-      }
-      useSoulStore.getState().incrementBehavement('glory_boss_streak_3');
-      useSoulStore.getState().incrementBehavement('glory_boss_streak_5');
-
-      // Per-floor behavements evaluated at floor completion (boss kill = floor clear)
-      const fc = useDungeonStore.getState().floorContext;
-      if (fc) {
-        const soul = useSoulStore.getState();
-        if (!fc.usedPhysicalAttack) soul.setBehavementProgress('magic_no_physical', 1);
-        if (!fc.usedHealing) soul.incrementBehavement('risk_no_heal_floor');
-        if (!fc.triggeredTrap) soul.incrementBehavement('caution_no_traps');
-        if (!fc.tookDamageThisFloor) soul.setBehavementProgress('glory_perfect_floor', 1);
-      }
+    // B-05 (KV-AUD-093/220): explore_rooms_* fires on movement (floor.tsx) — kills no
+    // longer inflate the EXPLORATION vector; boss-streak counters fire in the store.
+    // B-05 (KV-AUD-232/253): per-floor-conduct behavements now evaluate on every real
+    // floor descent (floor.tsx handleDescend), not only on boss kills.
+    if (monster.isBoss && !lastAttackWasMagic.current) {
+      useSoulStore.getState().incrementBehavement('phys_boss_melee');
     }
 
     // Per-fight behavioral soul tracking
     {
       const soul = useSoulStore.getState();
-      const finalChar = useCharacterStore.getState().character;
-      const finalMaxHp = finalChar?.maxHP ?? 1;
-      const finalCurrHp = finalChar?.currentHP ?? 0;
 
+      // B-05 (KV-AUD-093/220): survive-low-hp, near-death, elite, gold, item, and
+      // legendary counters fire in the stores (combat + character) — exactly once.
       soul.incrementBehavement('tank_no_flee');
-      if (wentLowHpThisFight.current) soul.incrementBehavement('tank_survive_low_hp');
       if (monster.isBoss) soul.incrementBehavement('tank_boss_no_death');
       if (!tookDamageThisFight.current) {
         soul.incrementBehavement('evade_no_damage_fight');
         if (monster.isBoss) soul.setBehavementProgress('evade_boss_no_hit', 1);
       }
-      if (finalCurrHp < finalMaxHp * 0.10) soul.incrementBehavement('risk_near_death_wins');
       if (!observedThisFight.current) soul.incrementBehavement('risk_no_observe');
-      if (monster.isElite) soul.incrementBehavement('risk_elite_fights');
-
-      // Resource tracking (include Artisan gold bonus in soul counters)
-      const totalGoldEarned = rewards.gold + goldBonus;
-      soul.incrementBehavement('resource_gold_1000', totalGoldEarned);
-      soul.incrementBehavement('resource_gold_10000', totalGoldEarned);
-      const totalItems = (rewards.weaponDrop ? 1 : 0) + rewards.materialDrops.reduce((s, d) => s + d.quantity, 0);
-      soul.incrementBehavement('resource_items_50', totalItems);
-      soul.incrementBehavement('resource_materials_collect', rewards.materialDrops.reduce((s, d) => s + d.quantity, 0));
-      if (rewards.weaponDrop?.rarity === 'legendary') soul.setBehavementProgress('resource_legendary_find', 1);
+      soul.incrementBehavement(
+        'resource_materials_collect',
+        rewards.materialDrops.reduce((s, d) => s + d.quantity, 0)
+      );
     }
 
     // God Challenge progress — route kill events to matching challenge types
