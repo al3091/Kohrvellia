@@ -48,4 +48,12 @@
 - Guard: anti-farm suite updated + extended (two-way options · exit-walk-with-completion-preserved · unconnected-teleport rejection) — **suite 17/17**; tsc 0 · refint PASS · sim baseline unchanged. The completed-node guard (`room.tsx:869`) verified: universal "This area has been cleared." render.
 - **Lesson logged:** anti-exploit fixes must be tested against the *legitimate* flows they share machinery with — the new exit-walk test now guards the door permanently.
 
+## 2026-06-12 · B-05 — event-firing single-owner ★ WAVE 0 COMPLETE
+- Commit: `c0a003e`
+- **Closes: KV-AUD-093 · 109 · 220 · 221 · 232 · 253** · **074 closed-AS-DESIGNED** (the 90-behavement definitions contain no INT/LCK growth entries — the commitExcelia switch matches the data exactly; adding INT/LCK vectors = a soul-score design change → owner's call, parked)
+- Surgery: ~24 store-owned counters stripped from `combat.tsx` (the 2× combat bias on the Paragon title is gone); the 221 magic→phys streak copy-paste removed (exactly 2 `phys_consecutive_kills` sites remain, guarded by count); the 4 per-floor conducts moved to `floor.tsx handleDescend` reading the OUTGOING floor's context pre-reset (they now fire on all ~95 non-boss descents, not 5 boss floors); shop `sellItem` feeds `resource_sell_items` (the audit's `incrementShopSpend` rider deliberately skipped — selling ≠ spending, logged deviation); screen-only fight conducts kept at their single sites
+- Guard: NEW `tests/soul-singlefire.spec.ts` — ownership-boundary source asserts (24 forbidden call patterns) + streak-count + exactly-once store semantics; **suite 52/52** · tsc 0 (2 orphaned consts removed — `noUnusedLocals` confirmed ON) · refint PASS · sim baseline unchanged
+- Found during work: `floor.tsx` already fired BOTH explore-room tiers (an earlier truncated grep mis-read it) — combat's kill-side firing was the only wrong-scope source
+- **★ WAVE 0 (B-01…B-05 + B-04b) COMPLETE:** the build is tracked+gated, permadeath is sealed, the farm is dead with the exit open, and the soul ledger counts honestly. 3 vitest suites / 52 tests stand guard. Next: Wave 1 (the architecture seams).
+
 *(entries follow)*
