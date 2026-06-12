@@ -35,14 +35,20 @@ import { useMarketStore } from './useMarketStore';
 import { useSoulStore } from './useSoulStore';
 import { useSacredItemStore } from './useSacredItemStore';
 
+// B-04: the forward-only adjacency primitive (KV-AUD-175 — previously dead) now
+// backs getCurrentPathOptions.
+import { getAdjacentNodes } from '../types/Dungeon';
+
 // ===== MAP GENERATION =====
 
 /**
  * Generate a branching path map for a floor
  * Creates Slay the Spire-style vertical node layout
  */
-function generateFloorMap(floorNumber: number): FloorMap {
-  const seed = Date.now() + floorNumber * 1000;
+function generateFloorMap(floorNumber: number, runSeed?: number): FloorMap {
+  // B-04 (KV-AUD-082): derive from the run's seed when available — wall-clock seeds
+  // made every regeneration a fresh roll (the infinite-content farm).
+  const seed = (runSeed ?? Date.now()) + floorNumber * 1000;
   const rng = createSeededRNG(seed);
 
   const biome = getBiomeForFloor(floorNumber, seed);
@@ -393,6 +399,9 @@ export const useDungeonStore = create<DungeonState>()(
       startNewRun: () => {
         const newRun = createDungeonRun();
 
+        // B-04 (KV-AUD-082): one deterministic seed for the whole run.
+        newRun.runSeed = Date.now();
+
         // Snapshot soul vector scores so boss dialogue reads only this run's behavioral delta
         const soulStore = useSoulStore.getState();
         const SOUL_VECTORS = [
@@ -406,7 +415,7 @@ export const useDungeonStore = create<DungeonState>()(
         newRun.soulVectorSnapshot = snapshot;
 
         // Generate floor 1 and start there
-        const floor1 = generateFloorMap(1);
+        const floor1 = generateFloorMap(1, newRun.runSeed);
         newRun.currentFloor = 1;
         newRun.currentMap = floor1;
 
@@ -452,10 +461,23 @@ export const useDungeonStore = create<DungeonState>()(
 
       // Navigation
       enterFloor: (floorNumber) => {
-        const map = generateFloorMap(floorNumber);
+        const run = get().currentRun;
+        // B-04 (KV-AUD-082): restore a previously generated floor (with its completion
+        // state) when one exists; otherwise generate deterministically from the run seed.
+        const map = run?.floorMaps?.[floorNumber] ?? generateFloorMap(floorNumber, run?.runSeed);
 
         set((state) => {
           if (!state.currentRun) return state;
+
+          // Stash the floor being left so ascending restores it exactly (KV-AUD-080/082);
+          // bound the cache to the 10 most recent floors (persisted-size discipline).
+          const stashed = { ...(state.currentRun.floorMaps ?? {}) };
+          if (state.currentRun.currentMap) {
+            stashed[state.currentRun.currentFloor] = state.currentRun.currentMap;
+          }
+          for (const key of Object.keys(stashed)) {
+            if (Number(key) < floorNumber - 9) delete stashed[Number(key)];
+          }
 
           return {
             currentRun: {
@@ -463,6 +485,7 @@ export const useDungeonStore = create<DungeonState>()(
               currentFloor: floorNumber,
               deepestFloor: Math.max(state.currentRun.deepestFloor, floorNumber),
               currentMap: map,
+              floorMaps: stashed,
               lastActivityAt: Date.now(),
             },
             lastRamifications: null,
@@ -595,6 +618,23 @@ export const useDungeonStore = create<DungeonState>()(
           };
         }
 
+        // B-04 (KV-AUD-081): only forward-connected nodes are reachable — defense in
+        // depth against stale buttons or direct calls (the UI gate alone was the farm's
+        // backward step).
+        const reachable = map.connections.some(
+          c => c.fromId === map.currentNodeId && c.toId === nodeId
+        );
+        if (!reachable) {
+          return {
+            ramifications: [],
+            wasBlessed: false,
+            totalHPLost: 0,
+            totalSPLost: 0,
+            totalGoldLost: 0,
+            rationsLost: 0,
+          };
+        }
+
         // Roll ramifications for this step
         const baseChance = getRamificationChance(currentRun.currentFloor);
         const ramifications = rollStepRamifications(currentRun.currentFloor, baseChance);
@@ -641,15 +681,9 @@ export const useDungeonStore = create<DungeonState>()(
           const updatedNodes = state.currentRun.currentMap.nodes.map(node => {
             // Handle the node we're leaving
             if (node.id === leavingNodeId) {
-              // Reactivate combat/elite nodes when leaving (NOT boss)
-              const shouldReactivate =
-                node.type === 'combat' || node.type === 'elite';
-
-              return {
-                ...node,
-                isCurrent: false,
-                isCompleted: shouldReactivate ? false : node.isCompleted,
-              };
+              // B-04 (KV-AUD-080): cleared means cleared — nodes never re-arm.
+              // (The old code reset combat/elite isCompleted on leave: the farm.)
+              return { ...node, isCurrent: false };
             }
             // Handle the node we're arriving at
             if (node.id === nodeId) {
@@ -699,23 +733,10 @@ export const useDungeonStore = create<DungeonState>()(
         const { currentRun } = get();
         if (!currentRun || !currentRun.currentMap) return [];
 
-        const map = currentRun.currentMap;
-        const currentId = map.currentNodeId;
-
-        // Forward connections (nodes we can move TO)
-        const forwardIds = map.connections
-          .filter(c => c.fromId === currentId)
-          .map(c => c.toId);
-
-        // Backward connections (nodes that connect TO us - we can go back)
-        const backwardIds = map.connections
-          .filter(c => c.toId === currentId)
-          .map(c => c.fromId);
-
-        // Combine both directions, remove duplicates
-        const allNavigableIds = [...new Set([...forwardIds, ...backwardIds])];
-
-        return map.nodes.filter(n => allNavigableIds.includes(n.id));
+        // B-04 (KV-AUD-080/251): descent is forward-only — backward edges were the
+        // other half of the re-fight farm. Wires the previously-dead forward-only
+        // primitive (KV-AUD-175).
+        return getAdjacentNodes(currentRun.currentMap, currentRun.currentMap.currentNodeId);
       },
 
       // Node state
@@ -1049,54 +1070,72 @@ export const useDungeonStore = create<DungeonState>()(
           return;
         }
 
-        // Generate new map for the floor above (fresh path each time)
         const previousFloor = currentRun.currentFloor - 1;
-        const map = generateFloorMap(previousFloor);
 
-        // Start at the BOSS node (coming from below)
-        // Mark boss node as completed since we already cleared it to get here
-        const updatedNodes = map.nodes.map(node => {
-          if (node.id === map.bossNodeId) {
-            return {
-              ...node,
-              isCurrent: true,
-              isCompleted: true,
-              isRevealed: true,
-            };
+        // B-04 (KV-AUD-082): restore the floor as it was left (positioned at its boss
+        // node, completion intact) instead of re-rolling fresh content. The fallback
+        // generates deterministically for runs predating the cache.
+        let newMap: FloorMap;
+        const cached = currentRun.floorMaps?.[previousFloor];
+        if (cached) {
+          newMap = cached;
+        } else {
+          const map = generateFloorMap(previousFloor, currentRun.runSeed);
+
+          // Start at the BOSS node (coming from below)
+          // Mark boss node as completed since we already cleared it to get here
+          const updatedNodes = map.nodes.map(node => {
+            if (node.id === map.bossNodeId) {
+              return {
+                ...node,
+                isCurrent: true,
+                isCompleted: true,
+                isRevealed: true,
+              };
+            }
+            // Clear the start node's current status
+            if (node.id === map.startNodeId) {
+              return { ...node, isCurrent: false };
+            }
+            return node;
+          });
+
+          // Also reveal nodes adjacent to boss (backward connections)
+          const bossBackwardIds = map.connections
+            .filter(c => c.toId === map.bossNodeId)
+            .map(c => c.fromId);
+
+          updatedNodes.forEach((node, index) => {
+            if (bossBackwardIds.includes(node.id)) {
+              updatedNodes[index] = { ...node, isRevealed: true };
+            }
+          });
+
+          newMap = {
+            ...map,
+            nodes: updatedNodes,
+            currentNodeId: map.bossNodeId,
+          };
+        }
+
+        set((state) => {
+          // Stash the floor being left so descending restores it exactly.
+          const stashed = { ...(state.currentRun!.floorMaps ?? {}) };
+          if (state.currentRun!.currentMap) {
+            stashed[state.currentRun!.currentFloor] = state.currentRun!.currentMap;
           }
-          // Clear the start node's current status
-          if (node.id === map.startNodeId) {
-            return { ...node, isCurrent: false };
-          }
-          return node;
+
+          return {
+            currentRun: {
+              ...state.currentRun!,
+              currentFloor: previousFloor,
+              currentMap: newMap,
+              floorMaps: stashed,
+              lastActivityAt: Date.now(),
+            },
+            lastRamifications: null,
+          };
         });
-
-        // Also reveal nodes adjacent to boss (backward connections)
-        const bossBackwardIds = map.connections
-          .filter(c => c.toId === map.bossNodeId)
-          .map(c => c.fromId);
-
-        updatedNodes.forEach((node, index) => {
-          if (bossBackwardIds.includes(node.id)) {
-            updatedNodes[index] = { ...node, isRevealed: true };
-          }
-        });
-
-        const newMap: FloorMap = {
-          ...map,
-          nodes: updatedNodes,
-          currentNodeId: map.bossNodeId,
-        };
-
-        set((state) => ({
-          currentRun: {
-            ...state.currentRun!,
-            currentFloor: previousFloor,
-            currentMap: newMap,
-            lastActivityAt: Date.now(),
-          },
-          lastRamifications: null,
-        }));
       },
 
       // Reset

@@ -182,6 +182,13 @@ export interface DungeonRun {
   // Anti-farming: floor number when last event weapon was granted (0 = never)
   lastEventWeaponFloor: number;
 
+  // B-04 (KV-AUD-082): one seed per run — floor layouts are deterministic and reproducible.
+  runSeed?: number;
+  // B-04 (KV-AUD-080/082): maps of previously visited floors (position + completion state)
+  // so ascending/descending restores the SAME floor instead of re-rolling fresh content.
+  // Optional + additive: pre-existing saves hydrate safely without migration.
+  floorMaps?: Record<number, FloorMap>;
+
   // Timestamps
   startedAt: number;
   lastActivityAt: number;

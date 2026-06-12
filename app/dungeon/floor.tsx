@@ -798,7 +798,17 @@ export default function FloorScreen() {
               </Text>
             </Pressable>
           )}
-          <Pressable style={styles.menuButton} onPress={() => router.push('/')}>
+          <Pressable
+            style={styles.menuButton}
+            onPress={() => {
+              // B-04 (KV-AUD-254): leaving mid-run is save-and-quit, not an escape —
+              // confirm intent; the run persists and resumes from the town gate.
+              Alert.alert('Leave the Tower?', 'Your run will await your return.', [
+                { text: 'Stay' },
+                { text: 'Leave', onPress: () => router.push('/') },
+              ]);
+            }}
+          >
             <Text style={styles.menuButtonText}>Menu</Text>
           </Pressable>
         </View>

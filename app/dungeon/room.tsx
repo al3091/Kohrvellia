@@ -3,8 +3,8 @@
  * Handles node-specific interactions based on node type
  */
 
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../src/constants/Colors';
@@ -148,6 +148,17 @@ export default function RoomScreen() {
     }
     router.back();
   };
+
+  // B-04 (KV-AUD-246): Android hardware-back must obey the same rules as the on-screen
+  // button — without this, back-navigation bypassed the No-Retreat gate entirely.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true; // Consume — handleBack decides whether leaving is allowed
+    });
+    return () => subscription.remove();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.id, node?.type, node?.isCompleted, node?.isAvoided]);
 
   const handleCompleteNode = () => {
     if (!node) return;
@@ -320,6 +331,8 @@ export default function RoomScreen() {
     setTreasureOpened(true);
     useSoulStore.getState().incrementBehavement('explore_treasure_rooms');
     useSacredItemStore.getState().incrementTreasureRoom();
+    // B-04 (KV-AUD-246): the reward is banked — the room is spent NOW, not on "Continue".
+    if (node) completeNode(node.id);
   };
 
   const handleTreasureContinue = () => {
@@ -367,6 +380,8 @@ export default function RoomScreen() {
     useSacredItemStore.getState().incrementRestSite();
     useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
+    // B-04 (KV-AUD-246): the rest is taken — the site is spent now.
+    completeNode(node.id);
   };
 
   const handleDangerousRest = () => {
@@ -388,6 +403,8 @@ export default function RoomScreen() {
     useSacredItemStore.getState().incrementRestSite();
     useDungeonStore.getState().setFloorFlag('restedThisFloor');
     useRestSite(node.id);
+    // B-04 (KV-AUD-246): the rest is taken — the site is spent now.
+    completeNode(node.id);
   };
 
   const handleRestContinue = () => {
@@ -566,6 +583,8 @@ export default function RoomScreen() {
 
     useSoulStore.getState().incrementBehavement('social_shrine_visits');
     setShrineUsed(true);
+    // B-04 (KV-AUD-246): the offering is made — the shrine is spent now.
+    if (node) completeNode(node.id);
   };
 
   const handleShrineContinue = () => {
@@ -677,6 +696,8 @@ export default function RoomScreen() {
     setEventOutcomeType(outcome.type);
     setEventResult(result);
     setEventCompleted(true);
+    // B-04 (KV-AUD-246): the outcome is resolved — the event is spent now.
+    if (node) completeNode(node.id);
   };
 
   const handleEventContinue = () => {
@@ -757,6 +778,8 @@ export default function RoomScreen() {
         });
       }
       setTrapCompleted(true);
+      // B-04 (KV-AUD-246): the trap has fired — the room is spent now.
+      if (node) completeNode(node.id);
     }
   };
 

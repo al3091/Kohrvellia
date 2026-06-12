@@ -1858,7 +1858,10 @@ export default function CombatScreen() {
                 style={styles.retreatFleeButton}
                 onPress={() => {
                   setRetreatModalVisible(false);
-                  playerFlee(getDerivedStats().speed, currentRun?.currentFloor ?? 1);
+                  // B-04 (KV-AUD-234): route through the real flee executor — same odds
+                  // (fleeBonus), AGI training, soul tracking, node avoidance, navigation,
+                  // and failure consequences as the Kairos flee.
+                  runFlee(getDerivedStats());
                 }}
               >
                 <Text style={styles.retreatFleeButtonText}>Attempt Escape</Text>
