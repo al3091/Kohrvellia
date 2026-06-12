@@ -33,4 +33,12 @@
 - **Process correction (honest):** `4894974` was committed while tsc was red, because the gate sweep was chained into the same shell command as the commit. Caught in-session; fixed forward in `03cdf9d`. **New rule: gates run as a separate command; the commit only follows an inspected green.**
 - Design notes for the owner: blood offerings are now *refused* when lethal (alternative was death-flow routing — flag if you prefer the crueler version); first-combat protection = level 1 + zero kills this run (protective-bias on multi-run level-1 characters).
 
+## 2026-06-11 · B-04 — kill the farm
+- Commit: `501017e`
+- **Closes: KV-AUD-080 · 081 · 082 · 234 · 246 · 251 · 252 · 254(a)** (+WIREs the dead `getAdjacentNodes`, 175 — Cohort-9 "pre-built fix" #2 landed)
+- Surgery: nodes never re-arm · forward-only path options · `moveToNode` target validation · one `runSeed` per run + a bounded `floorMaps` cache (ascend/descend restores the SAME floor — position + completion; **additive optional `DungeonRun` fields, old saves hydrate safely**) · rewards complete their rooms at banking (treasure/shrine/event/trap/rest ×2) · room gains the missing Android `BackHandler` · retreat modal → the real `runFlee` · Menu = confirmed save-and-quit
+- Guard: NEW `tests/antifarm.spec.ts` — **5/5** (re-arm · forward-only · validation · cache-restore · seed-determinism); full suite **16/16**; tsc 0 · refint PASS · knip PASS · **scaling-sim baseline unchanged** (BREAK-EVEN line byte-identical)
+- One surfaced fix in-flight: room.tsx had never imported `useEffect` bare — added with the BackHandler effect (caught by the pre-commit sweep, per the B-03 process rule)
+- Notes: `completeNode` is a pure flag-set for non-combat nodes → idempotent at the banking sites (Continue handlers left untouched; the exactly-once event work is B-05's). Floor-cache pruned to the 10 most recent floors (persisted-size discipline). The dungeon-shop `handleShopLeave` site was deliberately skipped (dead code; D3 = DELETE in B-22).
+
 *(entries follow)*
