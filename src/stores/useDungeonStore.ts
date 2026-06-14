@@ -5,8 +5,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type {
   DungeonRun,
@@ -1160,12 +1160,12 @@ export const useDungeonStore = create<DungeonState>()(
         set({ lastRamifications: null });
       },
     }),
-    {
-      name: 'kohrvellia-dungeon-v2',
-      storage: createJSONStorage(() => AsyncStorage),
+    // Storage key kept as '-v2' so existing runs still load; versioning now lives in the `version`
+    // field + deep-merge, so future field additions (e.g. D8's huntPressure) hydrate old saves safely.
+    createVersionedPersist<DungeonState>('kohrvellia-dungeon-v2', 1, {
       partialize: (state) => ({
         currentRun: state.currentRun,
       }),
-    }
+    })
   )
 );

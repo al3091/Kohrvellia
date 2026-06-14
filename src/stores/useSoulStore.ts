@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist, deepMergeDefaults } from '../lib/createVersionedPersist';
 
 import type { StatName } from '../types/Stats';
 import type {
@@ -139,6 +139,25 @@ const BEHAVEMENT_DEFINITIONS: Behavement[] = [
   { id: 'glory_all_stats_c', name: 'Balanced Warrior', description: 'Get all stats to grade C', vector: 'GLORY', target: 1, weight: 'hard', trackingType: 'threshold' },
   { id: 'glory_level_10', name: 'Paragon Ascension', description: 'Reach level 10', vector: 'GLORY', target: 10, weight: 'legendary', trackingType: 'threshold' },
 ];
+
+/**
+ * B-07 (KV-AUD-094): reconcile a saved behavement-progress array against the CURRENT
+ * BEHAVEMENT_DEFINITIONS. Keeps earned progress for behavements that still exist (clamped to the
+ * current target), adds newly-defined behavements at zero, and drops definitions that no longer
+ * exist — so changing the behavement list never crashes or silently corrupts an old save.
+ */
+export function reconcileBehavements(
+  saved: BehavementProgress[] | undefined
+): BehavementProgress[] {
+  const priorById = new Map((saved ?? []).map((b) => [b.behavementId, b]));
+  return BEHAVEMENT_DEFINITIONS.map((def) => {
+    const fresh = createBehavementProgress(def);
+    const prior = priorById.get(def.id);
+    if (!prior) return fresh;
+    const current = Math.min(fresh.target, Math.max(0, prior.current ?? 0));
+    return { ...fresh, current, completed: current >= fresh.target };
+  });
+}
 
 interface SoulState {
   // Denatus state (soul tracking)
@@ -393,10 +412,21 @@ export const useSoulStore = create<SoulState>()(
         return get().ceremonyCompleted;
       },
     }),
-    {
-      name: 'kohrvellia-soul',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<SoulState>('kohrvellia-soul', 1, {
+      // KV-AUD-094: rebuild the behavement array against current definitions on every load.
+      merge: (persisted, current) => {
+        const merged = deepMergeDefaults(current, persisted);
+        if (merged.denatus) {
+          const behavements = reconcileBehavements(merged.denatus.behavements);
+          merged.denatus = {
+            ...merged.denatus,
+            behavements,
+            vectorScores: calculateVectorScores(behavements),
+          };
+        }
+        return merged;
+      },
+    })
   )
 );
 

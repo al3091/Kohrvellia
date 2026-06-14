@@ -70,6 +70,18 @@ export function clearWeaponRegistry(): void {
 }
 
 /**
+ * B-07 (KV-AUD-118): repopulate the registry from a known set of weapons (e.g. the character's
+ * inventory/equipment) so a desynced or wiped registry self-heals instead of returning undefined.
+ */
+export function rebuildWeaponRegistry(weapons: Weapon[]): void {
+  weapons.forEach((w) => {
+    if (w && w.id) weaponCache.set(w.id, w);
+  });
+  isLoaded = true;
+  saveToStorage();
+}
+
+/**
  * Load weapons from AsyncStorage
  */
 export async function loadWeaponRegistry(): Promise<void> {
@@ -78,12 +90,26 @@ export async function loadWeaponRegistry(): Promise<void> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const weapons: Weapon[] = JSON.parse(stored);
-      weapons.forEach((w) => weaponCache.set(w.id, w));
+      const weapons: unknown = JSON.parse(stored);
+      if (Array.isArray(weapons)) {
+        weapons.forEach((w) => {
+          if (w && typeof w === 'object' && typeof (w as Weapon).id === 'string') {
+            weaponCache.set((w as Weapon).id, w as Weapon);
+          }
+        });
+      }
     }
     isLoaded = true;
   } catch (error) {
-    console.error('Failed to load weapon registry:', error);
+    // B-07 (KV-AUD-118): a corrupt registry must self-heal, not wedge the session — discard the bad
+    // blob and continue with an empty cache (it refills as weapons are registered).
+    console.error('Weapon registry corrupt — discarding and rebuilding:', error);
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // best effort
+    }
+    weaponCache.clear();
     isLoaded = true;
   }
 }
