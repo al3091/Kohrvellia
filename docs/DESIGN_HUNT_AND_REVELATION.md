@@ -3,7 +3,7 @@
 ### Owner directive **D8** + the shared `revelationStage` framework + the deity level-up arc
 
 > **Status:** DESIGN APPROVED (owner, 2026-06-14). Construction **deferred** — no game code yet.
-> **Two knobs OPEN** (flagged in §6) — lock them before build.
+> **Spec LOCKED** — severity (**A→B→C tiered**) + cross-dive seal (**ON**) decided 2026-06-14; only the diegetic naming remains (Orla/Valdris lore pass, §6).
 > **Build dependencies:** **B-07** (versioned persistence, for the new run-state fields) + **B-15**
 > (the Lycagon bands, for "overleveled for this floor"). Slots as a **Wave-4 batch (B-34)** riding on B-15.
 > **Lore basis:** `docs/LORE_GAME_INTEGRATION.md` (the *Kohrsâra* Chronology) — see its **CANON REFINEMENT** note.
@@ -82,7 +82,7 @@ have to dive.* "Forward" means **a floor you haven't reached yet**, not "a few s
 | **2 · Converging** | clearly hostile — packs, ambushes, something is following | ++encounter rate; Elite/Ancient prefix bias; packs; sneak/avoid disabled (forced engagement); the **Hunter** begins stalking |
 | **3 · Hunted** | the Tower wants you dead | Hunter spawns reliably (scaled to you); frequent ambushes; satiation drains faster |
 
-### 2.5 Severity ladder — **A→B→C across the tiers** *(OPEN — confirm)*
+### 2.5 Severity ladder — **A→B→C across the tiers** *(DECIDED 2026-06-14)*
 The escalation itself walks soft → hard:
 - **A · Diminishing comfort** (Tier 1): farming just gets crowded/slow, never lethal on its own.
 - **B · Net-negative** (Tier 2): costs (satiation, HP attrition, ambushes, repair/consumable burn) exceed the
@@ -90,10 +90,14 @@ The escalation itself walks soft → hard:
 - **C · The Hunt is lethal** (Tier 3): the *venoium* is a genuine kill-threat; keep farming and you likely die
   (permadeath). Must be well-telegraphed by the §3 tells so deaths feel earned.
 
-### 2.6 Cross-dive seal — *(OPEN — yes/no)*
-Optional light **persistent "the ledger remembers"** modifier: a habitual shallow-farmer draws pressure
-*faster each dive*, sealing the "farm Floor 1 in short dives, repeat" loop. (B-15's bands already make shallow
-farming low-value, so this is a belt-and-suspenders option.)
+### 2.6 Cross-dive seal — *(DECIDED 2026-06-14 — ON)*
+A persistent **`huntMemory`** lives on the **character** (survives across that *Wilak*'s dives; **resets on
+death** — a fresh *Wilak* gets a clean ledger). Each dive in which the player farms shallow while overleveled
+(accrues real `huntPressure` / draws a Hunter in the shallows) ticks `huntMemory` up. Higher `huntMemory` →
+**faster accrual and lower tier thresholds on future dives**, so a habitual farmer is *noticed sooner each
+time*. This seals the only gap B-15's bands left open: the "farm Floor 1 in short dives → leave → re-dive →
+repeat" loop. Lore-perfect — *the divine ledger records this; the records are being rewritten.* Per-character →
+persisted state → rides **B-07**'s versioned persistence.
 
 ### 2.7 Engineering notes
 - **State** (`DungeonRun`): `huntPressure`, `floorReclears` (per-floor re-clear counts), `deepestFloorReached`
@@ -176,10 +180,10 @@ stages in front of them.
 
 ---
 
-## 6. OPEN decisions (lock before build)
-1. **Severity** — confirm the **A→B→C tiered** model (recommended), or pin a single severity.
-2. **Cross-dive seal** — include the persistent **"the ledger remembers"** modifier? (yes/no)
-3. *(Naming, later)* — diegetic name for `huntPressure` and the Hunter → Orla/Valdris lore pass.
+## 6. Decisions
+1. ✅ **Severity = A→B→C tiered** (decided 2026-06-14).
+2. ✅ **Cross-dive seal = ON** — the persistent per-character `huntMemory` modifier (decided 2026-06-14, §2.6).
+3. ⏳ *(Naming, later)* — diegetic name for `huntPressure` and the Hunter → Orla/Valdris lore pass.
 
 ---
 
