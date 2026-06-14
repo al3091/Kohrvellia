@@ -3,6 +3,8 @@
  * Based on D&D + Fallout SPECIAL merged system with DanMachi-style grades
  */
 
+import { FalnaFormula, ProficiencyThresholds, DerivedStatFormulas } from '../constants/GameConstants';
+
 // The 8 core stats
 export type StatName = 'STR' | 'PER' | 'END' | 'CHA' | 'INT' | 'AGI' | 'WIS' | 'LCK';
 
@@ -127,7 +129,7 @@ export const STAT_INFO: Record<StatName, StatInfo> = {
  *   - Nothing is lost on level-up — all progress carries forward permanently
  */
 export function calculateEffectiveStat(level: number, points: number, carry: number = 0): number {
-  return level * 500 + points + carry;
+  return level * FalnaFormula.levelMultiplier + points + carry;
 }
 
 /**
@@ -179,7 +181,7 @@ export function meetsGradeRequirement(stat: StatValue, requiredGrade: Grade): bo
  */
 export function getProficiencyThreshold(currentGrade: Grade): number {
   const index = gradeToIndex(currentGrade);
-  return 100 * (index + 1);
+  return ProficiencyThresholds.basePerGrade * (index * ProficiencyThresholds.multiplierPerGrade + 1);
 }
 
 /**
@@ -328,19 +330,20 @@ export function calculateDerivedStats(
   const effWIS = calculateEffectiveStat(level, stats.WIS.points, carryStats.WIS ?? 0);
   const effLCK = calculateEffectiveStat(level, stats.LCK.points, carryStats.LCK ?? 0);
 
+  // ── Coefficients sourced from GameConstants (B-06 reconnection — tune them THERE, not here) ──
+  const DSF = DerivedStatFormulas;
+
   // ── Pools (uncapped — intentional progression reward) ──
-  const baseHP = 50 + effEND * 0.1 + effSTR * 0.02;
-  const baseSP = 30 + effWIS * 0.06 + effINT * 0.04;
+  const baseHP = DSF.hp.base + effEND * DSF.hp.endMultiplier + effSTR * DSF.hp.strMultiplier;
+  const baseSP = DSF.sp.base + effWIS * DSF.sp.wisMultiplier + effINT * DSF.sp.intMultiplier;
 
   // ── INT arcane armor + spell pierce (contributes to magicDefense / enemy-magic-def reduction) ──
-  const arcaneArmor = Math.min(30, effINT * 0.002);
-  const baseSpellPierce = Math.floor(effINT * 0.002);
+  const arcaneArmor = Math.min(DSF.arcaneArmor.cap, effINT * DSF.arcaneArmor.intMultiplier);
+  const baseSpellPierce = Math.floor(effINT * DSF.spellPierce.intMultiplier);
 
   // ── Per-stat physical attack coefficients ──
   // C2: Weapon quality caps total physical attack — crude weapons cannot scale with high stats
-  const PHYS_COEFFICIENTS: Record<string, number> = {
-    STR: 0.008, AGI: 0.007, PER: 0.005, END: 0.006, CHA: 0.005,
-  };
+  const PHYS_COEFFICIENTS: Record<string, number> = { ...DSF.physicalAttack.coefficients };
   const PHYS_STAT_VALUES: Record<string, number> = {
     STR: effSTR, AGI: effAGI, PER: effPER, END: effEND, CHA: effCHA,
   };
@@ -348,25 +351,25 @@ export function calculateDerivedStats(
     if (PHYS_COEFFICIENTS[weaponCategory] !== undefined) {
       return (PHYS_STAT_VALUES[weaponCategory] ?? effSTR) * PHYS_COEFFICIENTS[weaponCategory];
     }
-    return effSTR * 0.008; // fallback for hybrids / no weapon
+    return effSTR * DSF.physicalAttack.fallbackStrMultiplier; // fallback for hybrids / no weapon
   })();
   const basePhysicalAttack = Math.min(physScaling + weaponDamage, weaponMaxOutputCap);
 
   // ── Magic attack — WIS weapons swap primary/secondary coefficients ──
   const baseMagicAttack = weaponCategory === 'WIS'
-    ? effWIS * 0.008 + effINT * 0.002 + weaponMagic
-    : effINT * 0.008 + effWIS * 0.002 + weaponMagic;
-  const baseLuckAttack = effLCK * 0.012 + weaponLuck;
-  const basePhysicalDefense = effEND * 0.006 + armorDefense;
-  const baseMagicDefense = effWIS * 0.008 + armorMagicDef + arcaneArmor;
-  const baseSpeed = effAGI * 0.010 + effPER * 0.002;
-  const baseCritChance = 5 + effLCK * 0.0004 + effPER * 0.0002 + weaponCritChance;
-  const baseDodgeChance = effAGI * 0.0006 + effPER * 0.0002;
+    ? effWIS * DSF.magicAttack.wisPrimary + effINT * DSF.magicAttack.intSecondary + weaponMagic
+    : effINT * DSF.magicAttack.intPrimary + effWIS * DSF.magicAttack.wisSecondary + weaponMagic;
+  const baseLuckAttack = effLCK * DSF.luckAttack.lckMultiplier + weaponLuck;
+  const basePhysicalDefense = effEND * DSF.physicalDefense.endMultiplier + armorDefense;
+  const baseMagicDefense = effWIS * DSF.magicDefense.wisMultiplier + armorMagicDef + arcaneArmor;
+  const baseSpeed = effAGI * DSF.speed.agiMultiplier + effPER * DSF.speed.perMultiplier;
+  const baseCritChance = DSF.critChance.base + effLCK * DSF.critChance.lckMultiplier + effPER * DSF.critChance.perMultiplier + weaponCritChance;
+  const baseDodgeChance = effAGI * DSF.dodgeChance.agiMultiplier + effPER * DSF.dodgeChance.perMultiplier;
 
   // ── Accuracy & crit quality ──
-  const baseAccuracy = 65 + effPER * 0.0075;                                   // 65–95% range
-  const baseCritMultiplier = 1.5 + effPER * 0.0001 + effLCK * 0.00005;        // 1.5–2.0×
-  const baseMagicCritMultiplier = 1.5 + effWIS * 0.00008 + effINT * 0.00004;  // 1.5–1.9×
+  const baseAccuracy = DSF.accuracy.base + effPER * DSF.accuracy.perMultiplier;                                                          // 65–95% range
+  const baseCritMultiplier = DSF.critMultiplier.base + effPER * DSF.critMultiplier.perMultiplier + effLCK * DSF.critMultiplier.lckMultiplier;        // 1.5–2.0×
+  const baseMagicCritMultiplier = DSF.magicCritMultiplier.base + effWIS * DSF.magicCritMultiplier.wisMultiplier + effINT * DSF.magicCritMultiplier.intMultiplier;  // 1.5–1.9×
 
   // ── STR secondary interactions ──
   const baseArmorPierce = Math.min(20, effSTR * 0.0015);

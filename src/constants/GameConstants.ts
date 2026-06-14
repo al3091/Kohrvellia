@@ -20,44 +20,34 @@ export const FalnaFormula = {
   levelMultiplier: 500, // EffectiveStat = Level * 500 + Points
 } as const;
 
-// Derived stat formulas
+// Derived stat formulas — the SINGLE source of truth for calculateDerivedStats (Stats.ts).
+// B-06 reconnection: these coefficients are the LIVE values the combat math actually uses
+// (recalibrated for the linear effX scale). Previously this block had drifted ~10× from the
+// code and was never imported — editing it changed nothing. It is now wired; edit HERE to tune.
 export const DerivedStatFormulas = {
-  hp: {
-    base: 50,
-    endMultiplier: 0.1,
-    strMultiplier: 0.02,
-  },
-  sp: {
-    base: 30,
-    wisMultiplier: 0.06,
-    intMultiplier: 0.04,
-  },
+  hp: { base: 50, endMultiplier: 0.1, strMultiplier: 0.02 },
+  sp: { base: 30, wisMultiplier: 0.06, intMultiplier: 0.04 },
+  // Physical attack scales by the equipped weapon's category; hybrids/no-weapon use the fallback.
   physicalAttack: {
-    strMultiplier: 0.08,
+    coefficients: { STR: 0.008, AGI: 0.007, PER: 0.005, END: 0.006, CHA: 0.005 },
+    fallbackStrMultiplier: 0.008,
   },
+  // Magic attack: WIS-category weapons swap the INT/WIS primary & secondary coefficients.
   magicAttack: {
-    intMultiplier: 0.08,
-    wisMultiplier: 0.02,
+    intPrimary: 0.008, wisSecondary: 0.002, // default (INT caster)
+    wisPrimary: 0.008, intSecondary: 0.002, // WIS-weapon swap
   },
-  physicalDefense: {
-    endMultiplier: 0.06,
-  },
-  magicDefense: {
-    wisMultiplier: 0.08,
-  },
-  speed: {
-    agiMultiplier: 0.1,
-    perMultiplier: 0.02,
-  },
-  critChance: {
-    base: 5,
-    lckMultiplier: 0.004,
-    perMultiplier: 0.002,
-  },
-  dodgeChance: {
-    agiMultiplier: 0.006,
-    perMultiplier: 0.002,
-  },
+  luckAttack: { lckMultiplier: 0.012 },
+  physicalDefense: { endMultiplier: 0.006 },
+  magicDefense: { wisMultiplier: 0.008 },
+  speed: { agiMultiplier: 0.01, perMultiplier: 0.002 },
+  critChance: { base: 5, lckMultiplier: 0.0004, perMultiplier: 0.0002 },
+  dodgeChance: { agiMultiplier: 0.0006, perMultiplier: 0.0002 },
+  accuracy: { base: 65, perMultiplier: 0.0075 },
+  critMultiplier: { base: 1.5, perMultiplier: 0.0001, lckMultiplier: 0.00005 },
+  magicCritMultiplier: { base: 1.5, wisMultiplier: 0.00008, intMultiplier: 0.00004 },
+  arcaneArmor: { intMultiplier: 0.002, cap: 30 },
+  spellPierce: { intMultiplier: 0.002 },
 } as const;
 
 // Proficiency thresholds for stat growth
@@ -308,3 +298,41 @@ export const ZONE_NAMES = {
 // Displayed in a muted color style — see the Denatus ceremony component for rendering.
 // All player characters are Wilak, so this applies universally.
 export const DENATUS_WILAK_ALIGNMENT = "kohr'feli—";  // Level 10 alignment label — muted color
+
+// ===== MONSTER SCALING (relocated from Monster.ts in B-06) =====
+// Single source of truth for floor/CR-based monster scaling. Monster.ts re-exports these names
+// so existing importers keep working. B-15 (the Lycagon bands, D1) retunes this block — keep it
+// the ONE place scaling lives. (Distinct from MonsterBalance above, which is a dead/legacy model.)
+
+/** Floor ranges → target player level + HP/attack zone multiplier. */
+export const PLAYER_LEVEL_FLOOR_ZONES: Array<{
+  minFloor: number;
+  maxFloor: number;
+  targetPlayerLevel: number;
+  zoneMultiplier: number;
+}> = [
+  { minFloor: 1,   maxFloor: 10,  targetPlayerLevel: 1, zoneMultiplier: 1.0 },
+  { minFloor: 11,  maxFloor: 25,  targetPlayerLevel: 2, zoneMultiplier: 1.5 },
+  { minFloor: 26,  maxFloor: 40,  targetPlayerLevel: 3, zoneMultiplier: 2.2 },
+  { minFloor: 41,  maxFloor: 55,  targetPlayerLevel: 4, zoneMultiplier: 3.2 },
+  { minFloor: 56,  maxFloor: 70,  targetPlayerLevel: 5, zoneMultiplier: 4.5 },
+  { minFloor: 71,  maxFloor: 85,  targetPlayerLevel: 6, zoneMultiplier: 6.5 },
+  { minFloor: 86,  maxFloor: 999, targetPlayerLevel: 7, zoneMultiplier: 9.0 },
+];
+
+/** CR-tier level multipliers for monster stat scaling (higher CR scales harder with floor). */
+export const MONSTER_LEVEL_MULTIPLIERS = {
+  earlyGame: 8,    // CR 0.5-2.0 — fast fights, 2-4 hits to kill
+  midGame: 16,     // CR 2.1-5.0
+  lateGame: 26,    // CR 5.1-10.0
+  mythic: 36,      // CR 11+
+} as const;
+
+/** Stat scaling factors (multiplied by monsterLevel * levelMultiplier). */
+export const MONSTER_STAT_SCALING = {
+  hp: 1.0,         // Reduced so fights resolve in 3-5 hits, not 10+
+  attack: 0.20,    // Higher threat per hit to compensate for lower HP
+  defense: 0.1,
+  magicDefense: 0.08,
+  speed: 0.12,
+} as const;

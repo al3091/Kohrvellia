@@ -6,6 +6,15 @@
 
 import type { DamageType } from './Weapon';
 import type { StatusEffectId } from './Character';
+import {
+  PLAYER_LEVEL_FLOOR_ZONES,
+  MONSTER_LEVEL_MULTIPLIERS,
+  MONSTER_STAT_SCALING,
+} from '../constants/GameConstants';
+
+// Monster scaling tables live in GameConstants (B-06, single source of truth); re-exported here
+// so existing importers keep working. B-15 (Lycagon bands) retunes them there.
+export { PLAYER_LEVEL_FLOOR_ZONES, MONSTER_LEVEL_MULTIPLIERS, MONSTER_STAT_SCALING };
 
 // Monster armor types for damage calculation
 export type MonsterArmorType =
@@ -211,29 +220,8 @@ export const FLOOR_AFFIX_RULES: Array<{
 ];
 
 // ===== FLOOR ZONE TABLE =====
-
-/**
- * Maps floor ranges to target player levels with zone multipliers.
- * With the additive carry model, player power grows faster than linear across levels.
- * Zone multipliers ensure monsters remain a meaningful challenge in each level's zone.
- *
- * Zone multiplier applies to HP and attack only — not defense, to keep combat
- * time reasonable while maintaining danger at each tier.
- */
-export const PLAYER_LEVEL_FLOOR_ZONES: Array<{
-  minFloor: number;
-  maxFloor: number;
-  targetPlayerLevel: number;
-  zoneMultiplier: number;
-}> = [
-  { minFloor: 1,   maxFloor: 10,  targetPlayerLevel: 1, zoneMultiplier: 1.0 },
-  { minFloor: 11,  maxFloor: 25,  targetPlayerLevel: 2, zoneMultiplier: 1.5 },
-  { minFloor: 26,  maxFloor: 40,  targetPlayerLevel: 3, zoneMultiplier: 2.2 },
-  { minFloor: 41,  maxFloor: 55,  targetPlayerLevel: 4, zoneMultiplier: 3.2 },
-  { minFloor: 56,  maxFloor: 70,  targetPlayerLevel: 5, zoneMultiplier: 4.5 },
-  { minFloor: 71,  maxFloor: 85,  targetPlayerLevel: 6, zoneMultiplier: 6.5 },
-  { minFloor: 86,  maxFloor: 999, targetPlayerLevel: 7, zoneMultiplier: 9.0 },
-];
+// PLAYER_LEVEL_FLOOR_ZONES now lives in GameConstants (B-06, single source of truth) and is
+// re-exported at the top of this file. B-15 (Lycagon bands) retunes it there.
 
 /**
  * Get zone multiplier for a given floor.
@@ -247,27 +235,8 @@ export function getFloorZoneMultiplier(floor: number): number {
 
 // ===== MONSTER LEVEL SCALING =====
 
-/**
- * CR tier level multipliers for monster stat scaling
- * Higher CR monsters scale more aggressively with floor
- */
-export const MONSTER_LEVEL_MULTIPLIERS = {
-  earlyGame: 8,    // CR 0.5-2.0 — fast fights, 2-4 hits to kill
-  midGame: 16,     // CR 2.1-5.0
-  lateGame: 26,    // CR 5.1-10.0
-  mythic: 36,      // CR 11+
-} as const;
-
-/**
- * Stat scaling factors (multiplied by monsterLevel * levelMultiplier)
- */
-export const MONSTER_STAT_SCALING = {
-  hp: 1.0,         // Reduced so fights resolve in 3-5 hits, not 10+
-  attack: 0.20,    // Higher threat per hit to compensate for lower HP
-  defense: 0.1,
-  magicDefense: 0.08,
-  speed: 0.12,
-} as const;
+// MONSTER_LEVEL_MULTIPLIERS and MONSTER_STAT_SCALING now live in GameConstants (B-06, single
+// source of truth) and are re-exported at the top of this file.
 
 /**
  * Calculate effective monster level based on floor and CR modifiers
