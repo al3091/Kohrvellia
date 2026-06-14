@@ -22,6 +22,7 @@ import { Spacing, Padding, BorderRadius, BorderWidth } from '../../src/constants
 import { useCharacterStore } from '../../src/stores/useCharacterStore';
 import { useAchievementStore } from '../../src/stores/useAchievementStore';
 import { useSoulStore } from '../../src/stores/useSoulStore';
+import { useDeityStore } from '../../src/stores/useDeityStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { ACHIEVEMENT_TIER_REWARDS, type AchievementTier } from '../../src/types/Achievement';
@@ -349,9 +350,9 @@ export default function LevelUpScreen() {
     );
   }
 
-  // Get deity name (placeholder until deity store is implemented)
-  // TODO: Get from useDeityStore when implemented
-  const deityName = (character as any).deity?.name || 'Your Patron Deity';
+  // B-08 (KV-AUD-372): show the ACTUAL patron deity's name. This was a placeholder that read a
+  // non-existent `character.deity` field via `as any`, so it always fell back to the generic label.
+  const deityName = useDeityStore.getState().getPatronDeity()?.name || 'Your Patron Deity';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

@@ -245,7 +245,7 @@ export default function FloorScreen() {
   }
 
   // Handle long press for tooltip
-  const handleNodeLongPress = (node: MapNode, _event: any) => {
+  const handleNodeLongPress = (node: MapNode, _event: unknown) => {
     if (!node.isRevealed) return;
     haptics.light();
     setTooltipNode(node);

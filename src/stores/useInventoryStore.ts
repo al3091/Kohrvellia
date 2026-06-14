@@ -81,9 +81,11 @@ export const useInventoryStore = create<InventoryState>()(
         // Get consumable data
         const consumableData = getConsumableData(consumableId);
         if (!consumableData) {
-          // Fallback for unregistered consumables
+          // Fallback for unregistered consumables: consume it but apply no effect.
+          // B-08: was a fake `{ type: 'unknown' } as unknown as ConsumableEffect`; null is the
+          // honest "no effect" signal the caller already handles (see the early return above).
           characterStore.removeFromInventory(consumableId, 1);
-          return { type: 'unknown', value: 0 } as unknown as ConsumableEffect;
+          return null;
         }
 
         // Apply effects
