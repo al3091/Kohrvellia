@@ -88,4 +88,21 @@
 - **★ B-07 COMPLETE:** 094 + 118(self-heal) + 073/088/102/141 all closed. **Residual (small, tracked → B-27 guards):** weaponRegistry consumer-side defensiveness (rebuild-on-miss at lookup sites) — needs the weapon data-flow (do consumers hold full `Weapon` objects to rebuild from?) and fits the guards batch; the registry already self-heals corruption + exposes `rebuildWeaponRegistry`.
 - **Next: B-08** (typed unions + ban `as any`) — the budgeted error-surfacing slot; expect latent tsc errors when `as any` is removed (the 352 false-green class), fix-or-ledger each.
 
+## 2026-06-14 · B-08 — the `as any` / error-surfacing pass
+- Commit: `cd4f3b2` — **Closes KV-AUD-372 (a real bug, fixed)** · surfaces + ledgers **373–376**
+- **Reality vs the plan:** B-08 was specced as "tighten unions + ban `as any` + add eslint custom rules." On the ground: (a) most `as any` are in **tests** (legit fixtures) and the **audit harness** (generic data-walking) — out of scope; (b) every `as any` in `src/data` is a **false positive** — the literal words "as any"/"has any" inside flavor text ("as sharp as any blade"); (c) only ~10 real casts in game code; and (d) **the project has NO eslint configured** (only inside `node_modules`), so the "add eslint custom rules" premise needs eslint stood up first.
+- **FIXED:**
+  - **KV-AUD-372 (real, player-visible bug):** `level-up.tsx` showed the deity name via `(character as any).deity?.name` — a leftover placeholder reading a field that doesn't exist on `Character` (the patron lives in `useDeityStore`), so the level-up ceremony **always** printed the generic "Your Patron Deity". Now reads `useDeityStore.getState().getPatronDeity()?.name`. The `as any` had hidden it from the compiler.
+  - `useInventoryStore`: unregistered-consumable fallback returned a fake `{ type: 'unknown' } as unknown as ConsumableEffect` → now `return null` (the honest "no effect"; the caller already handles null).
+  - `floor.tsx`: `_event: any` → `unknown`.
+- **SURFACED + LEDGERED** (the deeper mismatches the casts were masking — each fixed in its domain batch, per the fix-or-ledger rule):
+  - **373** — `useCombatStore:499` `getDamageEffectiveness(weaponDamageType, normalizedArmor as any)`: the weapon-triangle normalization remaps plate/scales/ethereal but leaves flesh/bone/leather/spirit/magic_resistant un-remapped; the `as any` masks whether those are valid inputs → the damage triangle may be mis-applied for some armor types. → combat batch (B-13).
+  - **374** — `useInventoryStore:129` consumable **buff** built as `{...} as unknown as Parameters<addStatusEffect>[0]` → the buff status-effect shape doesn't match `addStatusEffect`'s param; buffs may be malformed. → status-model batch (B-09).
+  - **375** — `floor.tsx:434` `soul as unknown as Parameters<typeof createPlayerSnapshot>[3]` — soul/snapshot param-type drift. → resolver/combat batch.
+  - **376** — `useSoundStore:456` `(player as any).addListener` — expo-audio typing gap; needs a typed shim (not `any`). → audio/guards.
+  - Minor residual (3 equipment casts in `app/town/inventory/index.tsx`) → cleanup tail.
+- Guard: **tsc 0 · vitest 5 files / 72 · refint PASS · knip clean · madge 23/23.** (No new gate this turn — see below.)
+- **Deferred (documented, not silently dropped):** the **regression prevention** (ban new `as any`, balance-literals-outside-`GameConstants`, hex-outside-`Colors`) needs eslint configured — a **dedicated tooling task**. Recommended: a lightweight **grep-style CI gate** matching this project's existing gate pattern (must exclude the prose false positives in `src/data`), rather than standing up the full eslint toolchain mid-remediation.
+- **Next: B-09** (one status model) — also absorbs **374** (the buff shape).
+
 *(entries follow)*
