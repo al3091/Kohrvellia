@@ -85,10 +85,13 @@
 ## QUARANTINE batches (exist only if the owner says yes at G1 — Q-1)
 **B-30** durability+repair service (DESIGNED; M–L) · **B-31** restore the 5% wandering merchant (near-FREE — room side complete; XS) · **B-32** biome-filtered selection + the 2 missing biomes (S) · **B-33** stealth via the existing sneak flow (M).
 
+## POST-G1 DESIGN DIRECTIVES (owner, added after G1)
+**B-34 · D8 "The Tower Fights Back" (anti-farm via escalating danger — supersedes B-04's combat-node no-re-arm).** Goal: kill shallow-floor farming with *emergent danger, not denial*. Monsters (*nekl'ych'e*) repopulate on floor RE-entry (loot/items/stat/soul KEPT; reward nodes — treasure/shrine/event/rest — stay one-time). `huntPressure` accrues when **overleveled for the floor (B-15 bands) AND re-clearing cleared content**; **cools ONLY on a new-deepest descent** (not steps/up/old floors); resets on dungeon exit. A *venoium* **Hunter** stalks at T2 and hunts at T3 (scaled to the player; breaks off if you out-dive it, is killed, or you leave). Severity walks **A→B→C** across tiers. Bundles the shared **`revelationStage`** clock + the **staged deity level-up lines** (rewrite `blessing-rite.tsx BLESSING_MESSAGES` into `[stage]×[growthTier]`: Unknowing→Unease→Realization→domain-branched). **FULL SPEC → `docs/DESIGN_HUNT_AND_REVELATION.md`** (+ canon note in `docs/LORE_GAME_INTEGRATION.md`). Dep **B-07** (persist new `DungeonRun` fields) + **B-15** (bands). Skills: Thane/Sylas (mechanic) + Orla/Valdris/Mira (voice). Blast: dungeon traversal + encounter gen + blessing-rite text (**F: core loop UNTOUCHED — loot/items/stat/soul preserved; asserted**). Guard: NEW `tests/tower-heat.spec.ts` (farmer crosses tiers · honest climber sub-T1 · overleveled gate holds) + `scaling_sim` danger-curve extension. **M–L.** V: vitest, sim. **OPEN knobs:** cross-dive "ledger remembers" seal (y/n) · A→B→C confirm.
+
 ---
 
 ## Sequencing summary
-`W0 (B-01…05, parallel) → W1 (B-06∥B-07∥B-08→B-09→B-10; B-12 may run here) → W2 (B-11→B-13/B-14) → W3 (B-15→B-16) → W4 (B-17…21) → W5 (B-22…29) + Q-batches when answered.`
+`W0 (B-01…05, parallel) → W1 (B-06∥B-07∥B-08→B-09→B-10; B-12 may run here) → W2 (B-11→B-13/B-14) → W3 (B-15→B-16) → W4 (B-17…21, +B-34/D8 riding on B-15) → W5 (B-22…29) + Q-batches when answered.`
 Hard rules from the DAG/conflict scan: **B-06 before any tuning** · **B-07 before any persisted-shape change** · **B-08+B-09 before B-11** · **B-15 before all of W4's reachability claims** · **326-first inside B-19** · **B-17's 261 fixes ship WITH the route** · sim re-run after every W3 batch · the B-08 error-surfacing triage slot is budgeted, not incidental.
 
 ## Bucket coverage (DoD §9)

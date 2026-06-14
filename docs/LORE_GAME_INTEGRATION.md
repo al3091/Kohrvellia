@@ -14,6 +14,26 @@ Read this before writing any boss dialogue, deity lore, behavement flavor text, 
 
 ---
 
+> ## ⚑ CANON REFINEMENT — 2026-06-14 (owner)
+> **The marking is blind luck, not a knowing pact — and the *player* discovers the truth in small bites.**
+>
+> This supersedes, where they conflict, the "every patron is a *knowing* criminal" framing below (esp. §1, §3, §7):
+> - **No god knowingly blesses a *Wilak* — it is against *Aleabishal* law, period.** The patron marked the
+>   player **without knowing** what they were; the player became *vinrchíikul* by **luck**, not destiny or merit.
+>   ("Chosen one" framing is wrong — they *slipped through*.)
+> - **The player (the person) does not know they are a *Wilak* at the start.** It becomes clear only by
+>   exploring the dungeon. The *character* may carry a knowing dread the player doesn't yet share — that
+>   **player↔character knowledge gap is the dramatic-irony engine.**
+> - **The reveal is staged and drip-fed.** Nothing here is dumped on the player up front (this doc is the
+>   authors' truth, not the opening narration). No Malkohr term or cosmological fact appears on screen before
+>   the player has earned it. *(The doc already calls these "quiet revelations" — this formalizes the pacing.)*
+> - **Implication for favor/eviction (§3, §7):** the god's **dawning realization** that they blessed a *Wilak*
+>   unknowingly becomes the engine of the favor/eviction tension and of the level-up dialogue arc.
+>
+> Delivery mechanism for all of the above: the shared **`revelationStage`** clock and the staged deity
+> level-up lines — specified in **`docs/DESIGN_HUNT_AND_REVELATION.md`** (which also defines the **D8** Hunt
+> Pressure anti-farm system that this lore makes inevitable). Treat that doc as the companion to this one.
+
 ## 1. THE CENTRAL PREMISE REFRAMED
 
 ### What the Player REALLY Is
