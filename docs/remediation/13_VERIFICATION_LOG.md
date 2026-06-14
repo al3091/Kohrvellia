@@ -69,4 +69,16 @@
 - Why the golden master (not just the sim): the sim only exercises 3 of the ~40 derived outputs — a wrong coefficient in crit/dodge/speed/magic would pass the sim. The characterization test closes that gap.
 - **B-15/B-16 are now unblocked:** monster scaling + the proficiency/growth coefficients live in one tunable file; D1 (Lycagon bands) edits `GameConstants` alone.
 
+## 2026-06-14 · B-07 (CORE) — versioned persistence
+- Commit: `05187bc` — **Closes: KV-AUD-094 · 118** · **mechanism for 073/088/102/141 built + proven (rollout pending)**
+- **The disconnection, confirmed:** all 12 persisted stores used bare `persist({ name, storage })` with **zero `version`/`migrate`**; zustand's default merge is shallow, so any *nested* field added to a store hydrates `undefined` on an old save → crash. The dungeon store had coped by renaming its key to `kohrvellia-dungeon-v2` (a "migration" that just discards the old run).
+- Surgery:
+  - **NEW `src/lib/createVersionedPersist.ts`** — one config wrapper giving every store a `version`, a `migrate` hook, and a **deep-merge of saved data over current defaults** (`deepMergeDefaults`): new nested schema fields get their default; dynamic-key maps (e.g. `floorMaps`, reputation maps) keep all entries; arrays/primitives/explicit-null replace; action functions survive. This is the 073/088/102/141 fix mechanism.
+  - **KV-AUD-094:** `reconcileBehavements` (in `useSoulStore`) rebuilds the behavement-progress array against the CURRENT `BEHAVEMENT_DEFINITIONS` on every load — keeps earned progress (clamped to target), adds newly-defined behavements at 0, drops removed ones. Wired via the soul store's `merge`.
+  - **KV-AUD-118:** `weaponRegistry.loadWeaponRegistry` now **self-heals** a corrupt blob (discard + continue) instead of marking itself loaded-but-empty forever; added `rebuildWeaponRegistry(weapons)` to repopulate from a known set (character inventory) on desync.
+  - **Adopted in `useSoulStore` + `useDungeonStore`** (the latter retires the `-v2` key-bump and means D8's future `huntPressure`/`huntMemory` fields will hydrate cleanly into existing runs).
+- Guard: **NEW `tests/migrate.spec.ts`** (11) — deep-merge fills new nested defaults · preserves dynamic maps · replaces arrays · null-wins · keeps functions · config shape · behavement reconcile (keep/add/drop/clamp). Sweep: **tsc 0 · vitest 5 files / 72 · refint PASS · knip clean · madge 23/23 · sim baseline.**
+- **Two bugs caught by the pre-commit sweep** (the gates-separate rule earning its keep again): the reconcile matched `def.behavementId` but the *definition* type uses `id`; and `partialize: undefined` throws in this zustand build → the helper now omits the key when not provided.
+- **★ TAIL (remaining B-07, mechanical now the helper is proven):** roll `createVersionedPersist` into the other 10 stores — **character · game · deity · sacred · shop · market · job · blacksmith · achievements · inventory-ui** (each: swap `{ name, storage, [partialize] }` → `createVersionedPersist(...)` + drop the now-unused `createJSONStorage`/`AsyncStorage` imports, per the soul/dungeon pattern). Then wire `rebuildWeaponRegistry` at the weapon-lookup sites (118 consumer-defensiveness). **073/088/102/141 fully close when the rollout lands.** B-09 must only change a store's shape AFTER that store has adopted the helper.
+
 *(entries follow)*
