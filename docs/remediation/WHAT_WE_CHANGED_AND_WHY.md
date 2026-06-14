@@ -1,7 +1,7 @@
 # What We Changed and Why — Plain-Language Summary
 
 **For:** the game's owner and non-technical leadership
-**Covers:** every remediation change completed so far (**Wave 0**)
+**Covers:** every remediation change completed so far (**Wave 0 complete · Wave 1 in progress**)
 **Date:** 2026-06-13
 **Status:** Wave 0 complete — 5 foundational fixes landed, tested, and backed up to GitHub
 
@@ -174,6 +174,33 @@ without raising an alarm.
 - ✅ **No grinding** — cleared rooms stay cleared; the exit still works.
 - ✅ **An honest soul** — your level-10 title reflects how you really played.
 - ✅ **An alarm system** — this class of problem can't silently return.
+
+---
+
+## Wave 1 — in progress
+
+Wave 1 strengthens the game's internal structure so the bigger gameplay changes can land safely.
+First change landed:
+
+### We reconnected the game's "control panel" (B-06)
+**The problem, in plain terms:** The game has one file that is *supposed* to hold all the balance
+dials — how much health you gain per point, how hard monsters hit, how fast you move, and so on.
+But that control panel was **never actually wired to the game**. Turning a dial did nothing. Worse,
+the numbers printed on the dials had drifted to be roughly **10× wrong** compared to what the game
+truly used — so anyone trying to tune the game from that panel would have been badly misled.
+
+**What we did:** We connected the panel to the game and corrected every dial to match what the game
+actually does — **without changing how the game plays in any way.** We also moved the
+monster-difficulty settings into that same panel so they live in one place.
+
+**Why it matters:** Every gameplay change you approved — especially the monster-difficulty rework
+(making floors scale to your level) — has to be tuned from that control panel. It had to be made
+real and trustworthy *first*. This is the unglamorous plumbing that makes the exciting work possible.
+
+**How we proved nothing changed:** We took an exact "fingerprint" of the game's combat math before
+the change — 40 numbers across 5 different character builds — and confirmed it came out **identical**
+afterward. The separate difficulty simulation also produced a byte-for-byte identical result. So this
+was pure, provable plumbing: same game, honest dials.
 
 ---
 
