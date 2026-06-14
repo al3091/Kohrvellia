@@ -204,6 +204,28 @@ was pure, provable plumbing: same game, honest dials.
 
 ---
 
+### We made saved games survive future updates (B-07)
+**The problem, in plain terms:** The game already auto-saves your progress constantly — there's no save
+button; it just records everything in the background. But that auto-save was **fragile**: whenever *we*
+ship an update that changes how data is stored, an old save could fail to load — the game could crash or
+lose a character. Twelve separate save areas all had this weakness, and one had "coped" by simply
+**throwing away your dungeon run** whenever it changed.
+
+**What we did:** Built a one-time "save-file translator" and applied it to **all twelve save areas**. Now,
+when an old save loads into a newer version, anything new is filled in with sensible defaults instead of
+breaking — and earned progress (levels, loot, the soul/title tracking) is always preserved. We also made
+the weapon list **self-healing**: if its data ever corrupts, it cleans itself up instead of breaking the
+session.
+
+**Why it matters:** This is the safety net that lets us keep adding features — including "The Tower Fights
+Back" — **without ever corrupting a player's saved character.** It changes nothing you can see; it protects
+everything you've earned.
+
+**How to verify:** Guarded by 11 new automated tests proving old-format saves load cleanly. (Total
+automated checks now: **72**.)
+
+---
+
 ## What's next (Wave 1, and beyond)
 
 Wave 0 made the foundation sound. **Wave 1** strengthens the internal structure so the bigger
