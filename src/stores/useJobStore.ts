@@ -5,8 +5,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type { Job } from '../types/Job';
 import type { StatName } from '../types/Stats';
@@ -112,14 +112,12 @@ export const useJobStore = create<JobState>()(
         set({ currentJobId: null, hasSelectedJob: false, currentSpecializationId: null });
       },
     }),
-    {
-      name: 'kohrvellia-job-store',
-      storage: createJSONStorage(() => AsyncStorage),
+    createVersionedPersist<JobState>('kohrvellia-job-store', 1, {
       partialize: (state) => ({
         currentJobId: state.currentJobId,
         hasSelectedJob: state.hasSelectedJob,
         currentSpecializationId: state.currentSpecializationId,
       }),
-    }
+    })
   )
 );

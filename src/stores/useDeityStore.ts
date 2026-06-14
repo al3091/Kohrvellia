@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type { Deity, DeityRelationship, GodChallenge, DeityDomain } from '../types/Deity';
 import {
@@ -511,9 +511,6 @@ export const useDeityStore = create<DeityState>()(
         return !!relationship?.currentChallenge;
       },
     }),
-    {
-      name: 'kohrvellia-deity',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<DeityState>('kohrvellia-deity', 1)
   )
 );

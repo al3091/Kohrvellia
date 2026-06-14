@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type {
   Character,
@@ -1440,9 +1440,6 @@ export const useCharacterStore = create<CharacterState>()(
         return getBlessingMultiplier(character.deityFavor ?? 50);
       },
     }),
-    {
-      name: 'kohrvellia-character',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<CharacterState>('kohrvellia-character', 1)
   )
 );

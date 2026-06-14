@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type {
   Achievement,
@@ -460,9 +460,6 @@ export const useAchievementStore = create<AchievementState>()(
         set({ progress: updatedProgress });
       },
     }),
-    {
-      name: 'kohrvellia-achievements',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<AchievementState>('kohrvellia-achievements', 1)
   )
 );

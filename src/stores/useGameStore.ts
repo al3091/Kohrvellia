@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 import { useSoulStore } from './useSoulStore';
 
 // Game phases/screens
@@ -383,9 +383,6 @@ export const useGameStore = create<GameState>()(
         return codexEntries.includes(entryId);
       },
     }),
-    {
-      name: 'kohrvellia-game',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<GameState>('kohrvellia-game', 1)
   )
 );

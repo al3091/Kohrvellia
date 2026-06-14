@@ -5,8 +5,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import { BAG_CAPACITY } from '../types/Character';
 import type { InventoryItem } from '../types/Character';
@@ -225,13 +225,11 @@ export const useInventoryStore = create<InventoryState>()(
         return true;
       },
     }),
-    {
-      name: 'kohrvellia-inventory-ui',
-      storage: createJSONStorage(() => AsyncStorage),
+    createVersionedPersist<InventoryState>('kohrvellia-inventory-ui', 1, {
       // Only persist UI state, not actual inventory (that's in character store)
       partialize: (state) => ({
         selectedItemId: state.selectedItemId,
       }),
-    }
+    })
   )
 );

@@ -4,8 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import type { Consumable as _Consumable } from '../types/Consumable';
 import type { Weapon } from '../types/Weapon';
@@ -581,9 +581,7 @@ export const useShopStore = create<ShopStoreState>()(
         return state.equipmentStock.filter((s) => !s.sold);
       },
     }),
-    {
-      name: 'kohrvellia-shop',
-      storage: createJSONStorage(() => AsyncStorage),
+    createVersionedPersist<ShopStoreState>('kohrvellia-shop', 1, {
       partialize: (state) => ({
         generalStock: state.generalStock,
         equipmentStock: state.equipmentStock,
@@ -593,6 +591,6 @@ export const useShopStore = create<ShopStoreState>()(
         npcReputation: state.npcReputation,
         lifetimeGoldSpent: state.lifetimeGoldSpent,
       }),
-    }
+    })
   )
 );

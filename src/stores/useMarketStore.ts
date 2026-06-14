@@ -8,8 +8,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 import {
   MARKET_EVENT_TEMPLATES,
   NULL_EVENT_WEIGHT,
@@ -211,9 +211,6 @@ export const useMarketStore = create<MarketState>()(
         });
       },
     }),
-    {
-      name: 'kohrvellia-market',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
+    createVersionedPersist<MarketState>('kohrvellia-market', 1)
   )
 );

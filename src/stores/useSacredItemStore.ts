@@ -10,8 +10,8 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { createVersionedPersist } from '../lib/createVersionedPersist';
 
 import { ALL_PANTHEON_PIECES } from '../data/items/pantheonSets/index';
 import { DOMAIN_ARTIFACTS } from '../data/items/domainArtifacts';
@@ -637,13 +637,11 @@ export const useSacredItemStore = create<SacredItemState & SacredItemActions>()(
         }));
       },
     }),
-    {
-      name: 'kohrvellia-sacred-items',
-      storage: createJSONStorage(() => AsyncStorage),
+    createVersionedPersist<SacredItemState & SacredItemActions>('kohrvellia-sacred-items', 1, {
       partialize: (s) => ({
         acquired: s.acquired,
         metrics: s.metrics,
       }),
-    }
+    })
   )
 );
