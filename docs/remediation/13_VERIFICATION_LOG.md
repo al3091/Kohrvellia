@@ -127,4 +127,11 @@
 - The spec header records the acceptance criteria the unification must add later (buff actually applies in combat; Weaken lowers effective attack; old save hydrates).
 - **Next (B-09 unification surgery, now guardable):** (1) canonical model + enum union (add fear/silence/paralysis) → (2) generic buff/debuff → (3) bridge `character.statusEffects` ↔ combat `playerEffects` at encounter start/end → (4) apply the stat delta in combat → (5) persist-migrate via B-07 deep-merge. Each step verified against this guard + tsc + the sim.
 
+## 2026-06-14 · B-09 step 1a — unify the status-effect VOCABULARY
+- Commit: `f49df2c` — added **fear/silence/paralysis** (the character-side enum's exclusive effects) to `StatusEffect.ts` `StatusEffectType` + defs/colors/icons. The canonical COMBAT model now represents EVERY effect both systems use — additive, behavior-neutral (**tsc 0 · 79 tests · sim unchanged**). Prerequisite for collapsing `Character.ts`'s parallel `StatusEffect`/`StatusEffectId` into it.
+- **Remaining (mapped; gotchas flagged so 1b is a clean execution):**
+  - **1b — the behavioral merge:** re-export `Character.ts` `StatusEffect`/`StatusEffectId` from `StatusEffect.ts`; route the character store (`addStatusEffect`→`applyStatusEffect`, `tickStatusEffects`→helper); **⚠ `cure_poison`/`cure_bleed` (`useInventoryStore`) call `removeStatusEffect('poison')` — that worked only because the OLD `id` WAS the type; in the rich model `id` is a unique instance string, so they MUST switch to `removeStatusEffectByType('poison')` or they silently stop curing**; migrate construction sites (`room.tsx:526` curse, the consumable buff) → `createStatusEffect`.
+  - **2** generic buff/debuff effect · **3** bridge `character.statusEffects` ↔ combat `playerEffects` at encounter start/end · **4** apply the stat delta in combat (THE visible buff/debuff fix).
+- **Also found today (reinforces 190):** the shrine **curse** (`room.tsx:526`) is built in the simple shape and added to `character.statusEffects` — combat never reads it, so shrine curses don't bite in combat either; and `useInventoryStore.useConsumable` (where the buggy buff lives) appears **unused** — the town inventory screen has its own consumable handler (a duplicated use-path to reconcile).
+
 *(entries follow)*
