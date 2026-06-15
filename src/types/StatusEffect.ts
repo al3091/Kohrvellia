@@ -16,7 +16,10 @@ export type StatusEffectType =
   | 'weaken'    // Reduces attack damage
   | 'slow'      // Reduces speed/evasion
   | 'curse'     // Reduces all stats slightly, blocks healing
-  | 'regen';    // Heal over time
+  | 'regen'     // Heal over time
+  | 'fear'      // Reduces accuracy (merged from the character-side enum, B-09)
+  | 'silence'   // Blocks skill use (merged from the character-side enum, B-09)
+  | 'paralysis';// Skip turn — body-locked (merged from the character-side enum, B-09)
 
 export interface StatusEffect {
   id: string;
@@ -165,6 +168,32 @@ export const STATUS_EFFECT_DEFINITIONS: Record<StatusEffectType, Omit<StatusEffe
     maxDuration: 3,
     percentDamage: -3, // Negative = healing (3% max HP per turn)
   },
+
+  fear: {
+    type: 'fear',
+    name: 'Fear',
+    description: 'Dread shakes your hands — your aim suffers.',
+    duration: 2,
+    maxDuration: 2,
+    accuracyModifier: -25,
+  },
+
+  silence: {
+    type: 'silence',
+    name: 'Silence',
+    description: 'Your voice fails — no skills can be invoked.',
+    duration: 2,
+    maxDuration: 2,
+  },
+
+  paralysis: {
+    type: 'paralysis',
+    name: 'Paralysis',
+    description: 'Your body locks rigid, unable to act.',
+    duration: 1,
+    maxDuration: 1,
+    skipTurnChance: 100,
+  },
 };
 
 // Status effect colors for UI
@@ -179,6 +208,9 @@ export const STATUS_EFFECT_COLORS: Record<StatusEffectType, string> = {
   slow: '#1ABC9C',     // Teal
   curse: '#2C3E50',    // Dark blue-gray
   regen: '#27AE60',    // Green
+  fear: '#6C3483',     // Dark violet
+  silence: '#566573',  // Slate
+  paralysis: '#D4AC0D',// Amber
 };
 
 // Status effect icons (emoji for now)
@@ -193,6 +225,9 @@ export const STATUS_EFFECT_ICONS: Record<StatusEffectType, string> = {
   slow: '🐌',
   curse: '☠️',
   regen: '💚',
+  fear: '😱',
+  silence: '🤐',
+  paralysis: '⚡',
 };
 
 /**
