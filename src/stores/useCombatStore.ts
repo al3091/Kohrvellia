@@ -864,9 +864,24 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
       case 'buff':
         if (effect.buffEffect) {
-          // Apply as status effect
+          // B-09: actually apply the buff (it used to only log). Consumable buff values are PERCENT
+          // boosts (a flat +10 on a four-figure effStat is nil), so they ride statModifier and land
+          // via getAttackStatMultiplier (STR/ALL) — non-attack stats follow with the speed wiring.
+          const buffStat = effect.buffEffect.stat ?? 'STR';
+          const buffDuration = effect.duration ?? 3;
+          const buffInstance = {
+            ...createStatusEffect('buff', undefined, buffDuration),
+            maxDuration: buffDuration,
+            name: effect.buffEffect.name || consumable.name,
+            statModifier: { stat: buffStat, value: effect.buffEffect.value, isPercent: true },
+          };
+          // One buff per stat: re-using the same tonic refreshes rather than stacking infinitely.
+          const others = get().playerEffects.filter(
+            (e) => !(e.type === 'buff' && e.statModifier?.stat === buffStat)
+          );
+          set({ playerEffects: [...others, buffInstance] });
           get().addLogEntry(
-            `You use ${consumable.name}! +${effect.buffEffect.value} ${effect.buffEffect.stat || effect.buffEffect.name} for ${effect.duration} turns!`,
+            `You use ${consumable.name}! +${effect.buffEffect.value}% ${buffStat} for ${buffDuration} turns!`,
             'status'
           );
         }

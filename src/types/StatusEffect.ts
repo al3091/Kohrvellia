@@ -19,7 +19,8 @@ export type StatusEffectType =
   | 'regen'     // Heal over time
   | 'fear'      // Reduces accuracy (merged from the character-side enum, B-09)
   | 'silence'   // Blocks skill use (merged from the character-side enum, B-09)
-  | 'paralysis';// Skip turn — body-locked (merged from the character-side enum, B-09)
+  | 'paralysis' // Skip turn — body-locked (merged from the character-side enum, B-09)
+  | 'buff';     // Generic temporary stat boost — consumable buffs carry their own statModifier (B-09)
 
 export interface StatusEffect {
   id: string;
@@ -194,6 +195,15 @@ export const STATUS_EFFECT_DEFINITIONS: Record<StatusEffectType, Omit<StatusEffe
     maxDuration: 1,
     skipTurnChance: 100,
   },
+
+  buff: {
+    type: 'buff',
+    name: 'Buff',
+    description: 'A temporary boon to your prowess.',
+    duration: 3,
+    maxDuration: 3,
+    // statModifier is supplied per-instance by the consumable that grants the buff.
+  },
 };
 
 // Status effect colors for UI
@@ -211,6 +221,7 @@ export const STATUS_EFFECT_COLORS: Record<StatusEffectType, string> = {
   fear: '#6C3483',     // Dark violet
   silence: '#566573',  // Slate
   paralysis: '#D4AC0D',// Amber
+  buff: '#2ECC71',     // Emerald — positive
 };
 
 // Status effect icons (emoji for now)
@@ -228,6 +239,7 @@ export const STATUS_EFFECT_ICONS: Record<StatusEffectType, string> = {
   fear: '😱',
   silence: '🤐',
   paralysis: '⚡',
+  buff: '✨',
 };
 
 /**
