@@ -322,6 +322,25 @@ export function getAccuracyModifier(effects: StatusEffect[]): number {
 }
 
 /**
+ * B-09: combined multiplier on ATTACK damage from active effects' percent stat modifiers on
+ * STR or ALL. This makes the data-driven `statModifier` actually land in combat:
+ *   - Weaken (−25% STR) → ×0.75   (exactly the old hardcoded behaviour)
+ *   - Curse  (−10% ALL) → ×0.90   (previously did nothing to attack)
+ *   - a +20% STR buff   → ×1.20
+ * Modifiers stack multiplicatively. (Non-attack stats like AGI→speed are a separate follow-up.)
+ */
+export function getAttackStatMultiplier(effects: StatusEffect[]): number {
+  let mult = 1.0;
+  for (const effect of effects) {
+    const m = effect.statModifier;
+    if (m && m.isPercent && (m.stat === 'STR' || m.stat === 'ALL')) {
+      mult *= 1 + m.value / 100;
+    }
+  }
+  return mult;
+}
+
+/**
  * Tick all status effects (reduce duration, remove expired)
  */
 export function tickStatusEffects(effects: StatusEffect[]): StatusEffect[] {

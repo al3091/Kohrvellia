@@ -51,6 +51,7 @@ import {
   applyStatusEffect,
   removeStatusEffectByType,
   hasStatusEffect,
+  getAttackStatMultiplier,
   STATUS_EFFECT_ICONS,
 } from '../types/StatusEffect';
 import { Combat as CombatConfig, Loot as LootConfig } from '../constants/GameConstants';
@@ -469,9 +470,10 @@ export const useCombatStore = create<CombatState>((set, get) => ({
     if (combatDynamic.postDodgeCritActive) isCrit = true;
     const critMult = isCrit ? derived.critMultiplier : 1.0;
 
-    // ── 3. Damage modifiers from status effects ──
+    // ── 3. Damage modifiers from status effects (B-09: data-driven — percent STR/ALL modifiers on
+    //       active effects scale the attack, replacing the hardcoded weaken; curse/buffs now land too) ──
     let damageMultiplier = 1.0;
-    if (hasStatusEffect(playerEffects, 'weaken')) damageMultiplier *= 0.75;
+    damageMultiplier *= getAttackStatMultiplier(playerEffects);
 
     // ── 4. Enemy defense — formula resolver routes by category + damage type ──
     const equippedWeapon = useCharacterStore.getState().character?.equipment.weapon;
@@ -1187,7 +1189,7 @@ export const useCombatStore = create<CombatState>((set, get) => ({
 
     const defenseReduction = totalDefense / (totalDefense + 100);
     let damageMultiplier = 1.0;
-    if (hasStatusEffect(monsterEffects, 'weaken')) damageMultiplier *= 0.75;
+    damageMultiplier *= getAttackStatMultiplier(monsterEffects); // B-09: data-driven (weaken/curse/buffs)
 
     const rawDamage = Math.max(1, effectiveAttack * (1 - defenseReduction));
     const varianceFactor = 0.85 + Math.random() * 0.30;

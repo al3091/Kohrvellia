@@ -17,6 +17,7 @@ import {
   tickStatusEffects,
   calculateStatusDamage,
   getAccuracyModifier,
+  getAttackStatMultiplier,
   getHealingModifier,
   hasStatusEffect,
   removeStatusEffect,
@@ -87,5 +88,19 @@ describe('B-09 guard — has / remove', () => {
     expect(hasStatusEffect(effects, 'stun')).toBe(false);
     expect(removeStatusEffect(effects, effects[0].id)).toHaveLength(1);
     expect(removeStatusEffectByType(effects, 'weaken')).toHaveLength(1);
+  });
+});
+
+describe('B-09 step 4 — getAttackStatMultiplier (percent STR/ALL modifiers land on attack)', () => {
+  it('weaken → ×0.75 (same as the old hardcode), curse → ×0.9, none → ×1', () => {
+    expect(getAttackStatMultiplier([])).toBe(1);
+    expect(getAttackStatMultiplier([createStatusEffect('weaken')])).toBeCloseTo(0.75);
+    expect(getAttackStatMultiplier([createStatusEffect('curse')])).toBeCloseTo(0.9);
+  });
+
+  it('a +20% STR buff → ×1.2 and stacks multiplicatively with weaken', () => {
+    const buff = { ...createStatusEffect('curse'), statModifier: { stat: 'STR', value: 20, isPercent: true } };
+    expect(getAttackStatMultiplier([buff])).toBeCloseTo(1.2);
+    expect(getAttackStatMultiplier([createStatusEffect('weaken'), buff])).toBeCloseTo(0.9); // 0.75 × 1.2
   });
 });
