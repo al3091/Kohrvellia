@@ -18,6 +18,7 @@ import {
 } from '../types/Deity';
 import { getDeityById } from '../data/pantheons';
 import { useCharacterStore } from './useCharacterStore';
+import type { StatName } from '../types/Stats';
 import { useSoulStore } from './useSoulStore';
 import { useSacredItemStore } from './useSacredItemStore';
 
@@ -324,11 +325,14 @@ export const useDeityStore = create<DeityState>()(
           const challenge = deity.challenges.find((c) => c.id === lastCompleted);
           if (challenge?.bonusStatPoints && challenge.bonusStatPoints > 0) {
             const pointsPerStat = Math.max(1, Math.floor(challenge.bonusStatPoints / 4));
+            // B-10: target the reward at the BUILD's strongest stats (was a fixed STR/END/AGI/PER,
+            // which wasted the reward for a CHA/INT/WIS/LCK build).
             const characterStore = useCharacterStore.getState();
-            characterStore.addPendingExcelia('STR', pointsPerStat);
-            characterStore.addPendingExcelia('END', pointsPerStat);
-            characterStore.addPendingExcelia('AGI', pointsPerStat);
-            characterStore.addPendingExcelia('PER', pointsPerStat);
+            const eff = characterStore.getEffectiveStats();
+            const topStats = (Object.keys(eff) as StatName[])
+              .sort((a, b) => eff[b] - eff[a])
+              .slice(0, 4);
+            topStats.forEach((s) => characterStore.addPendingExcelia(s, pointsPerStat));
           }
         }
         // Soul: challenge completed
