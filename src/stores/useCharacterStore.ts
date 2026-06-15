@@ -113,6 +113,7 @@ interface CharacterState {
   addStatusEffect: (effect: StatusEffect) => void;
   removeStatusEffect: (effectId: string) => void;
   tickStatusEffects: () => void;
+  setStatusEffects: (effects: StatusEffect[]) => void;
 
   // Actions - Equipment
   equipWeapon: (weapon: Weapon) => void;
@@ -654,6 +655,16 @@ export const useCharacterStore = create<CharacterState>()(
             },
           };
         });
+      },
+
+      // B-09 bridge: combat seeds its effects from here at the start of a fight and writes the
+      // survivors back here at the end (so persistent afflictions tick over combat turns and expire).
+      setStatusEffects: (effects) => {
+        set((state) =>
+          state.character
+            ? { character: { ...state.character, statusEffects: effects } }
+            : state
+        );
       },
 
       // Equipment - swapping equipment stores old weapon in inventory if there's space

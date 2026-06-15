@@ -324,7 +324,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
       stagedPrimary: null,
       stagedBonus: null,
       bonusActionAvailable: false,
-      playerEffects: [],
+      // B-09 bridge: carry the character's persistent effects (shrine curse, paralysis, buffs)
+      // into the fight so they actually apply.
+      playerEffects: [...(useCharacterStore.getState().character?.statusEffects ?? [])],
       monsterEffects: [],
       log: [],
       rewards: null,
@@ -334,6 +336,9 @@ export const useCombatStore = create<CombatState>((set, get) => ({
   },
 
   endCombat: () => {
+    // B-09 bridge: persist surviving status effects back to the character so afflictions carry
+    // between fights and expire over combat turns (the character list is otherwise never ticked).
+    useCharacterStore.getState().setStatusEffects(get().playerEffects);
     set({
       isInCombat: false,
       phase: 'player_plan',
