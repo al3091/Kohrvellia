@@ -318,7 +318,8 @@ export function calculateDerivedStats(
   weaponMaxOutputCap: number = Infinity,
   weaponLuck: number = 0,
   weaponCritChance: number = 0,
-  weaponCategory: string = ''
+  weaponCategory: string = '',
+  primaryStats: readonly string[] = []
 ): DerivedStats {
   // Effective stats include current-level points + permanent carry from all previous levels
   const effSTR = calculateEffectiveStat(level, stats.STR.points, carryStats.STR ?? 0);
@@ -348,6 +349,16 @@ export function calculateDerivedStats(
     STR: effSTR, AGI: effAGI, PER: effPER, END: effEND, CHA: effCHA,
   };
   const physScaling = (() => {
+    // B-12 (KV-AUD-312): a dual-stat weapon scales on EACH of its physical primary stats, split
+    // evenly so the weighting sums to 1.0 (no double-dip). Single-stat weapons are unchanged.
+    const physPrimaries = primaryStats.filter((s) => PHYS_COEFFICIENTS[s] !== undefined);
+    if (physPrimaries.length > 1) {
+      const split = 1 / physPrimaries.length;
+      return (
+        physPrimaries.reduce((sum, s) => sum + (PHYS_STAT_VALUES[s] ?? effSTR) * PHYS_COEFFICIENTS[s], 0) *
+        split
+      );
+    }
     if (PHYS_COEFFICIENTS[weaponCategory] !== undefined) {
       return (PHYS_STAT_VALUES[weaponCategory] ?? effSTR) * PHYS_COEFFICIENTS[weaponCategory];
     }

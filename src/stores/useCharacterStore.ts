@@ -210,7 +210,7 @@ function computeMaxResources(
     mergedCarry[stat as import('../types/Stats').StatName] = (mergedCarry[stat as import('../types/Stats').StatName] ?? 0) + (val as number);
   }
   const derived = calculateDerivedStats(
-    level, stats, mergedCarry, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance, weaponCategory
+    level, stats, mergedCarry, weaponDamage, weaponMagic, armorDefense, armorMagicDef, blessingMult, weaponOutputCap, weaponLuck, weaponCritChance, weaponCategory, primaryStats
   );
   return { maxHP: derived.maxHP, maxSP: derived.maxSP };
 }
@@ -1275,7 +1275,8 @@ export const useCharacterStore = create<CharacterState>()(
           weaponOutputCap,
           weaponLuck,
           weaponCritChance,
-          weaponCategory
+          weaponCategory,
+          primaryStats
         );
       },
 
@@ -1331,7 +1332,8 @@ export const useCharacterStore = create<CharacterState>()(
           weaponOutputCap,
           weaponLuck,
           weaponCritChance,
-          weaponCategory
+          weaponCategory,
+          primaryStats
         );
 
         // Apply Paragon title buffs if character has reached Level 10 Denatus
