@@ -147,7 +147,7 @@ interface CharacterState {
 
   // Actions - Deity
   setPatronDeity: (deityId: string) => void;
-  modifyDeityFavor: (amount: number) => void;
+  setDeityFavor: (favor: number) => void;
 
   // Actions - Death
   killCharacter: () => void;
@@ -1152,11 +1152,14 @@ export const useCharacterStore = create<CharacterState>()(
         });
       },
 
-      modifyDeityFavor: (amount) => {
+      setDeityFavor: (favor) => {
         set((state) => {
           if (!state.character) return state;
 
-          const newFavor = Math.max(0, Math.min(100, state.character.deityFavor + amount));
+          // B-10: absolute setter (was the delta `modifyDeityFavor`). The single favor writer
+          // (useDeityStore.adjustFavor) calls this so character.deityFavor + the blessing-driven
+          // maxHP/maxSP recompute stay in lockstep with deity favor — they can no longer diverge.
+          const newFavor = Math.max(0, Math.min(100, favor));
           const { maxHP: newMaxHP, maxSP: newMaxSP } = computeMaxResources(
             state.character.level,
             state.character.stats,

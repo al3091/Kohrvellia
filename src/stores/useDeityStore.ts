@@ -131,35 +131,35 @@ export const useDeityStore = create<DeityState>()(
       adjustFavor: (amount, _reason) => {
         set((state) => {
           if (!state.relationship) return state;
-
           const newFavor = Math.max(0, Math.min(100, state.relationship.favor + amount));
-
-          return {
-            relationship: {
-              ...state.relationship,
-              favor: newFavor,
-            },
-          };
+          return { relationship: { ...state.relationship, favor: newFavor } };
         });
+        if (!get().relationship) return;
 
-        // Eviction: if favor drops to ABANDONED tier, flag for eviction modal in Familia Home
         const updatedFavor = get().relationship?.favor ?? 0;
-        if (updatedFavor <= FAVOR_STATUS.ABANDONED.max && !get().isPatronEvicted) {
-          set({ isPatronEvicted: true });
+
+        // B-10: adjustFavor is the SOLE favor writer — mirror it onto the character (which recomputes
+        // the blessing-driven maxHP/maxSP), so the two favor copies can never diverge.
+        useCharacterStore.getState().setDeityFavor(updatedFavor);
+
+        // Eviction: flag at the ABANDONED tier, and CLEAR it once favor recovers above it (B-10).
+        if (updatedFavor <= FAVOR_STATUS.ABANDONED.max) {
+          if (!get().isPatronEvicted) set({ isPatronEvicted: true });
+        } else if (get().isPatronEvicted) {
+          set({ isPatronEvicted: false });
         }
 
-        // Track high-favor milestone in soul system (target is 80, so set to actual favor value)
-        const newFavor = get().relationship?.favor;
-        if (newFavor !== undefined && newFavor >= 80) {
-          useSoulStore.getState().setBehavementProgress('social_deity_favor_high', newFavor);
+        // High-favor soul milestone (80+ — set to the actual favor value)
+        if (updatedFavor >= 80) {
+          useSoulStore.getState().setBehavementProgress('social_deity_favor_high', updatedFavor);
         }
-        // Deity relic reveal: trigger when reaching 100% favor
-        if (newFavor !== undefined && newFavor >= 100) {
+        // Deity relic reveal at 100% favor
+        if (updatedFavor >= 100) {
           const deityId = get().relationship?.deityId;
-          if (deityId) useSacredItemStore.getState().recordMaxFavor(deityId, newFavor);
+          if (deityId) useSacredItemStore.getState().recordMaxFavor(deityId, updatedFavor);
         }
         // Favoured Child tracking (91+)
-        if (newFavor !== undefined && newFavor >= 91) {
+        if (updatedFavor >= 91) {
           const deityId = get().relationship?.deityId;
           if (deityId) useSacredItemStore.getState().recordFavoredChild(deityId);
         }

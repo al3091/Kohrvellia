@@ -69,7 +69,7 @@ export default function RoomScreen() {
   const haptics = useHaptics();
   const { playSFX } = useSoundStore();
   const { getCurrentNode, getCurrentMap, completeNode, useRestSite, revealMystery, setRunFlag, clearRunFlag, getRunFlags } = useDungeonStore();
-  const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, removeFromInventory, addToInventory, modifyDeityFavor, addStatusEffect, modifySatiation } = useCharacterStore();
+  const { character, modifyHP, modifySP, modifyGold, addPendingExcelia, removeFromInventory, addToInventory, addStatusEffect, modifySatiation } = useCharacterStore();
   const { prepareEncounter } = useCombatStore();
   const { equipmentStock, purchaseEquipment, getEquipmentPrice, shouldRefreshStock, refreshStock } = useShopStore();
 
@@ -520,7 +520,8 @@ export default function RoomScreen() {
     if (hpHealed > 0) { modifyHP(hpHealed); playSFX('heal'); }
     if (spHealed > 0) { modifySP(spHealed); }
     if (hpDmg > 0) { modifyHP(-hpDmg); }
-    modifyDeityFavor(favorDelta);
+    // B-10: adjustFavor is the single favor writer — it now syncs character.deityFavor itself
+    // (this was previously a double-write that could drift from the deity-store copy).
     useDeityStore.getState().adjustFavor(favorDelta, 'shrine');
 
     if (curseTurns > 0) {
