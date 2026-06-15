@@ -161,4 +161,9 @@
 - **★ B-10 COMPLETE:** single-writer (`adjustFavor` sole) + character mirror + resource recompute + eviction-clear-on-recovery + all live favor paths routed (shrine/prayer/domain/challenge) + build-targeted challenge rewards. 121/242/270/180/122 closed.
 - **Residue → B-22 (cosmetic, non-blocking):** FAVOR_TIERS collapse (dedup the favor tier tables / 0× table) + delete the dead `tickChallengeFloor`.
 
+## 2026-06-15 · B-12 — dual-stat weapons engage ★★ WAVE 1 COMPLETE
+- Commit: `5e02d61` — **Closes KV-AUD-312.** `physScaling` used only the single `weaponCategory`, so a STR/AGI weapon ignored AGI (the abandoned 312 WIP). Added `primaryStats` to `calculateDerivedStats`; with 2+ physical primaries the scaling splits EVENLY (sum 1.0 — no 061-style double-dip). Single-stat byte-identical (B-06 golden master + sim untouched). Wired from all 3 callers. Guard: NEW `weapon-split.spec` — **89 tests.** Residual: the ×3-dup `physRatio` block (071) → extract to one helper (B-22); owner-review point: even-split vs weighted magnitude.
+- **★★ WAVE 1 COMPLETE:** B-06 (GameConstants reconnected) · B-07 (versioned persistence, all 12 stores) · B-08 (`as any` surfacing pass) · B-09 (ONE status model + buffs/debuffs LIVE) · B-10 (favor single-writer) · B-12 (dual-stat weapons). **Tracked riders/residue:** B-08 lint-gate · B-09 step 4b (speed statModifiers) · B-10 FAVOR_TIERS collapse · B-12 071 dup-extraction.
+- **Next: WAVE 2 — B-11 THE EFFECT-RESOLVER (#4, the audit's keystone):** one `resolveEffect(effect, ctx)` registry shared by combat/out-of-combat/skills/consumables/events; register statModifier, healing-mods, suffix procs, buff/damage_percent/flee, accessory/armor penalties, event afflictions, per-id achievement checkers. Dep B-08·B-09 (both done). Guard `tests/resolver.spec.ts` (one case per registered type, failing-test-first) + dpr5_check. **L.**
+
 *(entries follow)*
