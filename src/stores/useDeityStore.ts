@@ -238,35 +238,40 @@ export const useDeityStore = create<DeityState>()(
       },
 
       checkChallengeExpiry: (_currentFloor) => {
-        set((state) => {
-          if (!state.relationship?.currentChallenge) return state;
-          const { floorsRemaining } = state.relationship.currentChallenge;
-          if (floorsRemaining === undefined) return state;
+        const floorsRemaining = get().relationship?.currentChallenge?.floorsRemaining;
+        if (floorsRemaining === undefined) return;
 
-          const newFloorsRemaining = floorsRemaining - 1;
+        const newFloorsRemaining = floorsRemaining - 1;
 
-          if (newFloorsRemaining <= 0) {
-            const favorChange = calculateFavorChange('challenge_fail');
-            return {
-              relationship: {
-                ...state.relationship,
-                favor: Math.max(0, state.relationship.favor + favorChange),
-                challengesFailed: state.relationship.challengesFailed + 1,
-                currentChallenge: undefined,
-              },
-            };
-          }
-
-          return {
-            relationship: {
-              ...state.relationship,
-              currentChallenge: {
-                ...state.relationship.currentChallenge,
-                floorsRemaining: newFloorsRemaining,
-              },
-            },
-          };
-        });
+        if (newFloorsRemaining <= 0) {
+          set((state) =>
+            state.relationship
+              ? {
+                  relationship: {
+                    ...state.relationship,
+                    challengesFailed: state.relationship.challengesFailed + 1,
+                    currentChallenge: undefined,
+                  },
+                }
+              : state
+          );
+          // B-10: favor via the single writer (syncs character + eviction).
+          get().adjustFavor(calculateFavorChange('challenge_fail'), 'challenge_expiry');
+        } else {
+          set((state) =>
+            state.relationship?.currentChallenge
+              ? {
+                  relationship: {
+                    ...state.relationship,
+                    currentChallenge: {
+                      ...state.relationship.currentChallenge,
+                      floorsRemaining: newFloorsRemaining,
+                    },
+                  },
+                }
+              : state
+          );
+        }
       },
 
       checkChallengeCompletion: () => {
@@ -286,26 +291,27 @@ export const useDeityStore = create<DeityState>()(
       },
 
       completeChallenge: () => {
-        set((state) => {
-          if (!state.relationship?.currentChallenge) return state;
+        const rel = get().relationship;
+        if (!rel?.currentChallenge) return;
 
-          const { challengeId } = state.relationship.currentChallenge;
-          const deity = getDeityById(state.relationship.deityId);
-          const challenge = deity?.challenges.find((c) => c.id === challengeId);
+        const { challengeId } = rel.currentChallenge;
+        const challenge = getDeityById(rel.deityId)?.challenges.find((c) => c.id === challengeId);
+        const favorGain = challenge?.favorGain ?? calculateFavorChange('challenge_complete');
 
-          // Use challenge-specific favorGain when available, fall back to default
-          const favorGain = challenge?.favorGain ?? calculateFavorChange('challenge_complete');
-
-          return {
-            relationship: {
-              ...state.relationship,
-              favor: Math.min(100, state.relationship.favor + favorGain),
-              challengesCompleted: state.relationship.challengesCompleted + 1,
-              currentChallenge: undefined,
-            },
-            completedChallengeIds: [...state.completedChallengeIds, challengeId],
-          };
-        });
+        set((state) =>
+          state.relationship
+            ? {
+                relationship: {
+                  ...state.relationship,
+                  challengesCompleted: state.relationship.challengesCompleted + 1,
+                  currentChallenge: undefined,
+                },
+                completedChallengeIds: [...state.completedChallengeIds, challengeId],
+              }
+            : state
+        );
+        // B-10: favor via the single writer (syncs character + eviction/milestones).
+        get().adjustFavor(favorGain, 'challenge_complete');
 
         // Award bonus stat points via pending excelia if the challenge grants them
         const { relationship } = get();
@@ -346,25 +352,26 @@ export const useDeityStore = create<DeityState>()(
       },
 
       failChallenge: () => {
-        set((state) => {
-          if (!state.relationship?.currentChallenge) return state;
+        const rel = get().relationship;
+        if (!rel?.currentChallenge) return;
 
-          const { challengeId } = state.relationship.currentChallenge;
-          const deity = getDeityById(state.relationship.deityId);
-          const challenge = deity?.challenges.find((c) => c.id === challengeId);
+        const { challengeId } = rel.currentChallenge;
+        const challenge = getDeityById(rel.deityId)?.challenges.find((c) => c.id === challengeId);
+        const favorLoss = challenge?.favorLoss ?? Math.abs(calculateFavorChange('challenge_fail'));
 
-          // Use challenge-specific favorLoss when available, fall back to default
-          const favorLoss = challenge?.favorLoss ?? Math.abs(calculateFavorChange('challenge_fail'));
-
-          return {
-            relationship: {
-              ...state.relationship,
-              favor: Math.max(0, state.relationship.favor - favorLoss),
-              challengesFailed: state.relationship.challengesFailed + 1,
-              currentChallenge: undefined,
-            },
-          };
-        });
+        set((state) =>
+          state.relationship
+            ? {
+                relationship: {
+                  ...state.relationship,
+                  challengesFailed: state.relationship.challengesFailed + 1,
+                  currentChallenge: undefined,
+                },
+              }
+            : state
+        );
+        // B-10: favor via the single writer (syncs character + eviction).
+        get().adjustFavor(-favorLoss, 'challenge_fail');
       },
 
       abandonChallenge: () => {
