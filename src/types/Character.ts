@@ -107,27 +107,11 @@ export const BACKSTORIES: Record<BackstoryId, Backstory> = {
   },
 };
 
-// Status effects that can afflict the character
-export type StatusEffectId =
-  | 'poison'
-  | 'bleed'
-  | 'burn'
-  | 'freeze'
-  | 'stun'
-  | 'fear'
-  | 'curse'
-  | 'blind'
-  | 'silence'
-  | 'paralysis';
-
-export interface StatusEffect {
-  id: StatusEffectId;
-  name: string;
-  duration: number; // Turns remaining
-  damagePerTurn?: number;
-  statModifier?: Partial<Record<StatName, number>>;
-  description: string;
-}
+// Status effects — unified onto the canonical combat model (B-09 step 1b). `StatusEffectId` is kept
+// as an alias of `StatusEffectType` so monster/affliction data that references effects by name works.
+import type { StatusEffect } from './StatusEffect';
+export type { StatusEffect };
+export type { StatusEffectType as StatusEffectId } from './StatusEffect';
 
 // Skill stored on the character — extends the full CombatSkill so effects are always present
 export interface Skill extends CombatSkill {

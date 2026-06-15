@@ -16,6 +16,7 @@ import { useCombatStore } from '../../src/stores/useCombatStore';
 import { useHaptics } from '../../src/hooks/useHaptics';
 import { useSoundStore } from '../../src/stores/useSoundStore';
 import { getNodeIcon, getNodeDisplayName, type NodeType } from '../../src/types/Dungeon';
+import { createStatusEffect } from '../../src/types/StatusEffect';
 import { TypewriterText } from '../../src/components/text/TypewriterText';
 import { DramaticReveal } from '../../src/components/text/DramaticReveal';
 import {
@@ -524,9 +525,8 @@ export default function RoomScreen() {
 
     if (curseTurns > 0) {
       addStatusEffect({
-        id: 'curse',
+        ...createStatusEffect('curse', undefined, curseTurns),
         name: affinity === 'abandoned' ? 'Divine Wrath' : 'Shrine Curse',
-        duration: curseTurns,
         description: affinity === 'abandoned' ? 'The gods have forsaken you.' : 'A curse from an opposing shrine.',
       });
     }

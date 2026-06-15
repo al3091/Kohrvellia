@@ -6,6 +6,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createVersionedPersist } from '../lib/createVersionedPersist';
+import {
+  applyStatusEffect,
+  tickStatusEffects as tickEffectDurations,
+} from '../types/StatusEffect';
 
 import type {
   Character,
@@ -610,22 +614,13 @@ export const useCharacterStore = create<CharacterState>()(
       addStatusEffect: (effect) => {
         set((state) => {
           if (!state.character) return state;
-
-          // Check if effect already exists, refresh duration if so
-          const existing = state.character.statusEffects.findIndex((e) => e.id === effect.id);
-          let newEffects: StatusEffect[];
-
-          if (existing >= 0) {
-            newEffects = [...state.character.statusEffects];
-            newEffects[existing] = effect;
-          } else {
-            newEffects = [...state.character.statusEffects, effect];
-          }
-
+          // B-09: route through the canonical helper (dedup-by-type + stacking) so a repeated effect
+          // refreshes/stacks instead of accumulating duplicate entries (rich ids are unique per
+          // instance, so the old findIndex-by-id dedup would never match after the model unification).
           return {
             character: {
               ...state.character,
-              statusEffects: newEffects,
+              statusEffects: applyStatusEffect(state.character.statusEffects, effect),
             },
           };
         });
@@ -635,10 +630,14 @@ export const useCharacterStore = create<CharacterState>()(
         set((state) => {
           if (!state.character) return state;
 
+          // B-09: match either a unique instance id OR an effect type, so type-based cures
+          // ("cure poison") keep working now that effect ids are unique instance strings.
           return {
             character: {
               ...state.character,
-              statusEffects: state.character.statusEffects.filter((e) => e.id !== effectId),
+              statusEffects: state.character.statusEffects.filter(
+                (e) => e.id !== effectId && e.type !== effectId
+              ),
             },
           };
         });
@@ -648,17 +647,10 @@ export const useCharacterStore = create<CharacterState>()(
         set((state) => {
           if (!state.character) return state;
 
-          const updatedEffects = state.character.statusEffects
-            .map((effect) => ({
-              ...effect,
-              duration: effect.duration - 1,
-            }))
-            .filter((effect) => effect.duration > 0);
-
           return {
             character: {
               ...state.character,
-              statusEffects: updatedEffects,
+              statusEffects: tickEffectDurations(state.character.statusEffects),
             },
           };
         });
@@ -1440,6 +1432,19 @@ export const useCharacterStore = create<CharacterState>()(
         return getBlessingMultiplier(character.deityFavor ?? 50);
       },
     }),
-    createVersionedPersist<CharacterState>('kohrvellia-character', 1)
+    createVersionedPersist<CharacterState>('kohrvellia-character', 2, {
+      // B-09: statusEffects were unified onto the rich model. They're transient (afflictions expire
+      // in a few turns), so an old save simply starts with none rather than carrying malformed
+      // effects that would render without an icon/colour.
+      migrate: (persisted, fromVersion) => {
+        if (fromVersion < 2 && persisted && typeof persisted === 'object' && 'character' in persisted) {
+          const p = persisted as { character: { statusEffects?: unknown } | null };
+          if (p.character) {
+            p.character.statusEffects = [];
+          }
+        }
+        return persisted;
+      },
+    })
   )
 );
