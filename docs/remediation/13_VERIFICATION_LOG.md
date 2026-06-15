@@ -156,4 +156,9 @@
 - Commit: `736c1ba` — **Closes KV-AUD-180.** The 3 LIVE challenge favor-sets (`checkChallengeExpiry` · `completeChallenge` · `failChallenge`) set `relationship.favor` directly, bypassing `adjustFavor` — so challenge favor never synced to `character.deityFavor` (the blessing driver) and skipped eviction/milestone checks. Routed all three through `adjustFavor` (`completeChallenge`'s reward logic untouched — only the favor change lifted out). **Every live favor path now syncs the character.** `tickChallengeFloor`'s direct set remains but is DEAD (zero callers; only `checkChallengeExpiry` is invoked, from `floor.tsx`) → flagged for B-22. Sweep green (**86 tests**, sim unchanged).
 - **B-10 step 3 (final tail, small):** FAVOR_TIERS collapse (port labels, delete the 0× table) + target challenge rewards at the build's stats (`completeChallenge` awards fixed STR/END/AGI/PER pending-excelia — should target the actual build). Closes the rest (122/123/079/215/126). Plus the dead `tickChallengeFloor` → B-22.
 
+## 2026-06-15 · B-10 step 3 — challenge rewards target the build ★ FAVOR SYSTEM COMPLETE
+- Commit: `faa479f` — **Closes KV-AUD-122.** `completeChallenge` awarded its bonus stat points to a FIXED STR/END/AGI/PER set (wasted for a CHA/INT/WIS/LCK build); now sorts the character's effective stats (`getEffectiveStats`) and grants to the TOP 4, so the reward reinforces the actual build. Sweep green (**86 tests**, sim unchanged).
+- **★ B-10 COMPLETE:** single-writer (`adjustFavor` sole) + character mirror + resource recompute + eviction-clear-on-recovery + all live favor paths routed (shrine/prayer/domain/challenge) + build-targeted challenge rewards. 121/242/270/180/122 closed.
+- **Residue → B-22 (cosmetic, non-blocking):** FAVOR_TIERS collapse (dedup the favor tier tables / 0× table) + delete the dead `tickChallengeFloor`.
+
 *(entries follow)*
